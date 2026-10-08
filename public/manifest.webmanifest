@@ -1,0 +1,32 @@
+{
+  "id": "./",
+  "name": "Rudge — Organização pessoal",
+  "short_name": "Rudge",
+  "description": "Tarefas, metas, hábitos e lembretes com notificações.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./#/inicio",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["productivity", "lifestyle"],
+  "launch_handler": { "client_mode": ["focus-existing", "auto"] },
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Nova tarefa", "short_name": "Tarefa", "url": "./#/tarefas", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Lembretes", "short_name": "Lembretes", "url": "./#/lembretes", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Metas", "short_name": "Metas", "url": "./#/metas", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "screenshots": [
+    { "src": "icons/screenshot-wide.png", "sizes": "1440x900", "type": "image/png", "form_factor": "wide", "label": "Painel do Rudge" },
+    { "src": "icons/screenshot-mobile.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow", "label": "Rudge no celular" }
+  ]
+}
