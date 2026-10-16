@@ -3,6 +3,7 @@ import { useSession } from './lib/auth';
 import { getState, useStore } from './lib/store';
 import { openModal, useModals, useRoute } from './lib/ui';
 import { startScheduler } from './lib/scheduler';
+import { startPush } from './lib/push';
 import { applyTheme } from './components/ThemeToggle';
 import { Shell } from './components/Shell';
 import { ModalHost, Toaster } from './components/Host';
@@ -84,7 +85,7 @@ function Page() {
 function Authed() {
   const modals = useModals();
   useEffect(() => {
-    void startScheduler();
+    void startScheduler().then(() => startPush());
     if (!getState().settings.onboarded) setTimeout(() => openModal({ type: 'onboarding' }), 600);
   }, []);
 

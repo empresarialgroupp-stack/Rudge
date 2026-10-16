@@ -9,6 +9,7 @@ export const defaultSettings: Settings = {
   theme: 'dark',
   name: '',
   notifications: false,
+  push: false,
   sound: true,
   briefing: { enabled: true, time: '08:00' },
   review: { enabled: true, time: '21:00' },

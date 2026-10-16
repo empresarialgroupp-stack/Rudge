@@ -33,17 +33,28 @@ autenticação de servidor.
 
 ## Notificações
 
-O motor (`src/lib/scheduler.ts`) monta uma fila com lembretes, tarefas com horário, hábitos,
-check-ins e prazos de metas, resumo da manhã, fechamento do dia e revisão semanal. Com o app em
-foco aparece um aviso interno; em segundo plano/minimizado, notificação do sistema com os botões
-**Concluir** e **Adiar** (tratados pelo service worker). A fila e o registro de disparos ficam no
-IndexedDB, compartilhados com o service worker (sem duplicar avisos entre abas/recargas). Onde há
-suporte, a sincronização periódica dispara lembretes vencidos com o app fechado.
+**Com o app aberto/minimizado** o motor local (`src/lib/scheduler.ts`) monta a fila de avisos —
+lembretes, tarefas com horário, hábitos, check-ins e prazos de metas, resumo da manhã, fechamento
+do dia e revisão semanal — e mostra aviso interno (em foco) ou notificação do sistema.
 
-Limite atual: sem servidor de push, os avisos dependem do Rudge estar aberto ou em segundo plano.
-No computador, ative "Iniciar app ao fazer login" (passo a passo em **Instalar app**). Para avisos
-com o app totalmente fechado no celular é preciso um servidor Web Push — o service worker já
-trata o evento `push`.
+**Com o app fechado** o aviso vem do servidor (Web Push):
+
+```
+app (cada aparelho) ──/subscribe──▶ Edge Function "rudge" ◀── pg_cron (a cada minuto) → /dispatch
+        └──/sync (fila dos próximos 30 dias)──▶ rudge.notifications ──push──▶ service worker → notificação
+```
+
+- Servidor: Supabase (projeto `rudge`, região São Paulo). Função em `supabase/functions/rudge`,
+  migrações em `supabase/migrations`. Dados no schema `rudge`, que não é exposto pela API.
+- Autenticação: o login gera um token derivado da senha (a senha não é guardada); o servidor
+  guarda só o hash do token. Chaves VAPID e segredos ficam no Vault do Supabase.
+- Os botões **Concluir/Adiar** funcionam com o app fechado: o service worker avisa o servidor
+  (adiar reagenda o push) e o app aplica a mudança quando abrir.
+- Sem duplicar: com o app em foco o push vira aviso interno; o registro de disparos é
+  compartilhado entre app e service worker.
+- `owner_id` já existe nas tabelas para a futura versão multiusuário (SaaS).
+
+Teste: Configurações → Notificações → **Testar com o app fechado** (aviso em ~1 minuto).
 
 ## Desenvolvimento
 
@@ -51,6 +62,7 @@ trata o evento `push`.
 npm install
 npm run dev        # http://localhost:5173
 npm test           # testes (interpretador, recorrência, fila de notificações, hash)
+# servidor: supabase functions deploy rudge --no-verify-jwt  (projeto btpbarqvsglqzpcpezvz)
 npm run build      # typecheck + build em dist/
 npm run preview    # servir o build (o service worker só registra em https ou localhost)
 ```

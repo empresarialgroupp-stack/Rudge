@@ -1,0 +1,6 @@
+# Projeto Supabase do Rudge (servidor de notificações push)
+project_id = "btpbarqvsglqzpcpezvz"
+
+[functions.rudge]
+# a função faz a própria autenticação (token derivado da senha / segredo do cron)
+verify_jwt = false

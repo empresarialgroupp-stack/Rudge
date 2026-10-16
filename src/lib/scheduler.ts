@@ -79,9 +79,9 @@ export function dayPlan(s: AppState, key: string) {
   return { tasks, reminders: reminders.length, habits };
 }
 
-export function buildQueue(s: AppState, now = Date.now()): QueueItem[] {
+export function buildQueue(s: AppState, now = Date.now(), future = WINDOW_FUTURE): QueueItem[] {
   const from = now - WINDOW_PAST;
-  const to = now + WINDOW_FUTURE;
+  const to = now + future;
   const q: QueueItem[] = [];
   const days = daysInWindow(from, to);
   const name = s.settings.name ? `, ${s.settings.name.split(' ')[0]}` : '';
@@ -307,6 +307,14 @@ type Fired = Record<string, number>;
 
 let queue: QueueItem[] = [];
 let started = false;
+/** Push do servidor ativo neste aparelho: com o app em segundo plano, quem avisa é o servidor. */
+let pushActive = false;
+/** Tempo que o app espera o push chegar antes de avisar por conta própria. */
+const PUSH_FALLBACK = 150_000;
+
+export function setPushActive(v: boolean) {
+  pushActive = v;
+}
 let persistTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function getQueue() {
@@ -428,7 +436,10 @@ export async function tick() {
     rebuild();
     const now = Date.now();
     const fired = (await idbGet<Fired>('fired')) ?? {};
-    const due = queue.filter((q) => q.at <= now && !fired[q.key]);
+    const background = !isForeground();
+    const due = queue.filter(
+      (q) => q.at <= now && !fired[q.key] && !(pushActive && background && now - q.at < PUSH_FALLBACK),
+    );
     for (const item of due) {
       fired[item.key] = now;
       if (item.key.startsWith('snz:')) removeSnooze(item.key);
@@ -438,6 +449,38 @@ export async function tick() {
     // limpeza de registros antigos
     for (const [k, t] of Object.entries(fired)) if (now - t > 3 * 24 * HOUR) delete fired[k];
     if (due.length || Math.random() < 0.05) await idbSet('fired', fired);
+  });
+}
+
+interface PushedItem {
+  key: string;
+  at?: number;
+  title: string;
+  body: string;
+  kind: NotifKind;
+  refId?: string;
+  occ?: number;
+  url?: string;
+  actions?: { action: string; title: string }[];
+  requireInteraction?: boolean;
+  snoozeMin?: number;
+}
+
+function presentPushed(p: PushedItem) {
+  if (p.key?.startsWith('snz:')) removeSnooze(p.key);
+  void present({
+    key: p.key,
+    at: p.at ?? Date.now(),
+    title: p.title,
+    body: p.body,
+    kind: p.kind,
+    refId: p.refId,
+    occ: p.occ,
+    url: p.url ?? '#/inicio',
+    actions: p.actions ?? [],
+    grace: HOUR,
+    snoozeMin: p.snoozeMin ?? 10,
+    requireInteraction: p.requireInteraction,
   });
 }
 
@@ -480,6 +523,8 @@ export async function startScheduler() {
   navigator.serviceWorker?.addEventListener('message', (e) => {
     const msg = e.data as { type?: string; action?: string; data?: NotifData };
     if (msg?.type === 'rudge-action' && msg.data) handleAction(msg.action ?? 'open', msg.data);
+    // push do servidor com o app em foco: o service worker repassa para virar aviso interno
+    if (msg?.type === 'rudge-push' && (msg as { item?: PushedItem }).item) presentPushed((msg as { item: PushedItem }).item);
   });
 
   document.addEventListener('visibilitychange', () => {

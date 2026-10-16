@@ -118,6 +118,22 @@ self.addEventListener('fetch', (event) => {
 const ICON = new URL('icons/icon-192.png', SCOPE).href;
 const BADGE = new URL('icons/badge-96.png', SCOPE).href;
 
+/** Chama o servidor de notificações com a configuração salva pelo app. */
+async function callServer(path, body) {
+  try {
+    const cfg = await idbGet('push-config');
+    if (!cfg || !cfg.token) return false;
+    const res = await fetch(`${cfg.api}/${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-rudge-token': cfg.token },
+      body: JSON.stringify({ deviceId: cfg.deviceId, ...body }),
+    });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function windowClients() {
   return self.clients.matchAll({ type: 'window', includeUncontrolled: true });
 }
@@ -150,10 +166,14 @@ self.addEventListener('notificationclick', (event) => {
           client.postMessage({ type: 'rudge-action', action, data });
           return;
         }
-        // app fechado: guarda a ação (com o horário do clique) para aplicar quando abrir
-        const pending = (await idbGet('pending-actions')) || [];
-        pending.push({ action, data, at: Date.now() });
-        await idbSet('pending-actions', pending);
+        // app fechado: avisa o servidor (adiar reagenda o push; concluir cancela pendências)
+        const serverOk = await callServer('action', { action, data });
+        // "concluir" sempre fica guardado para o app aplicar ao abrir; "adiar" só se o servidor falhou
+        if (action === 'done' || !serverOk) {
+          const pending = (await idbGet('pending-actions')) || [];
+          pending.push({ action, data, at: Date.now() });
+          await idbSet('pending-actions', pending);
+        }
         return;
       }
       await openApp(data.url);
@@ -201,29 +221,77 @@ self.addEventListener('periodicsync', (event) => {
       (async () => {
         // se o app está aberto ele mesmo cuida dos disparos
         const list = await windowClients();
-        if (!list.some((c) => c.visibilityState === 'visible')) await fireDue();
+        const cfg = await idbGet('push-config');
+        if (!cfg && !list.some((c) => c.visibilityState === 'visible')) await fireDue();
       })(),
     );
   }
 });
 
-// Push de um servidor (opcional, para lembretes com o app 100% fechado no celular)
+// Push do servidor (Supabase): chega mesmo com o Rudge fechado
 self.addEventListener('push', (event) => {
-  let payload = {};
+  let item = {};
   try {
-    payload = event.data ? event.data.json() : {};
+    item = event.data ? event.data.json() : {};
   } catch (e) {
-    payload = { title: 'Rudge', body: event.data ? event.data.text() : '' };
+    item = { title: 'Rudge', body: event.data ? event.data.text() : '' };
   }
   event.waitUntil(
-    self.registration.showNotification(payload.title || 'Rudge', {
-      body: payload.body || '',
-      tag: payload.tag || `push:${Date.now()}`,
-      icon: ICON,
-      badge: BADGE,
-      data: payload.data || { url: '#/inicio' },
-      actions: payload.actions || [],
-    }),
+    (async () => {
+      const key = item.key || `push:${Date.now()}`;
+      const fired = (await idbGet('fired')) || {};
+      const already = !!fired[key];
+      fired[key] = Date.now();
+      await idbSet('fired', fired);
+
+      // app aberto e em foco: vira aviso interno (sem duplicar)
+      const list = await windowClients();
+      const focused = list.find((c) => c.focused && c.visibilityState === 'visible' && c.url.startsWith(SCOPE));
+      if (focused) {
+        if (!already) focused.postMessage({ type: 'rudge-push', item: { ...item, key } });
+        return;
+      }
+
+      if (!already) {
+        const inbox = (await idbGet('sw-inbox')) || [];
+        inbox.push({ key, kind: item.kind || 'reminder', url: item.url || '#/inicio', title: item.title || 'Rudge', body: item.body || '' });
+        await idbSet('sw-inbox', inbox.slice(-30));
+      }
+      await self.registration.showNotification(item.title || 'Rudge', {
+        body: item.body || '',
+        tag: key,
+        icon: ICON,
+        badge: BADGE,
+        renotify: !already,
+        requireInteraction: !!item.requireInteraction,
+        timestamp: item.at || Date.now(),
+        actions: item.actions || [],
+        vibrate: [120, 60, 120],
+        data: {
+          key,
+          kind: item.kind || 'reminder',
+          refId: item.refId,
+          occ: item.occ,
+          url: item.url || '#/inicio',
+          title: item.title || 'Rudge',
+          body: item.body || '',
+          snoozeMin: item.snoozeMin || 10,
+        },
+      });
+    })(),
+  );
+});
+
+// a assinatura foi trocada pelo navegador: avisa o servidor com a nova
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    (async () => {
+      const cfg = await idbGet('push-config');
+      const opts = event.oldSubscription && event.oldSubscription.options;
+      if (!cfg || !opts) return;
+      const sub = await self.registration.pushManager.subscribe(opts);
+      await callServer('subscribe', { subscription: sub.toJSON(), userAgent: 'renovada pelo service worker' });
+    })(),
   );
 });
 

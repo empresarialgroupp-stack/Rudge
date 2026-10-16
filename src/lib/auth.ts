@@ -8,12 +8,15 @@ const SESSION_DAYS = 30;
 export interface Session {
   email: string;
   at: number;
+  /** token do servidor de notificações (derivado da senha; a senha não é guardada) */
+  token: string;
 }
 
 function readSession(): Session | null {
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') as Session | null;
-    if (s && Date.now() - s.at < SESSION_DAYS * 86_400_000) return s;
+    // sessões antigas (sem token do servidor) pedem um novo login
+    if (s && s.token && Date.now() - s.at < SESSION_DAYS * 86_400_000) return s;
   } catch {
     /* ignora */
   }
@@ -53,7 +56,7 @@ export function isValidEmail(email: string) {
 export async function login(email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!isValidEmail(email)) return { ok: false, error: 'Digite um e-mail válido.' };
   if ((await sha256(password)) !== PASSWORD_SHA256) return { ok: false, error: 'Senha incorreta.' };
-  session = { email: email.trim().toLowerCase(), at: Date.now() };
+  session = { email: email.trim().toLowerCase(), at: Date.now(), token: await sha256(`rudge-sync:${password}`) };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   listeners.forEach((l) => l());
   return { ok: true };

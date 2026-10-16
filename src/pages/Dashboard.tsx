@@ -24,6 +24,7 @@ import { getSuggestions, type Suggestion } from '../lib/suggestions';
 import { parseInput } from '../lib/nlp';
 import { permission, requestPermission } from '../lib/notify';
 import { isStandalone } from '../lib/pwa';
+import { enablePush, pushSupported } from '../lib/push';
 import { useSession } from '../lib/auth';
 import { greetingTitle, todaySummary } from '../lib/summary';
 import { AreaIcon, Checkbox, cx, Empty, ProgressBar, ProgressRing, Segmented } from '../components/ui';
@@ -42,7 +43,14 @@ export async function enableNotifications() {
   const res = await requestPermission();
   if (res === 'granted') {
     updateSettings({ notifications: true });
-    toast({ title: 'Notificações ativadas', body: 'O Rudge vai lembrar você na hora certa.', icon: 'check' });
+    const push = pushSupported() ? await enablePush() : false;
+    toast({
+      title: 'Notificações ativadas',
+      body: push
+        ? 'Os avisos chegam mesmo com o Rudge fechado.'
+        : 'O Rudge vai lembrar você enquanto estiver aberto ou minimizado.',
+      icon: 'check',
+    });
     return true;
   }
   if (res === 'denied') {

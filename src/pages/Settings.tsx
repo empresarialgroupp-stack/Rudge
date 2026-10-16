@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Bell, Database, Download, LogOut, Palette, Upload, User } from 'lucide-react';
+import { Bell, CloudCheck, Database, Download, LogOut, Palette, Upload, User } from 'lucide-react';
 import { exportState, replaceState, resetState, useStore } from '../lib/store';
 import { updateSettings } from '../lib/actions';
 import { logout, useSession } from '../lib/auth';
@@ -9,6 +9,8 @@ import { toast } from '../lib/ui';
 import { WEEKDAYS } from '../lib/date';
 import { cx, Field, Switch } from '../components/ui';
 import { enableNotifications } from './Dashboard';
+import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
+import { formatWhen } from '../lib/date';
 
 const PERM_LABEL: Record<string, string> = {
   granted: 'Permitidas',
@@ -196,10 +198,14 @@ export function SettingsPage() {
                 if (v && permission() !== 'granted') {
                   await enableNotifications();
                   setPerm(permission());
-                } else updateSettings({ notifications: v });
+                } else {
+                  updateSettings({ notifications: v });
+                  if (!v && st.push) await disablePush();
+                }
               }}
             />
           </div>
+          <PushRow perm={perm} />
           <div className="setting">
             <div className="s-text">
               <b>Som nos avisos internos</b>
@@ -259,5 +265,100 @@ export function SettingsPage() {
         <p className="muted" style={{ fontSize: 12, margin: '4px 4px 0' }}>Rudge v1.0 · organização pessoal</p>
       </div>
     </div>
+  );
+}
+
+/** Avisos pelo servidor: chegam mesmo com o app fechado. */
+function PushRow({ perm }: { perm: string }) {
+  const st = useStore().settings;
+  const push = usePushStatus();
+  const [busy, setBusy] = useState(false);
+  const supported = pushSupported();
+  const on = st.push && push.state !== 'error';
+
+  let detail: string;
+  if (!supported) detail = 'Este navegador não suporta. No iPhone, instale o Rudge na Tela de Início (iOS 16.4+).';
+  else if (perm !== 'granted') detail = 'Ative a permissão de notificações primeiro.';
+  else if (push.state === 'working') detail = 'Conectando ao servidor…';
+  else if (push.state === 'error') detail = push.error ?? 'Falha ao conectar ao servidor.';
+  else if (on)
+    detail = `Ativo neste aparelho · ${push.pending ?? 0} avisos programados${push.next ? ` · próximo ${formatWhen(Date.parse(push.next)).toLowerCase()}` : ''}`;
+  else detail = 'Desligado: os avisos só chegam com o Rudge aberto ou minimizado.';
+
+  return (
+    <>
+      <div className="setting">
+        <div className="s-text">
+          <b style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CloudCheck width={15} height={15} /> Avisos com o app fechado
+          </b>
+          <span>{detail}</span>
+        </div>
+        <Switch
+          on={!!st.push}
+          label="Avisos com o app fechado"
+          onChange={async (v) => {
+            if (!supported) return;
+            setBusy(true);
+            try {
+              if (v) {
+                if (perm !== 'granted') await enableNotifications();
+                else if (await enablePush()) toast({ title: 'Avisos com o app fechado ativados', icon: 'check' });
+              } else {
+                await disablePush();
+                toast({ title: 'Avisos pelo servidor desligados', icon: 'info' });
+              }
+            } finally {
+              setBusy(false);
+            }
+          }}
+        />
+      </div>
+      {st.push && supported && perm === 'granted' && (
+        <div className="row wrap" style={{ padding: '0 0 12px' }}>
+          <button
+            className="btn btn-sm btn-primary"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await syncNow(true);
+                await serverTest(60);
+                toast({
+                  title: 'Teste agendado para daqui a 1 minuto',
+                  body: 'Feche o Rudge agora (feche a janela/app) e aguarde o aviso.',
+                  icon: 'bell',
+                  duration: 12000,
+                });
+              } catch (e) {
+                toast({ title: 'Não foi possível agendar o teste', body: e instanceof Error ? e.message : String(e), icon: 'error' });
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Testar com o app fechado
+          </button>
+          <button
+            className="btn btn-sm btn-glass"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await syncNow(true);
+                await refreshServerStatus();
+                toast({ title: 'Sincronizado com o servidor', icon: 'check' });
+              } catch (e) {
+                toast({ title: 'Falha ao sincronizar', body: e instanceof Error ? e.message : String(e), icon: 'error' });
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            Sincronizar agora
+          </button>
+        </div>
+      )}
+    </>
   );
 }

@@ -159,6 +159,8 @@ export interface Settings {
   theme: 'dark' | 'light';
   name: string;
   notifications: boolean;
+  /** avisos pelo servidor (chegam com o app fechado) */
+  push: boolean;
   sound: boolean;
   briefing: { enabled: boolean; time: string };
   review: { enabled: boolean; time: string };

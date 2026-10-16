@@ -142,8 +142,8 @@ export function Install() {
                 <Step title="Ative as notificações">
                   No Rudge, toque em <Hint><BellRing /> Ativar notificações</Hint> e escolha <Hint>Permitir</Hint>. Confira também se o sistema permite: Windows → <Hint>Configurações › Sistema › Notificações</Hint>; Mac → <Hint>Ajustes do Sistema › Notificações</Hint>.
                 </Step>
-                <Step title="Abra junto com o computador (recomendado)">
-                  Assim os lembretes funcionam desde que você liga o PC. Chrome: abra <Hint>chrome://apps</Hint>, clique com o botão direito no Rudge → <Hint><Power /> Iniciar app ao fazer login</Hint>. Edge: abra <Hint>edge://apps</Hint>, no Rudge clique em <Hint><MoreHorizontal /></Hint> → <Hint>Iniciar automaticamente no logon do dispositivo</Hint>.
+                <Step title="Abra junto com o computador (opcional)">
+                  Os avisos já chegam com o Rudge fechado; abrir com o sistema deixa o app à mão. Chrome: abra <Hint>chrome://apps</Hint>, clique com o botão direito no Rudge → <Hint><Power /> Iniciar app ao fazer login</Hint>. Edge: abra <Hint>edge://apps</Hint>, no Rudge clique em <Hint><MoreHorizontal /></Hint> → <Hint>Iniciar automaticamente no logon do dispositivo</Hint>.
                 </Step>
               </div>
             </section>
@@ -233,13 +233,13 @@ export function Install() {
             </div>
             <div className="stack sm" style={{ fontSize: 13, color: 'var(--fg-2)', lineHeight: 1.6 }}>
               <p style={{ margin: 0 }}>
-                O Rudge agenda tudo no próprio dispositivo: lembretes, tarefas com horário, hábitos, check-ins de metas, o resumo da manhã e o fechamento do dia.
+                O Rudge agenda tudo — lembretes, tarefas com horário, hábitos, check-ins de metas, o resumo da manhã e o fechamento do dia — e envia a agenda dos próximos 30 dias para o servidor do Rudge.
               </p>
               <p style={{ margin: 0 }}>
-                <b>Computador:</b> os avisos chegam enquanto o Rudge estiver aberto — pode ficar minimizado. Ative “iniciar ao fazer login” e nunca perca um lembrete.
+                <b>Com o app fechado:</b> o servidor confere a cada minuto e envia o aviso para o computador e o celular, com os botões <b>Concluir</b> e <b>Adiar</b>. Basta ativar as notificações em cada aparelho (no iPhone, pelo app instalado na Tela de Início).
               </p>
               <p style={{ margin: 0 }}>
-                <b>Celular:</b> os avisos chegam com o app aberto ou em segundo plano. Se o sistema fechar o app, os lembretes perdidos aparecem assim que você abrir o Rudge.
+                <b>Dica:</b> em Configurações → Notificações use “Testar com o app fechado” para conferir em cada aparelho.
               </p>
             </div>
           </section>
