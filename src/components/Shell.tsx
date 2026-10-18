@@ -9,6 +9,7 @@ import {
   ListTodo,
   LogOut,
   Menu,
+  Mic,
   Plus,
   Search,
   Settings,
@@ -103,6 +104,9 @@ export function Shell({ children }: { children: ReactNode }) {
           <button className="btn btn-primary" onClick={() => openModal({ type: 'quick-add' })}>
             <Plus /> Novo
           </button>
+          <button className="btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar com o Rudge" title="Falar com o Rudge">
+            <Mic />
+          </button>
         </div>
         <button className="search-btn" onClick={() => openModal({ type: 'command' })}>
           <Search /> Buscar ou comandar <kbd>Ctrl K</kbd>
@@ -142,6 +146,9 @@ export function Shell({ children }: { children: ReactNode }) {
           <BrandMark />
           <span className="brand-name">Rudge</span>
         </div>
+        <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar">
+          <Mic />
+        </button>
         <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'command' })} aria-label="Buscar">
           <Search />
         </button>

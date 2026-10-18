@@ -27,6 +27,7 @@ export type ModalSpec =
   | { type: 'goal-detail'; id: string }
   | { type: 'goal-edit'; id: string }
   | { type: 'command' }
+  | { type: 'voice' }
   | { type: 'onboarding' }
   | { type: 'quick-add'; mode?: 'task' | 'reminder' };
 

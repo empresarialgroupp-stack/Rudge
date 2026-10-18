@@ -12,6 +12,7 @@ import {
   ListTodo,
   LogOut,
   Moon,
+  Mic,
   Plus,
   Repeat as RepeatIcon,
   Search,
@@ -156,6 +157,15 @@ export function QuickAdd({ mode: initial = 'task' }: { mode?: CaptureMode }) {
           Escreva naturalmente: “hoje”, “amanhã às 9h”, “sexta 14:30”, “em 20 min”, “todo dia às 8h”, “toda segunda”, “dia 15”, “!!!” para alta prioridade, “#saude” para a área.
         </p>
         <div className="row wrap">
+          <button
+            className="chip"
+            onClick={() => {
+              close();
+              openModal({ type: 'voice' });
+            }}
+          >
+            <Mic /> Falar
+          </button>
           <button
             className="chip"
             onClick={() => {

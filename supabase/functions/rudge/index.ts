@@ -6,6 +6,7 @@
 //   /unsubscribe  remove a assinatura
 //   /action       botões "Concluir"/"Adiar" tocados com o app fechado
 //   /test         agenda um aviso de teste para daqui a N segundos
+//   /ai           interpreta uma fala (voz) em lembretes/tarefas com o Claude
 //   /status       resumo (assinaturas e avisos programados)
 //   /dispatch     chamado pelo pg_cron a cada minuto: envia o que venceu
 //
@@ -193,6 +194,58 @@ async function status(owner: string, body: Record<string, unknown>) {
   return json({ ok: true, ...row });
 }
 
+
+const AI_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['items', 'reply'],
+  properties: {
+    reply: { type: 'string', description: 'Confirmação curta em português para ser falada ao usuário' },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['kind', 'title', 'date', 'time', 'repeat', 'days', 'priority'],
+        properties: {
+          kind: { type: 'string', enum: ['reminder', 'task'] },
+          title: { type: 'string' },
+          date: { type: 'string', description: 'YYYY-MM-DD ou vazio' },
+          time: { type: 'string', description: 'HH:MM 24h ou vazio' },
+          repeat: { type: 'string', enum: ['none', 'daily', 'weekdays', 'weekly', 'monthly', 'yearly'] },
+          days: { type: 'array', items: { type: 'integer' }, description: 'dias da semana 0=domingo (repeat weekly)' },
+          priority: { type: 'integer', enum: [0, 1, 2, 3] },
+        },
+      },
+    },
+  },
+};
+
+async function interpret(body: Record<string, unknown>) {
+  const key = Deno.env.get('ANTHROPIC_API_KEY');
+  if (!key) return json({ error: 'no_key' }, 503);
+  const text = str(body.text, 2000);
+  if (!text) return json({ error: 'texto vazio' }, 400);
+  const now = str(body.now, 60); // data/hora local do usuário, ex.: "domingo, 2026-10-18 17:05"
+  // import sob demanda: se o SDK falhar, o resto do servidor (push) continua funcionando
+  const { default: Anthropic } = await import('npm:@anthropic-ai/sdk@0.135.0');
+  const client = new Anthropic({ apiKey: key });
+  const res = await client.messages.create({
+    model: 'claude-opus-5-5',
+    max_tokens: 4000,
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: AI_SCHEMA } },
+    system:
+      'Você é o assistente do Rudge, um app pessoal de organização. Converta o que o usuário falou (transcrição de voz em português) em lembretes e tarefas. ' +
+      'Pedidos com "me lembra/lembre" ou com horário viram kind=reminder; afazeres sem hora marcada viram task. Separe pedidos distintos em itens distintos. ' +
+      'Resolva datas relativas a partir do momento atual informado; se não houver data mas houver hora já passada hoje, use amanhã. Lembrete sem hora: 09:00. ' +
+      'Títulos curtos, começando com verbo, sem a data/hora. reply: uma frase curta e natural confirmando o que vai ser criado.',
+    messages: [{ role: 'user', content: `Agora: ${now}\nFala do usuário: ${text}` }],
+  });
+  if (res.stop_reason === 'refusal') return json({ error: 'refusal' }, 422);
+  const block = res.content.find((b) => b.type === 'text');
+  return json({ ok: true, ...JSON.parse(block && block.type === 'text' ? block.text : '{}') });
+}
+
 async function dispatch() {
   const s = await secrets();
   const vapid: VapidKeys = {
@@ -285,6 +338,8 @@ Deno.serve(async (req) => {
         return await action(owner, body);
       case 'test':
         return await test(owner, body);
+      case 'ai':
+        return await interpret(body);
       case 'status':
         return await status(owner, body);
       default:

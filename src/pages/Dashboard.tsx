@@ -12,6 +12,7 @@ import {
   Sparkles,
   Target,
   Wand2,
+  Mic,
   type LucideIcon,
 } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -179,6 +180,9 @@ export function Dashboard() {
             { value: 'reminder', label: 'Lembrete' },
           ]}
         />
+        <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
+          <Mic />
+        </button>
         <button className="btn btn-primary" onClick={submit} disabled={!text.trim()} aria-label="Adicionar">
           <ArrowRight />
         </button>

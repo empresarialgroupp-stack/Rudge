@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlarmClock, ArrowRight, Bell, BellRing, Check, Pencil, Repeat, RotateCcw, Trash2 } from 'lucide-react';
+import { AlarmClock, ArrowRight, Bell, BellRing, Check, Mic, Pencil, Repeat, RotateCcw, Trash2 } from 'lucide-react';
 import type { Reminder } from '../lib/types';
 import { useStore } from '../lib/store';
 import { completeReminder, deleteReminder, postponeReminder, reopenReminder } from '../lib/actions';
@@ -152,6 +152,9 @@ export function Reminders() {
           placeholder="Me lembre de… ex.: “tomar remédio todo dia às 8h”"
           aria-label="Novo lembrete"
         />
+        <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
+          <Mic />
+        </button>
         <button className="btn btn-primary" onClick={submit} disabled={!text.trim()} aria-label="Criar">
           <ArrowRight />
         </button>

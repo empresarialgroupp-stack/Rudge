@@ -8,6 +8,7 @@ import { isStandalone, promptInstall, useInstall } from '../lib/pwa';
 import { TaskEditor, ReminderEditor, HabitEditor } from './Editors';
 import { QuickAdd, CommandPalette } from './Quick';
 import { GoalWizard, GoalDetail, GoalEdit } from './GoalModals';
+import { VoiceModal } from './VoiceModal';
 import { BrandMark, Modal } from './ui';
 import { enableNotifications } from '../pages/Dashboard';
 
@@ -195,6 +196,8 @@ export function ModalHost() {
             return <GoalEdit key={`ge-${m.id}`} id={m.id} />;
           case 'quick-add':
             return <QuickAdd key="qa" mode={m.mode} />;
+          case 'voice':
+            return <VoiceModal key="voice" />;
           case 'command':
             return <CommandPalette key="cmd" />;
           case 'onboarding':

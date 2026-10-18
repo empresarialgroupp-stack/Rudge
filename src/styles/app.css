@@ -3177,6 +3177,37 @@ kbd,
   display: none;
 }
 
+/* Voz */
+.mic-orb {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--primary-bg);
+  color: var(--primary-fg);
+  box-shadow: var(--primary-shadow);
+  margin: 8px auto 4px;
+  transition: transform 0.2s var(--spring);
+}
+.mic-orb svg {
+  width: 32px;
+  height: 32px;
+}
+.mic-orb.on {
+  animation: micPulse 1.4s ease-in-out infinite;
+}
+@keyframes micPulse {
+  0%, 100% { box-shadow: var(--primary-shadow), 0 0 0 0 var(--fg-5); }
+  50% { box-shadow: var(--primary-shadow), 0 0 0 18px transparent; transform: scale(1.04); }
+}
+.voice-text {
+  margin: 0;
+  font-size: 15px;
+  color: var(--fg);
+  max-width: 460px;
+}
+
 /* ---------------- Responsivo ---------------- */
 
 @media (max-width: 1180px) {
