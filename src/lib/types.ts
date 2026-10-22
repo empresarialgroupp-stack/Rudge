@@ -181,4 +181,6 @@ export interface AppState {
   dismissedSuggestions: Record<string, string>;
   settings: Settings;
   lastWeeklyReview?: string;
+  /** Última edição feita pelo usuário (ms). Decide qual aparelho programa os avisos no servidor. */
+  editedAt?: number;
 }

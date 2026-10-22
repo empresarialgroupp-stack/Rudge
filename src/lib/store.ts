@@ -43,6 +43,35 @@ function seed(): AppState {
   };
 }
 
+/** Para dados antigos sem editedAt: o registro mais recente que existir nos itens. */
+export function inferEditedAt(s: Partial<AppState>): number {
+  let max = 0;
+  const see = (v?: string) => {
+    const t = v ? Date.parse(v) : NaN;
+    if (t > max && t <= Date.now()) max = t;
+  };
+  for (const t of s.tasks ?? []) (see(t.createdAt), see(t.doneAt), see(t.lastDoneAt));
+  for (const g of s.goals ?? []) (see(g.createdAt), see(g.completedAt), g.log?.forEach((l) => see(l.date)));
+  for (const h of s.habits ?? []) (see(h.createdAt), h.log?.forEach(see));
+  for (const r of s.reminders ?? []) (see(r.createdAt), see(r.doneAt), see(r.ackUntil));
+  return max;
+}
+
+const QUIET_SETTINGS = new Set(['theme', 'push', 'notifications']);
+
+/** Mudou algo que altera os avisos? (tema, permissões e caixa de entrada não contam) */
+export function isEdit(a: AppState, b: AppState): boolean {
+  if (a.tasks !== b.tasks || a.goals !== b.goals || a.habits !== b.habits || a.reminders !== b.reminders || a.snoozes !== b.snoozes) return true;
+  if (a.lastWeeklyReview !== b.lastWeeklyReview) return true;
+  if (a.settings === b.settings) return false;
+  const keys = new Set([...Object.keys(a.settings), ...Object.keys(b.settings)]) as Set<keyof Settings>;
+  for (const k of keys) {
+    if (QUIET_SETTINGS.has(k)) continue;
+    if (JSON.stringify(a.settings[k]) !== JSON.stringify(b.settings[k])) return true;
+  }
+  return false;
+}
+
 function migrate(raw: Partial<AppState>): AppState {
   const base = seed();
   return {
@@ -57,6 +86,7 @@ function migrate(raw: Partial<AppState>): AppState {
       weekly: { ...defaultSettings.weekly, ...(raw.settings?.weekly ?? {}) },
     },
     version: STATE_VERSION,
+    editedAt: typeof raw.editedAt === 'number' ? raw.editedAt : inferEditedAt(raw),
   };
 }
 
@@ -88,8 +118,9 @@ export function getState(): AppState {
 
 /** Atualiza o estado de forma imutável. */
 export function setState(updater: (s: AppState) => AppState) {
-  const next = updater(state);
+  let next = updater(state);
   if (next === state) return;
+  if (isEdit(state, next)) next = { ...next, editedAt: Date.now() };
   state = next;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persist, 80);
@@ -106,7 +137,7 @@ export function useStore(): AppState {
 }
 
 export function replaceState(raw: unknown) {
-  state = migrate(raw as Partial<AppState>);
+  state = { ...migrate(raw as Partial<AppState>), editedAt: Date.now() };
   persist();
   listeners.forEach((l) => l());
 }

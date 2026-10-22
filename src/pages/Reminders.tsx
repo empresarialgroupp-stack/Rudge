@@ -3,7 +3,7 @@ import { AlarmClock, ArrowRight, Bell, BellRing, Check, Mic, Pencil, Repeat, Rot
 import type { Reminder } from '../lib/types';
 import { useStore } from '../lib/store';
 import { completeReminder, deleteReminder, postponeReminder, reopenReminder } from '../lib/actions';
-import { openModal, toast } from '../lib/ui';
+import { openModal, toast, useNarrow } from '../lib/ui';
 import { addDays, formatWhen, fromNow } from '../lib/date';
 import { describeRule, nextOccurrence } from '../lib/recurrence';
 import { parseInput } from '../lib/nlp';
@@ -92,6 +92,7 @@ function RemRow({ r, at, overdue }: { r: Reminder; at?: number | null; overdue?:
 
 export function Reminders() {
   const s = useStore();
+  const narrow = useNarrow();
   const [text, setText] = useState('');
   const [showDone, setShowDone] = useState(false);
   const parsed = useMemo(() => parseInput(text), [text]);
@@ -149,7 +150,7 @@ export function Reminders() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder="Me lembre de… ex.: “tomar remédio todo dia às 8h”"
+          placeholder={narrow ? 'Me lembre de… “remédio todo dia 8h”' : 'Me lembre de… ex.: “tomar remédio todo dia às 8h”'}
           aria-label="Novo lembrete"
         />
         <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">

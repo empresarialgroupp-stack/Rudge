@@ -281,6 +281,8 @@ function PushRow({ perm }: { perm: string }) {
   else if (perm !== 'granted') detail = 'Ative a permissão de notificações primeiro.';
   else if (push.state === 'working') detail = 'Conectando ao servidor…';
   else if (push.state === 'error') detail = push.error ?? 'Falha ao conectar ao servidor.';
+  else if (on && push.stale)
+    detail = 'Ativo · outro aparelho tem dados mais recentes, então é ele que programa os avisos. Edite algo aqui para este aparelho assumir.';
   else if (on)
     detail = `Ativo neste aparelho · ${push.pending ?? 0} avisos programados${push.next ? ` · próximo ${formatWhen(Date.parse(push.next)).toLowerCase()}` : ''}`;
   else detail = 'Desligado: os avisos só chegam com o Rudge aberto ou minimizado.';

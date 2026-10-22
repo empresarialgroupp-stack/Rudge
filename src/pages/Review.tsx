@@ -59,7 +59,7 @@ export function Review() {
 
       {step === 0 && (
         <div className="stack">
-          <div className="kpis" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <div className="kpis" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
             <div className="kpi glass">
               <div className="kpi-body">
                 <div className="kpi-label">

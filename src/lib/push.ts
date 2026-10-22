@@ -24,6 +24,8 @@ export interface PushStatus {
   pending?: number;
   next?: string | null;
   error?: string;
+  /** outro aparelho tem dados editados mais recentemente: ele programa os avisos */
+  stale?: boolean;
 }
 
 let status: PushStatus = { state: 'off' };
@@ -109,12 +111,13 @@ export async function syncNow(force = false) {
       requireInteraction: !!q.requireInteraction,
       snoozeMin: q.snoozeMin,
     }));
-  const signature = JSON.stringify(items);
+  const editedAt = getState().editedAt ?? 0;
+  const signature = JSON.stringify([editedAt, items]);
   if (!force && signature === lastSignature && status.lastSync && now - status.lastSync < 3_600_000) return;
   try {
-    const r = await api<{ pending: number; next: string | null }>('sync', { deviceId: deviceId(), items });
+    const r = await api<{ pending: number; next: string | null; stale?: boolean }>('sync', { deviceId: deviceId(), editedAt, items });
     lastSignature = signature;
-    setStatus({ state: 'on', lastSync: Date.now(), pending: r.pending, next: r.next, error: undefined });
+    setStatus({ state: 'on', lastSync: Date.now(), pending: r.pending, next: r.next, stale: !!r.stale, error: undefined });
   } catch (e) {
     setStatus({ state: 'error', error: e instanceof Error ? e.message : String(e) });
   }
@@ -175,8 +178,8 @@ export async function serverTest(delaySec = 60) {
 }
 
 export async function refreshServerStatus() {
-  const r = await api<{ pending: number; next: string | null; this_device: number }>('status', { deviceId: deviceId() });
-  setStatus({ pending: r.pending, next: r.next });
+  const r = await api<{ pending: number; next: string | null; this_device: number; source?: boolean }>('status', { deviceId: deviceId() });
+  setStatus({ pending: r.pending, next: r.next, ...(typeof r.source === 'boolean' ? { stale: !r.source } : {}) });
   return r;
 }
 

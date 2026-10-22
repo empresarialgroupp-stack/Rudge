@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { dismissSuggestion, moveOverdueToToday, toggleHabit, addTask, updateSettings } from '../lib/actions';
-import { navigate, openModal, toast } from '../lib/ui';
+import { navigate, openModal, toast, useNarrow } from '../lib/ui';
 import { addDays, dateKey, formatWhen, fromNow, startOfWeek, todayKey, WEEKDAYS_SHORT } from '../lib/date';
 import { goalPace, goalProgress, habitStreak, isHabitDueOn } from '../lib/goals';
 import { occurrencesBetween } from '../lib/recurrence';
@@ -102,6 +102,7 @@ export function runSuggestion(sg: Suggestion) {
 
 export function Dashboard() {
   const s = useStore();
+  const narrow = useNarrow();
   const session = useSession();
   const today = todayKey();
   const [mode, setMode] = useState<CaptureMode>('task');
@@ -169,7 +170,7 @@ export function Dashboard() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder={mode === 'task' ? 'Capture uma tarefa… ex.: “Pagar internet amanhã 10h !!”' : 'Me lembre de… ex.: “ligar pro João em 30 min”'}
+          placeholder={narrow ? (mode === 'task' ? 'Nova tarefa… “pagar internet amanhã 10h”' : 'Me lembre de… “ligar pro João em 30 min”') : mode === 'task' ? 'Capture uma tarefa… ex.: “Pagar internet amanhã 10h !!”' : 'Me lembre de… ex.: “ligar pro João em 30 min”'}
           aria-label="Captura rápida"
         />
         <Segmented

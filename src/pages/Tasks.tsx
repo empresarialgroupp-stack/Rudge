@@ -3,7 +3,7 @@ import { ArrowRight, CheckCircle2, ListTodo, Mic, Plus } from 'lucide-react';
 import type { AreaKey, Task } from '../lib/types';
 import { useStore } from '../lib/store';
 import { moveOverdueToToday, moveTodayOpenToTomorrow } from '../lib/actions';
-import { openModal, useRoute, navigate } from '../lib/ui';
+import { openModal, useRoute, navigate, useNarrow } from '../lib/ui';
 import { addDaysKey, todayKey } from '../lib/date';
 import { parseInput } from '../lib/nlp';
 import { AREAS } from '../lib/goals';
@@ -15,6 +15,7 @@ type Filter = 'pendentes' | 'hoje' | 'semana' | 'concluidas';
 
 export function Tasks() {
   const s = useStore();
+  const narrow = useNarrow();
   const route = useRoute();
   const filter = (route.params.get('f') as Filter) || 'pendentes';
   const setFilter = (f: Filter) => navigate(`tarefas?f=${f}`);
@@ -75,7 +76,7 @@ export function Tasks() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
-          placeholder="Nova tarefa… ex.: “Enviar relatório sexta 14h !!! #carreira”"
+          placeholder={narrow ? 'Nova tarefa… “relatório sexta 14h”' : 'Nova tarefa… ex.: “Enviar relatório sexta 14h !!! #carreira”'}
           aria-label="Nova tarefa"
         />
         <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">

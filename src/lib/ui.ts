@@ -121,3 +121,18 @@ export function navigate(to: string) {
   if (location.hash === target) route.set(parseHash());
   else location.hash = target;
 }
+
+/* ---------------- Tela estreita ---------------- */
+
+const NARROW = '(max-width: 560px)';
+
+function subscribeNarrow(fn: () => void) {
+  const mq = window.matchMedia?.(NARROW);
+  mq?.addEventListener?.('change', fn);
+  return () => mq?.removeEventListener?.('change', fn);
+}
+
+/** true em celulares (mesmo limite do CSS), para encurtar textos. */
+export function useNarrow() {
+  return useSyncExternalStore(subscribeNarrow, () => !!window.matchMedia?.(NARROW).matches, () => false);
+}

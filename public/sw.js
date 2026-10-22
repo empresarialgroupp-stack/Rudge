@@ -2,11 +2,12 @@
  * - Cache offline (app shell + assets)
  * - Clique e botões das notificações ("Concluir", "Adiar")
  * - Sincronização periódica: dispara lembretes vencidos mesmo com o app fechado (onde suportado)
- * - Push (preparado para um servidor de push no futuro)
+ * - Push do servidor (Supabase): avisos com o app fechado
  */
 const BUILD = '__BUILD_ID__';
 const CACHE = `rudge-${BUILD}`;
 const SCOPE = self.registration.scope;
+const APPLE = /AppleWebKit/.test(self.navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|Android/.test(self.navigator.userAgent);
 const CORE = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/badge-96.png'];
 
 /* ---------- IndexedDB (mesmo banco do app) ---------- */
@@ -241,7 +242,9 @@ self.addEventListener('push', (event) => {
       const key = item.key || `push:${Date.now()}`;
       const fired = (await idbGet('fired')) || {};
       const already = !!fired[key];
-      fired[key] = Date.now();
+      const now = Date.now();
+      fired[key] = now;
+      for (const k in fired) if (now - fired[k] > 3 * 86400000) delete fired[k];
       await idbSet('fired', fired);
 
       // app aberto e em foco: vira aviso interno (sem duplicar)
@@ -249,6 +252,14 @@ self.addEventListener('push', (event) => {
       const focused = list.find((c) => c.focused && c.visibilityState === 'visible' && c.url.startsWith(SCOPE));
       if (focused) {
         if (!already) focused.postMessage({ type: 'rudge-push', item: { ...item, key } });
+        // Safari/iOS cancela a assinatura de push quando um push não exibe notificação:
+        // mostra uma silenciosa e fecha logo em seguida.
+        if (APPLE) {
+          const tag = `fg:${key}`;
+          await self.registration.showNotification(item.title || 'Rudge', { body: item.body || '', tag, icon: ICON, badge: BADGE, silent: true });
+          await new Promise((r) => setTimeout(r, 1500));
+          (await self.registration.getNotifications({ tag })).forEach((n) => n.close());
+        }
         return;
       }
 

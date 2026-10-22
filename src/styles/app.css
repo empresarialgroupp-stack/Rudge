@@ -614,13 +614,13 @@ a {
 
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1132,6 +1132,8 @@ kbd,
 .main {
   flex: 1;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
   margin-left: calc(var(--sidebar) + 24px);
   padding: 20px 28px 48px 12px;
 }
@@ -1318,7 +1320,7 @@ kbd,
 /* KPIs */
 .kpis {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -1332,6 +1334,8 @@ kbd,
 
 .kpi .kpi-body {
   min-width: 0;
+  max-width: 100%;
+  flex: 1 1 auto;
 }
 
 .kpi .kpi-label {
@@ -1648,7 +1652,7 @@ kbd,
 
 .week-chart {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   align-items: end;
   height: 120px;
@@ -1992,7 +1996,7 @@ kbd,
 
 .area-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -2101,7 +2105,7 @@ kbd,
 
 .stat-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -2343,7 +2347,7 @@ kbd,
 
 .cal-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -2610,7 +2614,7 @@ kbd,
 
 .theme-pick {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -3212,7 +3216,7 @@ kbd,
 
 @media (max-width: 1180px) {
   .kpis {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dash-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -3418,7 +3422,7 @@ kbd,
   }
 
   .area-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .habit-row {
@@ -3450,6 +3454,10 @@ kbd,
     display: none;
   }
 
+  .kpi .kpi-body {
+    width: 100%;
+  }
+
   .kpi .kpi-value {
     font-size: 21px;
   }
@@ -3477,7 +3485,7 @@ kbd,
   }
 
   .grid-3 {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .stat-row {

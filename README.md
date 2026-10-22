@@ -52,6 +52,11 @@ app (cada aparelho) ──/subscribe──▶ Edge Function "rudge" ◀── pg
   (adiar reagenda o push) e o app aplica a mudança quando abrir.
 - Sem duplicar: com o app em foco o push vira aviso interno; o registro de disparos é
   compartilhado entre app e service worker.
+- Vários aparelhos: os dados ficam em cada aparelho, então vale a fila do aparelho com a
+  **edição mais recente** (`editedAt`, tabela `rudge.owners`). Um aparelho desatualizado não
+  programa nada — evita lembrete em horário antigo ou já concluído. Uma assinatura por aparelho.
+- No iPhone, todo push exibe uma notificação (mesmo com o app aberto, uma silenciosa que fecha
+  sozinha): o Safari cancela a assinatura de sites que recebem push sem mostrar nada.
 - `owner_id` já existe nas tabelas para a futura versão multiusuário (SaaS).
 
 Teste: Configurações → Notificações → **Testar com o app fechado** (aviso em ~1 minuto).

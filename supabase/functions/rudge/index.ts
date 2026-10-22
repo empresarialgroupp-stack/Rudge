@@ -100,21 +100,33 @@ async function sync(owner: string, body: Record<string, unknown>) {
       payload: sql.json(toPayload(i)),
     }));
 
+  // Vale a fila do aparelho com os dados editados por último; aparelhos desatualizados
+  // não programam nada (senão disparariam lembretes com horário antigo ou já concluídos).
+  const editedAt = typeof body.editedAt === 'number' && Number.isFinite(body.editedAt) ? Math.floor(body.editedAt) : 0;
+  let stale = false;
   await sql.begin(async (tx) => {
+    await tx`insert into rudge.owners (owner_id) values (${owner}) on conflict (owner_id) do nothing`;
+    const [o] = await tx`select data_device, data_edited_at from rudge.owners where owner_id = ${owner} for update`;
+    stale = !!o.data_device && o.data_device !== deviceId && editedAt < Number(o.data_edited_at);
     await tx`delete from rudge.notifications where owner_id = ${owner} and device_id = ${deviceId} and sent_at is null`;
+    if (stale) return;
+    await tx`update rudge.owners set data_device = ${deviceId}, data_edited_at = greatest(${editedAt}, case when data_device = ${deviceId} then data_edited_at else 0 end), updated_at = now()
+      where owner_id = ${owner}`;
+    await tx`delete from rudge.notifications
+      where owner_id = ${owner} and sent_at is null and device_id <> ${deviceId} and device_id not in ('server', 'test')`;
     for (let i = 0; i < rows.length; i += 500) {
       const chunk = rows.slice(i, i + 500);
       await tx`insert into rudge.notifications ${tx(chunk, 'owner_id', 'device_id', 'key', 'fire_at', 'grace_seconds', 'payload')}
         on conflict (owner_id, device_id, key) do nothing`;
     }
-    // não reenviar o que outro aparelho já disparou
+    // não reenviar o que já foi disparado
     await tx`delete from rudge.notifications n
       where n.owner_id = ${owner} and n.device_id = ${deviceId} and n.sent_at is null
         and exists (select 1 from rudge.notifications s where s.owner_id = n.owner_id and s.key = n.key and s.sent_at is not null)`;
   });
   const [{ count, next }] = await sql`select count(*)::int as count, min(fire_at) as next from rudge.notifications
     where owner_id = ${owner} and sent_at is null`;
-  return json({ ok: true, stored: rows.length, pending: count, next });
+  return json({ ok: true, stored: stale ? 0 : rows.length, pending: count, next, stale });
 }
 
 async function subscribe(owner: string, body: Record<string, unknown>) {
@@ -129,6 +141,8 @@ async function subscribe(owner: string, body: Record<string, unknown>) {
     on conflict (endpoint) do update set owner_id = excluded.owner_id, device_id = excluded.device_id,
       p256dh = excluded.p256dh, auth = excluded.auth, user_agent = excluded.user_agent,
       failures = 0, last_seen_at = now()`;
+  // uma assinatura por aparelho: a antiga (trocada pelo navegador) gerava avisos em dobro
+  await sql`delete from rudge.push_subscriptions where owner_id = ${owner} and device_id = ${deviceId} and endpoint <> ${endpoint}`;
   return json({ ok: true });
 }
 
@@ -190,7 +204,8 @@ async function status(owner: string, body: Record<string, unknown>) {
       (select count(*)::int from rudge.push_subscriptions where owner_id = ${owner} and device_id = ${deviceId}) as this_device,
       (select count(*)::int from rudge.notifications where owner_id = ${owner} and sent_at is null) as pending,
       (select min(fire_at) from rudge.notifications where owner_id = ${owner} and sent_at is null) as next,
-      (select max(sent_at) from rudge.notifications where owner_id = ${owner}) as last_sent`;
+      (select max(sent_at) from rudge.notifications where owner_id = ${owner}) as last_sent,
+      coalesce((select data_device = ${deviceId} from rudge.owners where owner_id = ${owner}), true) as source`;
   return json({ ok: true, ...row });
 }
 
