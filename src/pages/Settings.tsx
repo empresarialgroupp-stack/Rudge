@@ -8,6 +8,7 @@ import { testNotification } from '../lib/scheduler';
 import { toast } from '../lib/ui';
 import { WEEKDAYS } from '../lib/date';
 import { cx, Field, Switch } from '../components/ui';
+import { setTheme } from '../components/ThemeToggle';
 import { enableNotifications } from './Dashboard';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
@@ -75,14 +76,14 @@ export function SettingsPage() {
             </h2>
           </div>
           <div className="theme-pick">
-            <button className={cx('theme-opt', st.theme === 'dark' && 'on')} onClick={() => updateSettings({ theme: 'dark' })}>
+            <button className={cx('theme-opt', st.theme === 'dark' && 'on')} onClick={(e) => setTheme('dark', e.currentTarget)}>
               <div className="preview dark">
                 <i />
                 <i />
               </div>
               <b>Escuro</b>
             </button>
-            <button className={cx('theme-opt', st.theme === 'light' && 'on')} onClick={() => updateSettings({ theme: 'light' })}>
+            <button className={cx('theme-opt', st.theme === 'light' && 'on')} onClick={(e) => setTheme('light', e.currentTarget)}>
               <div className="preview light">
                 <i />
                 <i />

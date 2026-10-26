@@ -1,7 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Bell,
   CalendarDays,
+  ChevronDown,
   ClipboardCheck,
   Download,
   Flame,
@@ -20,12 +21,12 @@ import {
 import { useStore } from '../lib/store';
 import { logout, useSession } from '../lib/auth';
 import { navigate, openModal, useRoute, type RouteName } from '../lib/ui';
-import { todayKey } from '../lib/date';
+import { greeting, todayKey } from '../lib/date';
 import { isHabitDueOn } from '../lib/goals';
 import { occurrencesBetween } from '../lib/recurrence';
 import { BrandMark, cx, Modal } from './ui';
-import { greetingTitle, todaySummary, displayName } from '../lib/summary';
-import { ThemeToggle } from './ThemeToggle';
+import { displayName } from '../lib/summary';
+import { ThemeSwitch, ThemeToggle } from './ThemeToggle';
 import { NotificationCenter } from './NotificationCenter';
 
 interface NavDef {
@@ -45,7 +46,7 @@ export const NAV: NavDef[] = [
 ];
 
 export const PAGE_META: Record<RouteName, { title: string; sub?: string }> = {
-  inicio: { title: 'Início' },
+  inicio: { title: 'Início', sub: 'Seu dia em um só lugar' },
   tarefas: { title: 'Tarefas', sub: 'Tudo o que precisa ser feito, organizado por prazo.' },
   metas: { title: 'Metas', sub: 'Objetivos com prazo, ritmo calculado e plano de ação.' },
   habitos: { title: 'Hábitos', sub: 'Pequenas ações diárias que constroem suas metas.' },
@@ -75,6 +76,47 @@ function initials(name: string, email: string) {
   return src.slice(0, 1).toUpperCase();
 }
 
+/** Abas em pílula do topo: páginas irmãs da seção atual. */
+const GROUPS: { name: RouteName; label: string }[][] = [
+  [
+    { name: 'inicio', label: 'Visão geral' },
+    { name: 'agenda', label: 'Agenda' },
+    { name: 'revisao', label: 'Revisão' },
+  ],
+  [
+    { name: 'tarefas', label: 'Tarefas' },
+    { name: 'lembretes', label: 'Lembretes' },
+  ],
+  [
+    { name: 'metas', label: 'Metas' },
+    { name: 'habitos', label: 'Hábitos' },
+  ],
+  [
+    { name: 'configuracoes', label: 'Configurações' },
+    { name: 'instalar', label: 'Instalar' },
+  ],
+];
+
+function PillTabs({ route, onGo }: { route: RouteName; onGo: (r: RouteName) => void }) {
+  const group = GROUPS.find((g) => g.some((t) => t.name === route)) ?? GROUPS[0];
+  const ref = useRef<HTMLDivElement>(null);
+  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = ref.current?.querySelector<HTMLElement>('button.on');
+    setThumb(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
+  }, [route]);
+  return (
+    <div className="pill-tabs" ref={ref} role="tablist" key={group[0].name}>
+      {thumb && <span className="pt-thumb" style={{ transform: `translateX(${thumb.left}px)`, width: thumb.width }} aria-hidden="true" />}
+      {group.map((t) => (
+        <button key={t.name} role="tab" aria-selected={t.name === route} className={cx(t.name === route && 'on')} onClick={() => onGo(t.name)}>
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
   const s = useStore();
@@ -82,62 +124,98 @@ export function Shell({ children }: { children: ReactNode }) {
   const badges = useBadges();
   const [bellOpen, setBellOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const unread = s.inbox.filter((i) => !i.read).length;
   const email = session?.email ?? '';
-  const meta = route.name === 'inicio' ? { title: greetingTitle(s, email), sub: todaySummary(s) } : PAGE_META[route.name];
+  const meta = PAGE_META[route.name];
   const userName = s.settings.name || displayName(s, email);
 
   const go = (name: RouteName) => {
     navigate(name);
     setMoreOpen(false);
+    setUserOpen(false);
   };
+
+  const railItems: NavDef[] = [...NAV, { name: 'instalar', label: 'Instalar app', icon: Download }, { name: 'configuracoes', label: 'Configurações', icon: Settings }];
 
   return (
     <div className="app">
-      {/* Sidebar (desktop) */}
-      <aside className="sidebar glass solid liquid">
-        <div className="brand">
-          <BrandMark />
-          <span className="brand-name">Rudge</span>
-        </div>
-        <div className="side-actions">
-          <button className="btn btn-primary" onClick={() => openModal({ type: 'quick-add' })}>
-            <Plus /> Novo
+      {/* Topo (computador) */}
+      <header className="topnav glass solid liquid">
+        <button className="brand" onClick={() => go('inicio')} aria-label="Rudge — início">
+          <BrandMark className="brand-orb" />
+          <span className="brand-txt">
+            <b>Rudge</b>
+            <small>Organização pessoal</small>
+          </span>
+        </button>
+        <PillTabs route={route.name} onGo={go} />
+        <div className="topnav-right">
+          <button className="search-pill" onClick={() => openModal({ type: 'command' })}>
+            <Search /> <span>Buscar</span> <kbd>Ctrl K</kbd>
           </button>
-          <button className="btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar com o Rudge" title="Falar com o Rudge">
+          <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar com o Rudge" title="Falar com o Rudge">
             <Mic />
           </button>
+          <button className="icon-btn btn-glass" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações" title="Notificações">
+            <Bell />
+            {unread > 0 && <span className="dot">{unread > 9 ? '9+' : unread}</span>}
+          </button>
+          <button className="btn btn-primary btn-pill" onClick={() => openModal({ type: 'quick-add' })}>
+            <Plus /> Novo
+          </button>
+          <div className="user-chip-wrap">
+            <button className="user-chip" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}>
+              <span className="avatar">{initials(s.settings.name, email)}</span>
+              <span className="who">
+                <small>{greeting()}</small>
+                <b>{userName}</b>
+              </span>
+              <ChevronDown className="chev" />
+            </button>
+            {userOpen && (
+              <>
+                <div className="click-away" onClick={() => setUserOpen(false)} />
+                <div className="user-menu glass strong">
+                  <div className="um-head">
+                    <b>{userName}</b>
+                    <span>{email}</span>
+                  </div>
+                  <button onClick={() => go('configuracoes')}>
+                    <Settings /> Configurações
+                  </button>
+                  <button onClick={() => go('instalar')}>
+                    <Download /> Instalar app
+                  </button>
+                  <button onClick={logout}>
+                    <LogOut /> Sair
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
-        <button className="search-btn" onClick={() => openModal({ type: 'command' })}>
-          <Search /> Buscar ou comandar <kbd>Ctrl K</kbd>
-        </button>
-        <nav className="nav">
-          <div className="nav-label">Organização</div>
-          {NAV.map((n) => (
-            <button key={n.name} className={cx('nav-item', route.name === n.name && 'on')} onClick={() => go(n.name)}>
-              <n.icon /> {n.label}
-              {!!badges[n.name] && <span className="badge">{badges[n.name]}</span>}
+      </header>
+
+      {/* Trilho lateral (computador) */}
+      <aside className="rail">
+        <div className="rail-group glass solid">
+          <ThemeSwitch />
+        </div>
+        <nav className="rail-group glass solid" aria-label="Navegação">
+          {railItems.map((n) => (
+            <button
+              key={n.name}
+              className={cx('rail-item', route.name === n.name && 'on')}
+              onClick={() => go(n.name)}
+              aria-label={n.label}
+              data-tip={n.label}
+            >
+              <n.icon />
+              {!!badges[n.name] && <span className="rail-badge">{badges[n.name]! > 9 ? '9+' : badges[n.name]}</span>}
             </button>
           ))}
         </nav>
-        <div className="side-bottom">
-          <button className={cx('nav-item', route.name === 'instalar' && 'on')} onClick={() => go('instalar')}>
-            <Download /> Instalar app
-          </button>
-          <button className={cx('nav-item', route.name === 'configuracoes' && 'on')} onClick={() => go('configuracoes')}>
-            <Settings /> Configurações
-          </button>
-          <div className="user-card">
-            <div className="avatar">{initials(s.settings.name, email)}</div>
-            <div className="who">
-              <b>{userName}</b>
-              <span>{email}</span>
-            </div>
-            <button className="icon-btn sm" onClick={logout} title="Sair" aria-label="Sair">
-              <LogOut />
-            </button>
-          </div>
-        </div>
       </aside>
 
       {/* Topo (mobile) */}
@@ -160,26 +238,16 @@ export function Shell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="main">
-        <div className="topbar">
-          <div className="page-head">
-            <h1 className="page-title">{meta.title}</h1>
-            {meta.sub && <p className="page-sub">{meta.sub}</p>}
-          </div>
-          <div className="top-actions">
-            <button className="icon-btn btn-glass" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações" title="Notificações">
-              <Bell />
-              {unread > 0 && <span className="dot">{unread > 9 ? '9+' : unread}</span>}
-            </button>
-            <ThemeToggle />
-          </div>
+        <div className="mobile-tabs only-mobile">
+          <PillTabs route={route.name} onGo={go} />
         </div>
         {route.name !== 'inicio' && (
-          <div className="mobile-title only-mobile">
+          <div className="page-head" key={`h-${route.name}`}>
+            {meta.sub && <p className="overline">{meta.sub}</p>}
             <h1 className="page-title">{meta.title}</h1>
-            {meta.sub && <p className="page-sub">{meta.sub}</p>}
           </div>
         )}
-        <div className="content" key={route.name}>
+        <div className="content stagger" key={route.name}>
           {children}
         </div>
       </main>

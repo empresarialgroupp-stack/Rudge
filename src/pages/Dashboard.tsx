@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlarmClock,
   ArrowRight,
@@ -13,12 +13,16 @@ import {
   Target,
   Wand2,
   Mic,
+  Plus,
+  TrendingDown,
+  TrendingUp,
+  Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { dismissSuggestion, moveOverdueToToday, toggleHabit, addTask, updateSettings } from '../lib/actions';
 import { navigate, openModal, toast, useNarrow } from '../lib/ui';
-import { addDays, dateKey, formatWhen, fromNow, startOfWeek, todayKey, WEEKDAYS_SHORT } from '../lib/date';
+import { capitalize, dateKey, formatWhen, fromNow, greeting, MONTHS, timeOf, todayKey, WEEKDAYS } from '../lib/date';
 import { goalPace, goalProgress, habitStreak, isHabitDueOn } from '../lib/goals';
 import { occurrencesBetween } from '../lib/recurrence';
 import { getSuggestions, type Suggestion } from '../lib/suggestions';
@@ -27,8 +31,10 @@ import { permission, requestPermission } from '../lib/notify';
 import { isStandalone } from '../lib/pwa';
 import { enablePush, pushSupported } from '../lib/push';
 import { useSession } from '../lib/auth';
-import { greetingTitle, todaySummary } from '../lib/summary';
-import { AreaIcon, Checkbox, cx, Empty, ProgressBar, ProgressRing, Segmented } from '../components/ui';
+import { displayName } from '../lib/summary';
+import { dailyCounts, periodSeries, type PeriodMode } from '../lib/stats';
+import { BarChart, CountUp, Gauge, Sparkline } from '../components/charts';
+import { Checkbox, cx, Empty, Segmented } from '../components/ui';
 import { TaskRow, sortTasks } from '../components/TaskRow';
 import { createFromText, ParseChips, type CaptureMode } from '../components/Quick';
 
@@ -128,7 +134,6 @@ export function Dashboard() {
   }, [s.reminders, now]);
 
   const activeGoals = s.goals.filter((g) => g.status === 'active');
-  const avgGoal = activeGoals.length ? activeGoals.reduce((n, g) => n + goalProgress(g), 0) / activeGoals.length : 0;
   const behind = activeGoals.filter((g) => goalPace(g).status === 'behind').length;
 
   const habitsToday = s.habits.filter((h) => isHabitDueOn(h, today));
@@ -140,17 +145,21 @@ export function Dashboard() {
     installed: isStandalone(),
   }).slice(0, 4);
 
-  const week = useMemo(() => {
-    const start = startOfWeek(new Date());
-    return Array.from({ length: 7 }, (_, i) => {
-      const key = dateKey(addDays(start, i));
-      const tasks = s.tasks.filter((t) => t.doneAt && dateKey(new Date(t.doneAt)) === key).length;
-      const habits = s.habits.filter((h) => h.log.includes(key)).length;
-      return { key, dow: addDays(start, i).getDay(), n: tasks + habits };
-    });
-  }, [s.tasks, s.habits]);
-  const weekMax = Math.max(4, ...week.map((w) => w.n));
-  const weekTotal = week.reduce((n, w) => n + w.n, 0);
+  const daily = useMemo(() => dailyCounts(s, 7), [s]);
+  const [period, setPeriod] = useState<PeriodMode>('semanas');
+  const series = useMemo(() => periodSeries(s, period), [s, period]);
+  const tasksDelta = daily.tasks[6] - daily.tasks[5];
+  const habitsDelta = daily.habits[6] - daily.habits[5];
+
+  // meta principal: a ativa com prazo mais próximo (ou a primeira)
+  const mainGoal = [...activeGoals].sort((a, b) => (a.deadline ?? '9999').localeCompare(b.deadline ?? '9999'))[0];
+  const mainPace = mainGoal ? goalPace(mainGoal) : undefined;
+  const onPace = activeGoals.length - behind;
+  const ranking = [...activeGoals].map((g) => ({ g, p: goalProgress(g) })).sort((a, b) => b.p - a.p).slice(0, 5);
+  const remindersToday = nextReminders.filter((r) => dateKey(new Date(r.at)) === today);
+
+  const clock = useClock();
+  const userName = s.settings.name || displayName(s, session?.email);
 
   function submit() {
     if (!text.trim()) return;
@@ -159,9 +168,99 @@ export function Dashboard() {
 
   return (
     <>
-      <div className="hero only-mobile">
-        <h1>{greetingTitle(s, session?.email)}</h1>
-        <p>{todaySummary(s)}</p>
+      <div className="dash-top stagger">
+        <div className="welcome">
+          <span className="date-chip">
+            <i className="live" /> {clock}
+          </span>
+          <h1 className="welcome-title">
+            {greeting()}
+            {userName ? `, ${userName}` : ''}!
+          </h1>
+          <p className="welcome-sub">
+            {focus.length ? (
+              <>
+                Hoje você tem <b>{focus.length} {focus.length === 1 ? 'tarefa' : 'tarefas'}</b>
+              </>
+            ) : (
+              <>Nenhuma tarefa pendente para hoje</>
+            )}
+            {remindersToday.length > 0 && (
+              <>
+                {' '}e <b>{remindersToday.length} {remindersToday.length === 1 ? 'lembrete' : 'lembretes'}</b>
+              </>
+            )}
+            {behind > 0 ? (
+              <>
+                {' '}— <b>{behind} {behind === 1 ? 'meta' : 'metas'}</b> fora do ritmo.
+              </>
+            ) : (
+              '.'
+            )}
+          </p>
+          <div className="welcome-actions">
+            <button className="btn btn-primary btn-pill" onClick={() => openModal({ type: 'task' })}>
+              <Plus /> Nova tarefa
+            </button>
+            <button className="btn btn-glass btn-pill" onClick={() => openModal({ type: 'voice' })}>
+              <Mic /> Falar
+            </button>
+          </div>
+        </div>
+
+        <button className="kpi2 glass" onClick={() => navigate('tarefas?f=hoje')}>
+          <div className="k-head">
+            <span>Tarefas de hoje</span>
+            <span className="k-icon">
+              <ListTodo />
+            </span>
+          </div>
+          <div className="k-value">
+            <CountUp value={doneToday.length} />
+            <small>/{totalToday}</small>
+            <Delta n={tasksDelta} />
+          </div>
+          <div className="k-foot">
+            <span>concluídas · 7 dias</span>
+            <Sparkline data={daily.tasks} />
+          </div>
+        </button>
+
+        <button className="kpi2 glass" onClick={() => navigate('habitos')}>
+          <div className="k-head">
+            <span>Hábitos</span>
+            <span className="k-icon">
+              <Flame />
+            </span>
+          </div>
+          <div className="k-value">
+            <CountUp value={habitsDone} />
+            <small>/{habitsToday.length}</small>
+            <Delta n={habitsDelta} />
+          </div>
+          <div className="k-foot">
+            <span>melhor sequência · {bestStreak} d</span>
+            <Sparkline data={daily.habits} />
+          </div>
+        </button>
+
+        <button className="kpi2 glass" onClick={() => navigate('lembretes')}>
+          <div className="k-head">
+            <span>Próximo lembrete</span>
+            <span className="k-icon">
+              <AlarmClock />
+            </span>
+          </div>
+          <div className="k-value">{nextReminders[0] ? fromNow(nextReminders[0].at) : '—'}</div>
+          <div className="k-foot">
+            <span className="k-ellipsis">{nextReminders[0]?.title ?? 'nenhum programado'}</span>
+            <span className="k-times">
+              {nextReminders.slice(0, 3).map((r) => (
+                <i key={`${r.id}-${r.at}`}>{timeOf(new Date(r.at))}</i>
+              ))}
+            </span>
+          </div>
+        </button>
       </div>
 
       <div className="capture glass liquid">
@@ -194,58 +293,99 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="kpis">
-        <div className="kpi glass">
-          <ProgressRing value={totalToday ? doneToday.length / totalToday : 0} size={50} stroke={5} />
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <ListTodo /> Hoje
+      <div className="dash-row stagger">
+        <section className="card glass">
+          <div className="card-head">
+            <h2 className="card-title">
+              <BarChart3 /> Produtividade
+            </h2>
+            <div className="legend-inline">
+              <span>
+                <i className="dot solid" /> Tarefas e lembretes
+              </span>
+              <span>
+                <i className="dot soft" /> Hábitos
+              </span>
             </div>
-            <div className="kpi-value">
-              {doneToday.length}
-              <small>/{totalToday}</small>
-            </div>
-            <div className="kpi-hint">tarefas concluídas</div>
+            <Segmented
+              value={period}
+              onChange={setPeriod}
+              options={[
+                { value: 'semanas', label: 'Semanas' },
+                { value: 'meses', label: 'Meses' },
+              ]}
+            />
           </div>
-        </div>
-        <div className="kpi glass">
-          <ProgressRing value={avgGoal} size={50} stroke={5} />
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <Target /> Metas
-            </div>
-            <div className="kpi-value">{activeGoals.length}</div>
-            <div className="kpi-hint">{activeGoals.length ? (behind ? `${behind} fora do ritmo` : 'todas no ritmo') : 'nenhuma ativa'}</div>
+          <BarChart
+            key={period}
+            labels={series.labels}
+            current={series.labels.length - 1}
+            series={[
+              { name: 'Tarefas e lembretes', values: series.tasks, tone: 'solid' },
+              { name: 'Hábitos', values: series.habits, tone: 'soft' },
+            ]}
+          />
+        </section>
+
+        <section className="card glass gauge-card">
+          <div className="card-head">
+            <h2 className="card-title">
+              <Target /> Meta principal
+            </h2>
+            <button className="link" onClick={() => navigate('metas')}>
+              Todas <ChevronRight />
+            </button>
           </div>
-        </div>
-        <div className="kpi glass">
-          <ProgressRing value={habitsToday.length ? habitsDone / habitsToday.length : 0} size={50} stroke={5} />
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <Flame /> Hábitos
-            </div>
-            <div className="kpi-value">
-              {habitsDone}
-              <small>/{habitsToday.length}</small>
-            </div>
-            <div className="kpi-hint">melhor sequência: {bestStreak} d</div>
-          </div>
-        </div>
-        <div className="kpi glass">
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <AlarmClock /> Próximo lembrete
-            </div>
-            <div className="kpi-value" style={{ fontSize: 20 }}>
-              {nextReminders[0] ? fromNow(nextReminders[0].at) : '—'}
-            </div>
-            <div className="kpi-hint">{nextReminders[0]?.title ?? 'nenhum programado'}</div>
-          </div>
-        </div>
+          {mainGoal && mainPace ? (
+            <>
+              <button className="gauge-wrap" onClick={() => openModal({ type: 'goal-detail', id: mainGoal.id })}>
+                <Gauge value={mainPace.progress} />
+                <div className="gauge-center">
+                  <b>
+                    <CountUp value={mainPace.progress * 100} decimals={1} />%
+                  </b>
+                  <span>{mainGoal.title}</span>
+                </div>
+              </button>
+              <div className="gauge-stats">
+                <div>
+                  <span>Metas ativas</span>
+                  <b>
+                    <CountUp value={activeGoals.length} />
+                  </b>
+                </div>
+                <div className="r">
+                  <span>No ritmo</span>
+                  <b>
+                    <CountUp value={onPace} />
+                  </b>
+                </div>
+              </div>
+              <div className="gauge-foot">
+                <TrendingUp />
+                <span>
+                  {mainPace.label}
+                  {mainPace.daysLeft !== undefined && mainPace.daysLeft >= 0 ? ` · ${mainPace.daysLeft} dias restantes` : ''}
+                </span>
+              </div>
+            </>
+          ) : (
+            <Empty
+              icon={Target}
+              title="Nenhuma meta ativa"
+              text="O assistente propõe metas concretas e monta o plano com etapas e lembretes."
+              action={
+                <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'goal-wizard' })}>
+                  <Sparkles /> Criar meta
+                </button>
+              }
+            />
+          )}
+        </section>
       </div>
 
       <div className="dash-grid">
-        <div className="dash-col">
+        <div className="dash-col stagger">
           <section className="card glass">
             <div className="card-head">
               <h2 className="card-title">
@@ -286,102 +426,6 @@ export function Dashboard() {
           <section className="card glass">
             <div className="card-head">
               <h2 className="card-title">
-                <Target /> Metas em andamento
-              </h2>
-              <button className="link" onClick={() => navigate('metas')}>
-                Todas <ChevronRight />
-              </button>
-            </div>
-            {activeGoals.length ? (
-              activeGoals.slice(0, 4).map((g) => {
-                const pace = goalPace(g);
-                return (
-                  <div key={g.id} className="goal-mini" onClick={() => openModal({ type: 'goal-detail', id: g.id })}>
-                    <div className="top">
-                      <AreaIcon area={g.area} />
-                      <b>{g.title}</b>
-                      <span className="pct">{Math.round(pace.progress * 100)}%</span>
-                    </div>
-                    <ProgressBar value={pace.progress} marker={pace.expected} />
-                    <div className="bottom">
-                      <span>{pace.label}</span>
-                      <span>{pace.daysLeft !== undefined ? `${Math.max(0, pace.daysLeft)} dias restantes` : ''}</span>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <Empty
-                icon={Target}
-                title="Nenhuma meta ativa"
-                text="O assistente propõe metas concretas e monta o plano com etapas e lembretes."
-                action={
-                  <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'goal-wizard' })}>
-                    <Sparkles /> Criar meta
-                  </button>
-                }
-              />
-            )}
-          </section>
-
-          <section className="card glass">
-            <div className="card-head">
-              <h2 className="card-title">
-                <BarChart3 /> Sua semana
-              </h2>
-              <span className="link">{weekTotal} conclusões</span>
-            </div>
-            <div className="week-chart">
-              {week.map((w) => (
-                <div className="col" key={w.key}>
-                  <div className={cx('barv', w.n > 0 && 'on')} style={{ height: `${Math.max(4, (w.n / weekMax) * 100)}%` }}>
-                    {w.n > 0 && <span>{w.n}</span>}
-                  </div>
-                  <span className={cx('d', w.key === today && 'today')}>{WEEKDAYS_SHORT[w.dow]}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <div className="dash-col">
-          <section className="card glass liquid">
-            <div className="card-head">
-              <h2 className="card-title">
-                <Sparkles /> Rudge sugere
-              </h2>
-            </div>
-            {suggestions.length ? (
-              suggestions.map((sg) => {
-                const I = TONE_ICON[sg.tone];
-                return (
-                  <div className="suggestion" key={sg.id}>
-                    <div className="s-icon">
-                      <I />
-                    </div>
-                    <div className="s-body">
-                      <b>{sg.title}</b>
-                      <p>{sg.body}</p>
-                      <div className="s-actions">
-                        <button className="btn btn-sm btn-primary" onClick={() => runSuggestion(sg)}>
-                          {sg.cta}
-                        </button>
-                        <button className="btn btn-sm btn-ghost" onClick={() => dismissSuggestion(sg.id)}>
-                          Agora não
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <Empty icon={Sparkles} title="Tudo em ordem" text="Sem pendências ou alertas. Continue assim." />
-            )}
-          </section>
-
-          <section className="card glass">
-            <div className="card-head">
-              <h2 className="card-title">
                 <Flame /> Hábitos de hoje
               </h2>
               <button className="link" onClick={() => navigate('habitos')}>
@@ -414,6 +458,78 @@ export function Dashboard() {
                   </button>
                 }
               />
+            )}
+          </section>
+        </div>
+
+        <div className="dash-col stagger">
+          {ranking.length > 0 && (
+            <section className="card glass">
+              <div className="card-head">
+                <h2 className="card-title">
+                  <Trophy /> Metas por progresso
+                </h2>
+                <button className="link" onClick={() => navigate('metas')}>
+                  Todas <ChevronRight />
+                </button>
+              </div>
+              <div className="rank-list">
+                {ranking.map(({ g, p }, i) => {
+                  const pace = goalPace(g);
+                  return (
+                    <button key={g.id} className={cx('rank', i === 0 && 'first')} onClick={() => openModal({ type: 'goal-detail', id: g.id })}>
+                      <span className="rank-n">{i + 1}</span>
+                      <span className="rank-body">
+                        <span className="rank-top">
+                          <b>{g.title}</b>
+                          <span className="v">{Math.round(p * 100)}%</span>
+                        </span>
+                        <span className="rank-sub">
+                          {pace.label}
+                          {pace.daysLeft !== undefined && pace.daysLeft >= 0 ? ` · ${pace.daysLeft} dias` : ''}
+                        </span>
+                        <span className="rank-bar">
+                          <i style={{ width: `${Math.max(2, p * 100)}%`, animationDelay: `${120 + i * 70}ms` }} />
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          <section className="card glass liquid">
+            <div className="card-head">
+              <h2 className="card-title">
+                <Sparkles /> Rudge sugere
+              </h2>
+            </div>
+            {suggestions.length ? (
+              suggestions.map((sg) => {
+                const I = TONE_ICON[sg.tone];
+                return (
+                  <div className="suggestion" key={sg.id}>
+                    <div className="s-icon">
+                      <I />
+                    </div>
+                    <div className="s-body">
+                      <b>{sg.title}</b>
+                      <p>{sg.body}</p>
+                      <div className="s-actions">
+                        <button className="btn btn-sm btn-primary" onClick={() => runSuggestion(sg)}>
+                          {sg.cta}
+                        </button>
+                        <button className="btn btn-sm btn-ghost" onClick={() => dismissSuggestion(sg.id)}>
+                          Agora não
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <Empty icon={Sparkles} title="Tudo em ordem" text="Sem pendências ou alertas. Continue assim." />
             )}
           </section>
 
@@ -470,4 +586,29 @@ export function Dashboard() {
       </div>
     </>
   );
+}
+
+function Delta({ n }: { n: number }) {
+  if (!n) return null;
+  return (
+    <span className={cx('delta', n < 0 && 'down')} title="em relação a ontem">
+      {n > 0 ? <TrendingUp /> : <TrendingDown />}
+      {n > 0 ? `+${n}` : n}
+    </span>
+  );
+}
+
+/** "Segunda, 26 out · 16:17", atualizado a cada minuto. */
+function useClock() {
+  const fmt = () => {
+    const d = new Date();
+    const wd = capitalize(WEEKDAYS[d.getDay()]);
+    return `${wd}, ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)} · ${timeOf(d)}`;
+  };
+  const [v, setV] = useState(fmt);
+  useEffect(() => {
+    const t = setInterval(() => setV(fmt()), 15_000);
+    return () => clearInterval(t);
+  }, []);
+  return v;
 }
