@@ -29,7 +29,10 @@ export type ModalSpec =
   | { type: 'command' }
   | { type: 'voice' }
   | { type: 'onboarding' }
-  | { type: 'quick-add'; mode?: 'task' | 'reminder' };
+  | { type: 'quick-add'; mode?: 'task' | 'reminder' }
+  | { type: 'focus'; taskId?: string; goalId?: string }
+  | { type: 'photo' }
+  | { type: 'retro'; month?: string };
 
 const modals = createAtom<ModalSpec[]>([]);
 
@@ -90,6 +93,7 @@ export type RouteName =
   | 'lembretes'
   | 'agenda'
   | 'revisao'
+  | 'diario'
   | 'instalar'
   | 'configuracoes';
 
@@ -98,7 +102,7 @@ export interface Route {
   params: URLSearchParams;
 }
 
-const ROUTES: RouteName[] = ['inicio', 'tarefas', 'metas', 'habitos', 'lembretes', 'agenda', 'revisao', 'instalar', 'configuracoes'];
+const ROUTES: RouteName[] = ['inicio', 'tarefas', 'metas', 'habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'instalar', 'configuracoes'];
 
 function parseHash(): Route {
   const h = (typeof location !== 'undefined' ? location.hash : '').replace(/^#\/?/, '');

@@ -283,10 +283,14 @@ export function ReminderEditor({ id, defaults }: { id?: string; defaults?: { tit
   const [when, setWhen] = useState(toLocalInput(roundTo5(initialAt)));
   const [repeat, setRepeat] = useState<Repeat>(existing?.repeat ?? 'none');
   const [days, setDays] = useState<number[]>(existing?.days ?? []);
+  const [trigger, setTrigger] = useState<'time' | 'place'>(existing?.place ? 'place' : 'time');
+  const [placeId, setPlaceId] = useState(existing?.place?.placeId ?? s.places[0]?.id ?? '');
+  const [placeOn, setPlaceOn] = useState<'arrive' | 'leave'>(existing?.place?.on ?? 'leave');
   const close = () => closeModal('reminder');
 
-  const at = when ? fromLocalInput(when) : NaN;
-  const past = repeat === 'none' && at < Date.now() - 30_000;
+  const byPlace = trigger === 'place';
+  const at = byPlace ? Date.now() : when ? fromLocalInput(when) : NaN;
+  const past = !byPlace && repeat === 'none' && at < Date.now() - 30_000;
 
   const presets = useMemo(() => {
     const now = new Date();
@@ -307,6 +311,16 @@ export function ReminderEditor({ id, defaults }: { id?: string; defaults?: { tit
 
   function save() {
     if (!title.trim() || isNaN(at) || past) return;
+    if (byPlace) {
+      if (!placeId) return;
+      const place = s.places.find((p) => p.id === placeId);
+      const patch = { title: title.trim(), notes: notes.trim() || undefined, at: new Date().toISOString(), repeat: 'none' as const, days: undefined, done: false, place: { placeId, on: placeOn } };
+      if (existing) updateReminder(existing.id, patch);
+      else addReminder(patch);
+      toast({ title: existing ? 'Lembrete atualizado' : 'Lembrete criado', body: `${patch.title} — ${placeOn === 'arrive' ? 'ao chegar em' : 'ao sair de'} ${place?.name}`, icon: 'bell' });
+      close();
+      return;
+    }
     const patch = {
       title: title.trim(),
       notes: notes.trim() || undefined,
@@ -315,6 +329,7 @@ export function ReminderEditor({ id, defaults }: { id?: string; defaults?: { tit
       days: repeat === 'weekly' ? (days.length ? days : [new Date(at).getDay()]) : undefined,
       done: false,
       ackUntil: repeat !== 'none' ? new Date().toISOString() : undefined,
+      place: undefined,
     };
     if (existing) updateReminder(existing.id, patch);
     else addReminder(patch);
@@ -359,6 +374,37 @@ export function ReminderEditor({ id, defaults }: { id?: string; defaults?: { tit
         <Field label="Me lembre de…">
           <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex.: tomar o remédio" autoFocus />
         </Field>
+        {s.places.length > 0 && (
+          <Segmented
+            full
+            value={trigger}
+            onChange={setTrigger}
+            options={[
+              { value: 'time', label: 'Em um horário' },
+              { value: 'place', label: 'Em um lugar' },
+            ]}
+          />
+        )}
+        {byPlace ? (
+          <div className="grid-2">
+            <Field label="Lugar">
+              <select className="select" value={placeId} onChange={(e) => setPlaceId(e.target.value)}>
+                {s.places.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Quando">
+              <select className="select" value={placeOn} onChange={(e) => setPlaceOn(e.target.value as 'arrive' | 'leave')}>
+                <option value="leave">Ao sair</option>
+                <option value="arrive">Ao chegar</option>
+              </select>
+            </Field>
+          </div>
+        ) : (
+        <>
         <div className="row wrap">
           {presets.map((p) => (
             <button type="button" key={p.label} className={cx('chip', Math.abs(at - p.at) < 60_000 && 'on')} onClick={() => setWhen(toLocalInput(p.at))}>
@@ -393,6 +439,8 @@ export function ReminderEditor({ id, defaults }: { id?: string; defaults?: { tit
             setDays(r === 'weekly' && !d.length && !isNaN(at) ? [new Date(at).getDay()] : d);
           }}
         />
+        </>
+        )}
         <Field label="Notas (aparecem na notificação)">
           <textarea className="textarea" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opcional" />
         </Field>

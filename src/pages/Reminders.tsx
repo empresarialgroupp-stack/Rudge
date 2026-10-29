@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlarmClock, ArrowRight, Bell, BellRing, Check, CheckCircle2, Clock, Mic, Pencil, Repeat, RotateCcw, Trash2 } from 'lucide-react';
+import { AlarmClock, ArrowRight, Bell, BellRing, Camera, Check, CheckCircle2, Clock, MapPin, Mic, Pencil, Repeat, RotateCcw, Trash2 } from 'lucide-react';
 import type { Reminder } from '../lib/types';
 import { useStore } from '../lib/store';
 import { completeReminder, deleteReminder, postponeReminder, reopenReminder } from '../lib/actions';
@@ -11,19 +11,22 @@ import { permission } from '../lib/notify';
 import { cx, Empty, StatCard, StatRow } from '../components/ui';
 import { createFromText, ParseChips } from '../components/Quick';
 import { enableNotifications } from './Dashboard';
+import { describePlace } from '../lib/geo';
 
 function RemRow({ r, at, overdue }: { r: Reminder; at?: number | null; overdue?: boolean }) {
   const [menu, setMenu] = useState(false);
+  const places = useStore().places;
   const rule = { at: Date.parse(r.at), repeat: r.repeat, days: r.days };
   const tomorrow9 = addDays(new Date(), 1);
   tomorrow9.setHours(9, 0, 0, 0);
   return (
     <div className={cx('item', r.done && 'done')}>
-      <div className="lead-icon">{r.repeat !== 'none' ? <Repeat /> : overdue ? <BellRing /> : <Bell />}</div>
+      <div className="lead-icon">{r.place ? <MapPin /> : r.repeat !== 'none' ? <Repeat /> : overdue ? <BellRing /> : <Bell />}</div>
       <div className="item-main" onClick={() => openModal({ type: 'reminder', id: r.id })}>
         <div className="item-title">{r.title}</div>
         <div className="item-meta">
-          {at && (
+          {r.place && <span className="meta strong">{describePlace(r, places)}</span>}
+          {at && !r.place && (
             <span className={cx('meta', overdue && 'strong')}>
               {overdue ? 'Venceu ' : ''}
               {formatWhen(at)} · {fromNow(at)}
@@ -61,7 +64,7 @@ function RemRow({ r, at, overdue }: { r: Reminder; at?: number | null; overdue?:
           </button>
         ) : (
           <>
-            {r.repeat === 'none' && (
+            {r.repeat === 'none' && !r.place && (
               <button className="icon-btn sm" title="Adiar" onClick={() => setMenu((v) => !v)} aria-label="Adiar">
                 <AlarmClock />
               </button>
@@ -99,8 +102,8 @@ export function Reminders() {
   const now = Date.now();
   const perm = permission();
 
-  const { overdue, soon, week, later, recurring, done } = useMemo(() => {
-    const active = s.reminders.filter((r) => !r.done);
+  const { overdue, soon, week, later, recurring, byPlace, done } = useMemo(() => {
+    const active = s.reminders.filter((r) => !r.done && !r.place);
     const once = active.filter((r) => r.repeat === 'none');
     const t = (r: Reminder) => Date.parse(r.at);
     return {
@@ -112,6 +115,7 @@ export function Reminders() {
         .filter((r) => r.repeat !== 'none')
         .map((r) => ({ r, next: nextOccurrence({ at: t(r), repeat: r.repeat, days: r.days }, Math.max(now, r.ackUntil ? Date.parse(r.ackUntil) : 0)) }))
         .sort((a, b) => (a.next ?? Infinity) - (b.next ?? Infinity)),
+      byPlace: s.reminders.filter((r) => !r.done && r.place),
       done: s.reminders.filter((r) => r.done).sort((a, b) => (b.doneAt ?? '').localeCompare(a.doneAt ?? '')),
     };
   }, [s.reminders, now]);
@@ -128,7 +132,7 @@ export function Reminders() {
     { key: 'later', title: 'Mais adiante', items: later },
   ].filter((x) => x.items.length);
 
-  const empty = !sections.length && !recurring.length;
+  const empty = !sections.length && !recurring.length && !byPlace.length;
 
   const activeN = s.reminders.filter((r) => !r.done).length;
   const doneWeek = s.reminders.filter((r) => r.done && r.doneAt && Date.parse(r.doneAt) >= now - 7 * 86_400_000).length;
@@ -163,6 +167,9 @@ export function Reminders() {
           placeholder={narrow ? 'Me lembre de… “remédio todo dia 8h”' : 'Me lembre de… ex.: “tomar remédio todo dia às 8h”'}
           aria-label="Novo lembrete"
         />
+        <button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
+          <Camera />
+        </button>
         <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
           <Mic />
         </button>
@@ -195,6 +202,19 @@ export function Reminders() {
           </div>
         </section>
       ))}
+
+      {byPlace.length > 0 && (
+        <section className="group-card glass">
+          <div className="group-head">
+            <MapPin width={14} /> Por lugar <span className="count">{byPlace.length}</span>
+          </div>
+          <div className="list">
+            {byPlace.map((r) => (
+              <RemRow key={r.id} r={r} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {recurring.length > 0 && (
         <section className="group-card glass">

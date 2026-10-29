@@ -1,8 +1,9 @@
 // "Rudge sugere": propostas contextuais com base no estado atual.
 import type { AppState, AreaKey } from './types';
 import { diffDays, todayKey } from './date';
-import { AREA_LABEL, goalPace, goalProgress, habitStreak } from './goals';
+import { AREA_LABEL, goalPace, goalProgress, habitStreak, recalcGoal } from './goals';
 import { TEMPLATES, type GoalTemplate } from './templates';
+import { retimeSuggestions } from './insights';
 
 export type SuggestionAction =
   | { type: 'wizard'; templateId?: string }
@@ -11,7 +12,8 @@ export type SuggestionAction =
   | { type: 'navigate'; to: string }
   | { type: 'notifications' }
   | { type: 'install' }
-  | { type: 'add-task'; title: string; goalId?: string };
+  | { type: 'add-task'; title: string; goalId?: string }
+  | { type: 'retime'; kind: 'reminder' | 'habit'; id: string; time: string };
 
 export interface Suggestion {
   id: string;
@@ -104,14 +106,15 @@ export function getSuggestions(
 
   for (const g of active) {
     const pace = goalPace(g, today);
+    const rc = recalcGoal(g, today);
     if (pace.status === 'behind') {
       out.push({
         id: `behind-${g.id}`,
         tone: 'goal',
         title: `“${g.title}” está ${pace.label.toLowerCase()}`,
-        body: pace.advice,
-        cta: 'Criar tarefa para hoje',
-        action: { type: 'add-task', title: `Avançar na meta: ${g.title}`, goalId: g.id },
+        body: rc ? `${rc.message} Veja como mudar o prazo ou quebrar em etapas.` : pace.advice,
+        cta: rc ? 'Recalcular meta' : 'Criar tarefa para hoje',
+        action: rc ? { type: 'goal', goalId: g.id } : { type: 'add-task', title: `Avançar na meta: ${g.title}`, goalId: g.id },
         priority: 85,
       });
     } else if (pace.status === 'overdue') {
@@ -119,7 +122,7 @@ export function getSuggestions(
         id: `overdue-goal-${g.id}`,
         tone: 'goal',
         title: `Prazo vencido: ${g.title}`,
-        body: 'Ajuste o prazo para continuar ou conclua a meta.',
+        body: rc?.newDeadline ? `No seu ritmo, dá para fechar até ${rc.newDeadline.split('-').reverse().slice(0, 2).join('/')}. Ajuste o prazo ou conclua.` : 'Ajuste o prazo para continuar ou conclua a meta.',
         cta: 'Abrir meta',
         action: { type: 'goal', goalId: g.id },
         priority: 75,
@@ -240,6 +243,19 @@ export function getSuggestions(
     }
   }
 
+  // horários aprendidos
+  for (const r of retimeSuggestions(s)) {
+    out.push({
+      id: `retime:${r.id}:${r.to}`,
+      tone: r.kind === 'habit' ? 'habit' : 'focus',
+      title: `Mudar “${r.title}” para ${r.to}?`,
+      body: r.reason,
+      cta: `Mudar para ${r.to}`,
+      action: { type: 'retime', kind: r.kind, id: r.id, time: r.to },
+      priority: 62,
+    });
+  }
+
   if (!ctx.installed) {
     out.push({
       id: 'install',
@@ -253,6 +269,7 @@ export function getSuggestions(
   }
 
   return out
-    .filter((x) => s.dismissedSuggestions[x.id] !== today)
+    // horários recusados não voltam; o resto volta no dia seguinte
+    .filter((x) => (x.id.startsWith('retime:') ? !(x.id in s.dismissedSuggestions) : s.dismissedSuggestions[x.id] !== today))
     .sort((a, b) => b.priority - a.priority);
 }

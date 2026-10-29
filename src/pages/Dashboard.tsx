@@ -12,16 +12,19 @@ import {
   Sparkles,
   Target,
   Wand2,
+  Camera,
   Mic,
+  NotebookPen,
   Plus,
+  Timer,
   TrendingDown,
   TrendingUp,
   Trophy,
   type LucideIcon,
 } from 'lucide-react';
 import { useStore } from '../lib/store';
-import { dismissSuggestion, moveOverdueToToday, toggleHabit, addTask, updateSettings } from '../lib/actions';
-import { navigate, openModal, toast, useNarrow } from '../lib/ui';
+import { dismissSuggestion, moveOverdueToToday, toggleHabit, addTask, updateSettings, retimeReminder, updateHabit } from '../lib/actions';
+import { navigate, openModal, toast, useNarrow, useRoute } from '../lib/ui';
 import { capitalize, dateKey, formatWhen, fromNow, greeting, MONTHS, timeOf, todayKey, WEEKDAYS } from '../lib/date';
 import { goalPace, goalProgress, habitStreak, isHabitDueOn } from '../lib/goals';
 import { occurrencesBetween } from '../lib/recurrence';
@@ -34,6 +37,8 @@ import { useSession } from '../lib/auth';
 import { displayName } from '../lib/summary';
 import { dailyCounts, periodSeries, type PeriodMode } from '../lib/stats';
 import { BarChart, CountUp, Gauge, Sparkline } from '../components/charts';
+import { PlanCard } from '../components/PlanCard';
+import { prevMonth } from '../lib/retro';
 import { Checkbox, cx, Empty, Segmented } from '../components/ui';
 import { TaskRow, sortTasks } from '../components/TaskRow';
 import { createFromText, ParseChips, type CaptureMode } from '../components/Quick';
@@ -99,6 +104,12 @@ export function runSuggestion(sg: Suggestion) {
     case 'install':
       navigate('instalar');
       break;
+    case 'retime':
+      if (a.kind === 'reminder') retimeReminder(a.id, a.time);
+      else updateHabit(a.id, { time: a.time });
+      dismissSuggestion(sg.id);
+      toast({ title: `Horário mudado para ${a.time}`, body: 'O Rudge passa a avisar no novo horário.', icon: 'check' });
+      break;
     case 'add-task':
       addTask({ title: a.title, due: todayKey(), priority: 2, goalId: a.goalId });
       toast({ title: 'Tarefa criada para hoje', body: a.title, icon: 'check' });
@@ -108,6 +119,16 @@ export function runSuggestion(sg: Suggestion) {
 
 export function Dashboard() {
   const s = useStore();
+  const route = useRoute();
+  // atalhos vindos das notificações: #/inicio?plano=1 · ?retro=2026-10 · ?foco=1
+  const qp = route.params.toString();
+  useEffect(() => {
+    const p = new URLSearchParams(qp);
+    if (p.get('retro')) openModal({ type: 'retro', month: p.get('retro')! });
+    if (p.get('foco')) openModal({ type: 'focus' });
+    if (p.get('plano')) setTimeout(() => document.getElementById('plano')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 400);
+    if (p.toString()) history.replaceState(null, '', '#/inicio');
+  }, [qp]);
   const narrow = useNarrow();
   const session = useSession();
   const today = todayKey();
@@ -124,7 +145,7 @@ export function Dashboard() {
   const nextReminders = useMemo(() => {
     const list: { id: string; title: string; at: number }[] = [];
     for (const r of s.reminders) {
-      if (r.done) continue;
+      if (r.done || r.place) continue;
       const ack = r.ackUntil ? Date.parse(r.ackUntil) : 0;
       for (const at of occurrencesBetween({ at: Date.parse(r.at), repeat: r.repeat, days: r.days }, now - 6 * 3_600_000, now + 3 * 86_400_000)) {
         if (at > ack && (at > now || r.repeat === 'none')) list.push({ id: r.id, title: r.title, at });
@@ -202,6 +223,9 @@ export function Dashboard() {
             <button className="btn btn-primary btn-pill" onClick={() => openModal({ type: 'task' })}>
               <Plus /> Nova tarefa
             </button>
+            <button className="btn btn-glass btn-pill" onClick={() => openModal({ type: 'focus' })}>
+              <Timer /> Focar
+            </button>
             <button className="btn btn-glass btn-pill" onClick={() => openModal({ type: 'voice' })}>
               <Mic /> Falar
             </button>
@@ -255,7 +279,7 @@ export function Dashboard() {
           <div className="k-foot">
             <span className="k-ellipsis">{nextReminders[0]?.title ?? 'nenhum programado'}</span>
             <span className="k-times">
-              {nextReminders.slice(0, 3).map((r) => (
+              {nextReminders.filter((r, i, a) => a.findIndex((x) => x.id === r.id) === i).slice(0, 3).map((r) => (
                 <i key={`${r.id}-${r.at}`}>{timeOf(new Date(r.at))}</i>
               ))}
             </span>
@@ -280,6 +304,9 @@ export function Dashboard() {
             { value: 'reminder', label: 'Lembrete' },
           ]}
         />
+        <button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
+          <Camera />
+        </button>
         <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
           <Mic />
         </button>
@@ -291,6 +318,28 @@ export function Dashboard() {
         <div className="parse-preview">
           <ParseChips p={parsed} mode={mode} />
         </div>
+      )}
+
+      <PlanCard />
+
+      {new Date().getDate() <= 7 && (!s.seenRetro || s.seenRetro < prevMonth()) && (
+        <button className="banner glass liquid retro-banner" onClick={() => openModal({ type: 'retro', month: prevMonth() })}>
+          <Sparkles />
+          <span className="b-text">
+            <b>Sua retrospectiva do mês está pronta</b> — tarefas feitas, maior sequência, meta que mais avançou e melhor semana.
+          </span>
+          <ChevronRight />
+        </button>
+      )}
+
+      {!s.journal[today] && new Date().getHours() >= Math.max(17, Number(s.settings.review.time.slice(0, 2)) - 2) && (
+        <button className="banner glass journal-banner" onClick={() => navigate('diario')}>
+          <NotebookPen />
+          <span className="b-text">
+            <b>Diário de 1 minuto</b> — o que deu certo, o que travou e a nota do dia.
+          </span>
+          <ChevronRight />
+        </button>
       )}
 
       <div className="dash-row stagger">

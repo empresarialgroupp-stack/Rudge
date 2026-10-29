@@ -28,7 +28,7 @@ export function CalendarPage() {
     const get = (k: string) => (map[k] ??= { tasks: 0, rems: [], goals: [] });
     for (const t of s.tasks) if (t.due && !t.done) get(t.due).tasks++;
     for (const r of s.reminders) {
-      if (r.done) continue;
+      if (r.done || r.place) continue;
       const ack = r.ackUntil ? Date.parse(r.ackUntil) : 0;
       for (const at of occurrencesBetween({ at: Date.parse(r.at), repeat: r.repeat, days: r.days }, rangeFrom, rangeTo)) {
         if (at > ack) get(dateKey(new Date(at))).rems.push({ id: r.id, title: r.title, at });

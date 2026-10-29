@@ -14,9 +14,12 @@ import { addDays, dateKey, parseKey, todayKey, WEEKDAYS } from './date';
 import { goalPace, goalProgress, habitStreak, isHabitDueOn } from './goals';
 import { idbGet, idbSet } from './idb';
 import { playChime, showSystem } from './notify';
+import { currentPlan, planSummary } from './planner';
 import {
+  acceptDayPlan,
   addSnooze,
   completeReminder,
+  logAction,
   pushInbox,
   removeSnooze,
   toggleHabit,
@@ -44,6 +47,13 @@ const MIN = 60_000;
 const HOUR = 60 * MIN;
 const WINDOW_PAST = 24 * HOUR;
 const WINDOW_FUTURE = 8 * 24 * HOUR;
+const DAYMS = 24 * HOUR;
+const MONTH_NAMES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+/** Em foco: avisos ficam guardados na central, sem som nem aviso na tela. */
+export function inFocus(s = getState(), now = Date.now()) {
+  return !!s.focus && (s.focus.pausedLeft !== undefined || s.focus.until > now);
+}
 
 const A_DONE = { action: 'done', title: 'Concluir' };
 const A_SNOOZE = (label: string) => ({ action: 'snooze', title: label });
@@ -73,7 +83,7 @@ export function dayPlan(s: AppState, key: string) {
   const start = parseKey(key).getTime();
   const end = start + 24 * HOUR - 1;
   const reminders = s.reminders
-    .filter((r) => !r.done)
+    .filter((r) => !r.done && !r.place)
     .flatMap((r) => occurrencesBetween({ at: Date.parse(r.at), repeat: r.repeat, days: r.days }, start, end));
   const habits = s.habits.filter((h) => isHabitDueOn(h, key) && !h.log.includes(key));
   return { tasks, reminders: reminders.length, habits };
@@ -88,7 +98,7 @@ export function buildQueue(s: AppState, now = Date.now(), future = WINDOW_FUTURE
 
   // Lembretes (ocorrências anteriores à criação não contam como atrasadas)
   for (const r of s.reminders) {
-    if (r.done) continue;
+    if (r.done || r.place) continue; // lembretes por lugar não têm horário
     const rule = { at: Date.parse(r.at), repeat: r.repeat, days: r.days };
     const ack = r.ackUntil ? Date.parse(r.ackUntil) : 0;
     const created = (Date.parse(r.createdAt) || 0) - MIN;
@@ -207,28 +217,52 @@ export function buildQueue(s: AppState, now = Date.now(), future = WINDOW_FUTURE
       }
     }
 
-    // Resumo da manhã
+    // Resumo da manhã = plano do dia
     if (s.settings.briefing.enabled) {
       const plan = dayPlan(s, key);
+      const near = key <= dateKey(addDays(new Date(now), 1));
+      const dp = s.settings.plan.enabled && near ? currentPlan(s, key, parseKey(key, s.settings.briefing.time).getTime()) : null;
       const parts = [
         plural(plan.tasks.length, 'tarefa', 'tarefas'),
         plural(plan.reminders, 'lembrete', 'lembretes'),
         plural(plan.habits.length, 'hábito', 'hábitos'),
       ];
-      const top = plan.tasks[0];
+      const top = dp?.priorities[0] ? s.tasks.find((t) => t.id === dp.priorities[0]) : plan.tasks[0];
+      const accepted = dp?.status === 'accepted';
       q.push({
         key: `brief:${key}`,
         at: parseKey(key, s.settings.briefing.time).getTime(),
-        title: `${dow === 1 ? 'Boa semana' : 'Bom dia'}${name}! Seu plano de hoje`,
-        body: plan.tasks.length || plan.reminders || plan.habits.length
-          ? `${parts.join(' · ')}.${top ? ` Comece por: ${top.title}` : ''}`
-          : 'Agenda livre. Que tal avançar em uma meta?',
+        title: dp ? `${dow === 1 ? 'Boa semana' : 'Bom dia'}${name}! Seu dia está pronto` : `${dow === 1 ? 'Boa semana' : 'Bom dia'}${name}! Seu plano de hoje`,
+        body: dp
+          ? `${planSummary(dp)}.${top ? ` Comece por: ${top.title}` : ''}`
+          : plan.tasks.length || plan.reminders || plan.habits.length
+            ? `${parts.join(' · ')}.${top ? ` Comece por: ${top.title}` : ''}`
+            : 'Agenda livre. Que tal avançar em uma meta?',
         kind: 'briefing',
-        url: '#/inicio',
-        actions: [A_OPEN('Abrir meu dia')],
+        refId: key,
+        url: '#/inicio?plano=1',
+        actions: s.settings.plan.enabled && !accepted ? [{ action: 'accept-plan', title: 'Aceitar plano' }, A_OPEN('Ajustar')] : [A_OPEN('Abrir meu dia')],
         grace: 3 * HOUR,
         snoozeMin: 30,
       });
+    }
+
+    // Retrospectiva do mês (dia 1, 10h)
+    if (key.endsWith('-01')) {
+      const prev = new Date(parseKey(key).getTime() - DAYMS);
+      const ym = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+      if (!s.seenRetro || s.seenRetro < ym)
+        q.push({
+          key: `retro:${ym}`,
+          at: parseKey(key, '10:00').getTime(),
+          title: `Sua retrospectiva de ${MONTH_NAMES[prev.getMonth()]} está pronta`,
+          body: 'Tarefas feitas, maior sequência, meta que mais avançou e sua melhor semana.',
+          kind: 'retro',
+          url: `#/inicio?retro=${ym}`,
+          actions: [A_OPEN('Ver retrospectiva')],
+          grace: 24 * HOUR,
+          snoozeMin: 60,
+        });
     }
 
     // Revisão da noite
@@ -241,11 +275,11 @@ export function buildQueue(s: AppState, now = Date.now(), future = WINDOW_FUTURE
         at: parseKey(key, s.settings.review.time).getTime(),
         title: 'Hora de fechar o dia',
         body: isToday
-          ? `${plural(doneToday, 'tarefa concluída', 'tarefas concluídas')}, ${plural(open, 'pendente', 'pendentes')}. Reagende e planeje amanhã.`
-          : 'Revise o que ficou pendente e planeje amanhã em 2 minutos.',
+          ? `${plural(doneToday, 'tarefa concluída', 'tarefas concluídas')}, ${plural(open, 'pendente', 'pendentes')}. Responda o diário de 1 minuto.`
+          : 'Responda o diário de 1 minuto e planeje amanhã.',
         kind: 'review',
-        url: '#/tarefas',
-        actions: [A_OPEN('Planejar amanhã')],
+        url: '#/diario',
+        actions: [A_OPEN('Abrir diário')],
         grace: 2 * HOUR,
         snoozeMin: 30,
       });
@@ -265,6 +299,22 @@ export function buildQueue(s: AppState, now = Date.now(), future = WINDOW_FUTURE
         snoozeMin: 60,
       });
     }
+  }
+
+  // Fim do foco
+  if (s.focus && s.focus.pausedLeft === undefined && s.focus.until > from) {
+    q.push({
+      key: `focus:${s.focus.start}`,
+      at: s.focus.until,
+      title: 'Foco concluído',
+      body: `${s.focus.minutes} min em “${s.focus.title}”. Hora de uma pausa.`,
+      kind: 'focus',
+      refId: s.focus.taskId,
+      url: '#/inicio?foco=1',
+      actions: [A_OPEN('Abrir')],
+      grace: 6 * HOUR,
+      snoozeMin: 5,
+    });
   }
 
   // Adiados (ignora os que já foram resolvidos)
@@ -349,6 +399,12 @@ export async function present(item: QueueItem, late = false) {
   const s = getState();
   const body = late ? `Atrasado · ${item.body}` : item.body;
   pushInbox([{ key: item.key, at: item.at, title: item.title, body, kind: item.kind, url: item.url }]);
+  if (item.kind !== 'focus' && inFocus(s)) {
+    // modo foco: guarda na central; com o app em segundo plano, avisa sem som
+    if (!isForeground() && s.settings.notifications)
+      await showSystem({ title: item.title, body, tag: item.key, data: notifData(item), actions: item.actions, timestamp: item.at, silent: true });
+    return;
+  }
 
   let shownBySystem = false;
   if (!isForeground() && s.settings.notifications) {
@@ -413,8 +469,16 @@ export function handleAction(action: string, data: NotifData, baseAt = Date.now(
     toast({ title: 'Concluído', body: data.title, icon: 'check' });
     return;
   }
+  if (action === 'accept-plan') {
+    const date = data.refId ?? todayKey();
+    acceptDayPlan(currentPlan(getState(), date));
+    toast({ title: 'Plano do dia aceito', body: 'Horários adicionados às tarefas.', icon: 'check' });
+    return;
+  }
   if (action === 'snooze') {
     const min = data.snoozeMin || 10;
+    if ((data.kind === 'reminder' || data.kind === 'habit' || data.kind === 'task') && data.refId)
+      logAction({ kind: data.kind, refId: data.refId, action: 'snooze', scheduledAt: data.occ, at: baseAt });
     if (data.key.startsWith('snz:')) removeSnooze(data.key);
     addSnooze({
       at: baseAt + min * MIN,

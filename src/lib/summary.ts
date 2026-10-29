@@ -17,7 +17,7 @@ export function greetingTitle(s: AppState, email = ''): string {
 export function nextReminderAt(s: AppState, now = Date.now()): number | undefined {
   let best: number | undefined;
   for (const r of s.reminders) {
-    if (r.done) continue;
+    if (r.done || r.place) continue;
     const ack = r.ackUntil ? Date.parse(r.ackUntil) : 0;
     for (const at of occurrencesBetween({ at: Date.parse(r.at), repeat: r.repeat, days: r.days }, now - 6 * 3_600_000, now + 3 * 86_400_000)) {
       if (at > ack && (at > now || r.repeat === 'none') && (best === undefined || at < best)) best = at;

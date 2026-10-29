@@ -51,6 +51,8 @@ export interface Milestone {
   doneAt?: string;
   /** YYYY-MM-DD (opcional) */
   due?: string;
+  /** metas numéricas: etapa concluída automaticamente ao atingir este valor */
+  value?: number;
 }
 
 export interface GoalLog {
@@ -117,6 +119,70 @@ export interface Reminder {
   createdAt: string;
   /** ocorrências repetidas já confirmadas até esta data (ISO) */
   ackUntil?: string;
+  /** lembrete por lugar: avisa ao chegar ou sair (em vez de horário) */
+  place?: { placeId: ID; on: 'arrive' | 'leave' };
+}
+
+/** Lugar salvo para lembretes por localização. */
+export interface Place {
+  id: ID;
+  name: string;
+  lat: number;
+  lng: number;
+  /** metros */
+  radius: number;
+}
+
+/** Plano do dia montado pelo Rudge (horários em HH:MM). */
+export interface DayPlan {
+  date: string;
+  status: 'proposed' | 'accepted' | 'dismissed';
+  priorities: ID[];
+  slots: { taskId: ID; start: string; end: string }[];
+  createdAt: string;
+}
+
+/** Sessão de foco em andamento. */
+export interface ActiveFocus {
+  title: string;
+  taskId?: ID;
+  goalId?: ID;
+  /** ms */
+  start: number;
+  /** fim previsto (ms); quando pausado, fica parado */
+  until: number;
+  minutes: number;
+  /** ms restantes quando pausado */
+  pausedLeft?: number;
+}
+
+export interface FocusSession {
+  id: ID;
+  title: string;
+  taskId?: ID;
+  goalId?: ID;
+  start: string;
+  end: string;
+  minutes: number;
+}
+
+export interface JournalEntry {
+  good: string;
+  blocked: string;
+  /** 1 a 5 */
+  score: number;
+  at: string;
+}
+
+/** Registro de quando a pessoa conclui ou adia, para aprender horários. */
+export interface ActionLog {
+  kind: 'reminder' | 'habit' | 'task';
+  refId: ID;
+  action: 'done' | 'snooze';
+  /** horário programado (ms) */
+  scheduledAt?: number;
+  /** quando agiu (ms) */
+  at: number;
 }
 
 /** Notificação adiada ("lembrar de novo em 10 min"). */
@@ -142,6 +208,9 @@ export type NotifKind =
   | 'weekly'
   | 'deadline'
   | 'snooze'
+  | 'focus'
+  | 'place'
+  | 'retro'
   | 'test';
 
 export interface InboxItem {
@@ -167,6 +236,8 @@ export interface Settings {
   weekly: { enabled: boolean; weekday: number; time: string };
   /** minutos padrão de antecedência para lembretes de tarefas */
   defaultTaskRemind: number;
+  /** plano do dia: janela de trabalho usada para encaixar tarefas */
+  plan: { enabled: boolean; start: string; end: string };
   onboarded: boolean;
 }
 
@@ -183,4 +254,12 @@ export interface AppState {
   lastWeeklyReview?: string;
   /** Última edição feita pelo usuário (ms). Decide qual aparelho programa os avisos no servidor. */
   editedAt?: number;
+  dayPlans: Record<string, DayPlan>;
+  focus?: ActiveFocus | null;
+  focusSessions: FocusSession[];
+  journal: Record<string, JournalEntry>;
+  places: Place[];
+  history: ActionLog[];
+  /** último mês (YYYY-MM) cuja retrospectiva foi vista */
+  seenRetro?: string;
 }

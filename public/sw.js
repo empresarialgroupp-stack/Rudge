@@ -177,6 +177,18 @@ self.addEventListener('notificationclick', (event) => {
         }
         return;
       }
+      if (action === 'accept-plan') {
+        const list = await windowClients();
+        const client = list.find((c) => c.url.startsWith(SCOPE));
+        if (client) {
+          client.postMessage({ type: 'rudge-action', action, data });
+          return;
+        }
+        // app fechado: guarda para aplicar ao abrir e abre o Início
+        const pending = (await idbGet('pending-actions')) || [];
+        pending.push({ action, data, at: Date.now() });
+        await idbSet('pending-actions', pending);
+      }
       await openApp(data.url);
     })(),
   );
@@ -268,16 +280,20 @@ self.addEventListener('push', (event) => {
         inbox.push({ key, kind: item.kind || 'reminder', url: item.url || '#/inicio', title: item.title || 'Rudge', body: item.body || '' });
         await idbSet('sw-inbox', inbox.slice(-30));
       }
+      // modo foco: chega sem som (fica na central do app)
+      const focusUntil = (await idbGet('focus-until')) || 0;
+      const quiet = item.kind !== 'focus' && focusUntil > Date.now();
       await self.registration.showNotification(item.title || 'Rudge', {
         body: item.body || '',
         tag: key,
         icon: ICON,
         badge: BADGE,
-        renotify: !already,
+        silent: quiet,
+        renotify: !already && !quiet,
         requireInteraction: !!item.requireInteraction,
         timestamp: item.at || Date.now(),
         actions: item.actions || [],
-        vibrate: [120, 60, 120],
+        ...(quiet ? {} : { vibrate: [120, 60, 120] }),
         data: {
           key,
           kind: item.kind || 'reminder',

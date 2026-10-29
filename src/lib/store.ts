@@ -15,6 +15,7 @@ export const defaultSettings: Settings = {
   review: { enabled: true, time: '21:00' },
   weekly: { enabled: true, weekday: 0, time: '18:00' },
   defaultTaskRemind: 10,
+  plan: { enabled: true, start: '09:00', end: '18:00' },
   onboarded: false,
 };
 
@@ -40,6 +41,12 @@ function seed(): AppState {
     inbox: [],
     dismissedSuggestions: {},
     settings: { ...defaultSettings },
+    dayPlans: {},
+    focus: null,
+    focusSessions: [],
+    journal: {},
+    places: [],
+    history: [],
   };
 }
 
@@ -63,6 +70,7 @@ const QUIET_SETTINGS = new Set(['theme', 'push', 'notifications']);
 export function isEdit(a: AppState, b: AppState): boolean {
   if (a.tasks !== b.tasks || a.goals !== b.goals || a.habits !== b.habits || a.reminders !== b.reminders || a.snoozes !== b.snoozes) return true;
   if (a.lastWeeklyReview !== b.lastWeeklyReview) return true;
+  if (a.dayPlans !== b.dayPlans || a.focus !== b.focus || a.journal !== b.journal || a.places !== b.places) return true;
   if (a.settings === b.settings) return false;
   const keys = new Set([...Object.keys(a.settings), ...Object.keys(b.settings)]) as Set<keyof Settings>;
   for (const k of keys) {
@@ -84,7 +92,13 @@ function migrate(raw: Partial<AppState>): AppState {
       briefing: { ...defaultSettings.briefing, ...(raw.settings?.briefing ?? {}) },
       review: { ...defaultSettings.review, ...(raw.settings?.review ?? {}) },
       weekly: { ...defaultSettings.weekly, ...(raw.settings?.weekly ?? {}) },
+      plan: { ...defaultSettings.plan, ...(raw.settings?.plan ?? {}) },
     },
+    dayPlans: raw.dayPlans ?? {},
+    focusSessions: raw.focusSessions ?? [],
+    journal: raw.journal ?? {},
+    places: raw.places ?? [],
+    history: raw.history ?? [],
     version: STATE_VERSION,
     editedAt: typeof raw.editedAt === 'number' ? raw.editedAt : inferEditedAt(raw),
   };

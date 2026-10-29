@@ -4,6 +4,8 @@ import {
   ArrowRight,
   Bell,
   CalendarDays,
+  Camera,
+  Timer,
   Clock,
   Download,
   Flag,
@@ -22,6 +24,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { parseInput, type Parsed } from '../lib/nlp';
+import { parsePlacePhrase } from '../lib/geo';
 import { addReminder, addTask, updateSettings } from '../lib/actions';
 import { getState, useStore } from '../lib/store';
 import { closeModal, navigate, openModal, toast } from '../lib/ui';
@@ -58,6 +61,23 @@ export function ParseChips({ p, mode }: { p: Parsed; mode: CaptureMode }) {
 
 /** Cria tarefa ou lembrete a partir do texto em linguagem natural. Retorna false se faltar algo. */
 export function createFromText(text: string, mode: CaptureMode): boolean {
+  // "quando sair do trabalho" / "quando chegar em casa" → lembrete por lugar
+  const pp = parsePlacePhrase(text, getState().places);
+  if (pp && pp.title) {
+    if (!pp.placeId) {
+      toast({
+        title: `Salve o lugar “${pp.placeName}” primeiro`,
+        body: 'Em Configurações → Lugares, salve onde você está agora com esse nome.',
+        icon: 'info',
+        duration: 9000,
+        actions: [{ label: 'Abrir Lugares', run: () => navigate('configuracoes?lugares=1') }],
+      });
+      return false;
+    }
+    addReminder({ title: pp.title, at: new Date().toISOString(), place: { placeId: pp.placeId, on: pp.on } });
+    toast({ title: 'Lembrete por lugar criado', body: `${pp.title} — ${pp.on === 'arrive' ? 'ao chegar em' : 'ao sair de'} ${pp.placeName}`, icon: 'bell' });
+    return true;
+  }
   const p = parseInput(text);
   const title = p.title || text.trim();
   if (!title) return false;
@@ -170,6 +190,24 @@ export function QuickAdd({ mode: initial = 'task' }: { mode?: CaptureMode }) {
             className="chip"
             onClick={() => {
               close();
+              openModal({ type: 'photo' });
+            }}
+          >
+            <Camera /> Foto
+          </button>
+          <button
+            className="chip"
+            onClick={() => {
+              close();
+              openModal({ type: 'focus' });
+            }}
+          >
+            <Timer /> Focar
+          </button>
+          <button
+            className="chip"
+            onClick={() => {
+              close();
               openModal({ type: 'goal-wizard' });
             }}
           >
@@ -237,6 +275,9 @@ export function CommandPalette() {
       { id: 'c-rem', group: 'Ações', label: 'Novo lembrete', icon: AlarmClock, run: () => openModal({ type: 'reminder' }) },
       { id: 'c-goal', group: 'Ações', label: 'Nova meta (assistente)', icon: Target, run: () => openModal({ type: 'goal-wizard' }) },
       { id: 'c-habit', group: 'Ações', label: 'Novo hábito', icon: Flame, run: () => openModal({ type: 'habit' }) },
+      { id: 'c-focus', group: 'Ações', label: 'Modo foco', icon: Timer, run: () => openModal({ type: 'focus' }) },
+      { id: 'c-photo', group: 'Ações', label: 'Capturar por foto (boleto, papel)', icon: Camera, run: () => openModal({ type: 'photo' }) },
+      { id: 'c-retro', group: 'Ações', label: 'Retrospectiva do mês', icon: Sparkles, run: () => openModal({ type: 'retro' }) },
       {
         id: 'c-theme',
         group: 'Ações',

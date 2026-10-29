@@ -75,3 +75,24 @@ export function dailyBreakdown(s: AppState, days: number, now = new Date()) {
   const labels = base.keys.map((k) => `${Number(k.slice(8))}/${Number(k.slice(5, 7))}`);
   return { ...base, labels, reminders, scheduled };
 }
+
+/** Hábitos x nota do diário: média da nota nos dias em que fez e em que não fez. */
+export function journalHabitImpact(s: AppState) {
+  const days = Object.entries(s.journal);
+  const out: { id: string; title: string; withAvg: number; withoutAvg: number; withN: number; withoutN: number; diff: number }[] = [];
+  for (const h of s.habits) {
+    if (h.archived) continue;
+    const set = new Set(h.log);
+    const w: number[] = [];
+    const wo: number[] = [];
+    for (const [d, e] of days) {
+      const [y, m, dd] = d.split('-').map(Number);
+      if (!h.days.includes(new Date(y, m - 1, dd).getDay())) continue;
+      (set.has(d) ? w : wo).push(e.score);
+    }
+    if (w.length < 3 || wo.length < 2) continue;
+    const avg = (xs: number[]) => xs.reduce((n, x) => n + x, 0) / xs.length;
+    out.push({ id: h.id, title: h.title, withAvg: avg(w), withoutAvg: avg(wo), withN: w.length, withoutN: wo.length, diff: avg(w) - avg(wo) });
+  }
+  return out.sort((a, b) => b.diff - a.diff);
+}

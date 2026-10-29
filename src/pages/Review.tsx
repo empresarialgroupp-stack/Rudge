@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Activity, ArrowLeft, ArrowRight, Check, CheckCircle2, Flame, ListTodo, Target, Trash2 } from 'lucide-react';
+import { Activity, Sparkles, ArrowLeft, ArrowRight, Check, CheckCircle2, Flame, ListTodo, Target, Trash2 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { addTask, deleteTask, finishWeeklyReview, rescheduleTasks, toggleTask, bumpGoal } from '../lib/actions';
 import { navigate, openModal, toast } from '../lib/ui';
@@ -104,6 +104,12 @@ export function Review() {
               ]}
             />
           </section>
+          <button className="banner glass" onClick={() => openModal({ type: 'retro' })}>
+            <Sparkles />
+            <span className="b-text">
+              <b>Retrospectiva do mês</b> — veja seu mês em telas animadas e compartilhe.
+            </span>
+          </button>
           <div className="callout">
             <Check />
             <span>

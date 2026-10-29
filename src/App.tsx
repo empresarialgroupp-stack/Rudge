@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { useSession } from './lib/auth';
 import { getState, useStore } from './lib/store';
 import { openModal, useModals, useRoute } from './lib/ui';
-import { startScheduler } from './lib/scheduler';
+import { present, startScheduler } from './lib/scheduler';
 import { startPush } from './lib/push';
+import { startFocusWatcher } from './lib/focus';
+import { startGeo } from './lib/geo';
 import { applyTheme } from './components/ThemeToggle';
 import { Shell } from './components/Shell';
 import { ModalHost, Toaster } from './components/Host';
@@ -15,6 +17,7 @@ import { Habits } from './pages/Habits';
 import { Reminders } from './pages/Reminders';
 import { CalendarPage } from './pages/Calendar';
 import { Review } from './pages/Review';
+import { Journal } from './pages/Journal';
 import { Install } from './pages/Install';
 import { SettingsPage } from './pages/Settings';
 
@@ -73,6 +76,8 @@ function Page() {
       return <CalendarPage />;
     case 'revisao':
       return <Review />;
+    case 'diario':
+      return <Journal />;
     case 'instalar':
       return <Install />;
     case 'configuracoes':
@@ -86,6 +91,22 @@ function Authed() {
   const modals = useModals();
   useEffect(() => {
     void startScheduler().then(() => startPush());
+    startFocusWatcher();
+    startGeo((r, place) =>
+      void present({
+        key: `place:${r.id}:${Date.now()}`,
+        at: Date.now(),
+        title: r.title,
+        body: `${r.place?.on === 'arrive' ? 'Você chegou em' : 'Você saiu de'} ${place.name}`,
+        kind: 'place',
+        refId: r.id,
+        url: '#/lembretes',
+        actions: [],
+        grace: 3_600_000,
+        snoozeMin: 10,
+        requireInteraction: true,
+      }),
+    );
     if (!getState().settings.onboarded) setTimeout(() => openModal({ type: 'onboarding' }), 600);
   }, []);
 

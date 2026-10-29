@@ -9,6 +9,9 @@ import { TaskEditor, ReminderEditor, HabitEditor } from './Editors';
 import { QuickAdd, CommandPalette } from './Quick';
 import { GoalWizard, GoalDetail, GoalEdit } from './GoalModals';
 import { VoiceModal } from './VoiceModal';
+import { FocusMode } from './FocusMode';
+import { PhotoCapture } from './PhotoCapture';
+import { Retro } from './Retro';
 import { BrandMark, Modal } from './ui';
 import { enableNotifications } from '../pages/Dashboard';
 
@@ -202,6 +205,12 @@ export function ModalHost() {
             return <CommandPalette key="cmd" />;
           case 'onboarding':
             return <Onboarding key="onb" />;
+          case 'retro':
+            return <Retro key={`retro-${m.month ?? ''}`} month={m.month} />;
+          case 'photo':
+            return <PhotoCapture key="photo" />;
+          case 'focus':
+            return <FocusMode key="focus" taskId={m.taskId} goalId={m.goalId} />;
           default:
             return null;
         }

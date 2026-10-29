@@ -1,5 +1,5 @@
 // Mutações do estado. Toda escrita passa por aqui.
-import type { AppState, Goal, Habit, InboxItem, Milestone, Reminder, Settings, Snooze, Task } from './types';
+import type { ActionLog, ActiveFocus, AppState, DayPlan, Goal, Habit, InboxItem, JournalEntry, Milestone, Place, Reminder, Settings, Snooze, Task } from './types';
 import { setState, uid, getState } from './store';
 import { addDaysKey, dateKey, DAY, parseKey, relativeDay, startOfDay, todayKey } from './date';
 import { nextOccurrence } from './recurrence';
@@ -47,6 +47,7 @@ export function toggleTask(id: string, done?: boolean) {
       return;
     }
   }
+  if (d) logAction({ kind: 'task', refId: id, action: 'done', scheduledAt: task.due && task.time ? parseKey(task.due, task.time).getTime() : undefined, at: Date.now() });
   setState((s) => ({
     ...s,
     tasks: patchList(s.tasks, id, (t) => ({ ...t, done: d, doneAt: d ? nowIso() : undefined })),
@@ -83,6 +84,8 @@ export function updateReminder(id: string, patch: Partial<Reminder>) {
 
 /** Conclui um lembrete único, ou confirma a ocorrência atual de um recorrente. */
 export function completeReminder(id: string, occurrenceAt?: number) {
+  const r0 = getState().reminders.find((r) => r.id === id);
+  logAction({ kind: 'reminder', refId: id, action: 'done', scheduledAt: occurrenceAt ?? (r0 ? Date.parse(r0.at) : undefined), at: Date.now() });
   setState((s) => ({
     ...s,
     reminders: patchList(s.reminders, id, (r) =>
@@ -110,6 +113,8 @@ export function deleteReminder(id: string) {
 
 /** Adia um lembrete único para outro horário (move o próprio lembrete). */
 export function postponeReminder(id: string, at: number) {
+  const r0 = getState().reminders.find((r) => r.id === id);
+  if (r0) logAction({ kind: 'reminder', refId: id, action: 'snooze', scheduledAt: Date.parse(r0.at), at: Date.now() });
   updateReminder(id, { at: new Date(at).toISOString(), done: false });
 }
 
@@ -158,6 +163,18 @@ export function addGoal(
 }
 
 function finalizeGoal(g: Goal): Goal {
+  if (g.kind === 'numeric' && g.milestones.some((m) => m.value !== undefined)) {
+    const cur = g.current ?? g.startValue ?? 0;
+    const up = (g.target ?? 0) >= (g.startValue ?? 0);
+    g = {
+      ...g,
+      milestones: g.milestones.map((m) => {
+        if (m.value === undefined) return m;
+        const reached = up ? cur >= m.value : cur <= m.value;
+        return reached === m.done ? m : { ...m, done: reached, doneAt: reached ? nowIso() : undefined };
+      }),
+    };
+  }
   if (g.status === 'active' && goalProgress(g) >= 1) {
     setTimeout(
       () =>
@@ -262,6 +279,9 @@ export function toggleHabit(id: string, date = todayKey(), done?: boolean) {
     const want = done ?? !has;
     if (want === has) return s;
     const log = want ? [...habit.log, date] : habit.log.filter((d) => d !== date);
+    let history = s.history;
+    if (want && date === todayKey())
+      history = [...history, { kind: 'habit' as const, refId: id, action: 'done' as const, scheduledAt: parseKey(date, habit.time).getTime(), at: Date.now() }].slice(-HISTORY_MAX);
     let goals = s.goals;
     if (habit.goalId) {
       goals = patchList(goals, habit.goalId, (g) => {
@@ -270,7 +290,7 @@ export function toggleHabit(id: string, date = todayKey(), done?: boolean) {
         return finalizeGoal({ ...g, current: cur, log: [...g.log, { date: nowIso(), value: cur, note: habit.title }] });
       });
     }
-    return { ...s, goals, habits: patchList(s.habits, id, { log }) };
+    return { ...s, goals, history, habits: patchList(s.habits, id, { log }) };
   });
 }
 
@@ -332,4 +352,166 @@ export function moveTodayOpenToTomorrow() {
     .map((t) => t.id);
   rescheduleTasks(ids, addDaysKey(today, 1));
   toast({ title: `${ids.length} tarefa(s) movidas para amanhã`, icon: 'check' });
+}
+
+/* ---------------- Histórico (aprender horários) ---------------- */
+
+const HISTORY_MAX = 400;
+
+export function logAction(entry: ActionLog) {
+  setState((s) => ({ ...s, history: [...s.history, entry].slice(-HISTORY_MAX) }));
+}
+
+/** Muda só o horário (HH:MM) de um lembrete, mantendo a data/recorrência. */
+export function retimeReminder(id: string, time: string) {
+  const r = getState().reminders.find((x) => x.id === id);
+  if (!r) return;
+  const d = new Date(r.at);
+  const [h, m] = time.split(':').map(Number);
+  d.setHours(h, m, 0, 0);
+  updateReminder(id, { at: d.toISOString(), ackUntil: r.repeat !== 'none' ? new Date().toISOString() : r.ackUntil });
+}
+
+/* ---------------- Plano do dia ---------------- */
+
+export function saveDayPlan(plan: DayPlan) {
+  setState((s) => ({ ...s, dayPlans: pruneByDate({ ...s.dayPlans, [plan.date]: plan }, 14) }));
+}
+
+/** Aceita o plano: prioridades vão para o dia e as tarefas encaixadas recebem horário. */
+export function acceptDayPlan(plan: DayPlan) {
+  const st = getState();
+  const slotOf = new Map(plan.slots.map((x) => [x.taskId, x]));
+  const prio = new Set(plan.priorities);
+  setState((s) => ({
+    ...s,
+    tasks: s.tasks.map((t) => {
+      const slot = slotOf.get(t.id);
+      if (!slot && !prio.has(t.id)) return t;
+      return {
+        ...t,
+        due: plan.date,
+        ...(slot ? { time: slot.start, remind: t.remind ?? st.settings.defaultTaskRemind } : {}),
+        ...(prio.has(t.id) && t.priority < 3 ? { priority: 3 as const } : {}),
+      };
+    }),
+    dayPlans: pruneByDate({ ...s.dayPlans, [plan.date]: { ...plan, status: 'accepted' } }, 14),
+  }));
+}
+
+export function dismissDayPlan(plan: DayPlan) {
+  saveDayPlan({ ...plan, status: 'dismissed' });
+}
+
+function pruneByDate<T>(rec: Record<string, T>, keep: number): Record<string, T> {
+  const keys = Object.keys(rec).sort().slice(-keep);
+  return Object.fromEntries(keys.map((k) => [k, rec[k]]));
+}
+
+/* ---------------- Modo foco ---------------- */
+
+export function startFocus(f: { title: string; taskId?: string; goalId?: string; minutes: number }) {
+  const now = Date.now();
+  const focus: ActiveFocus = { ...f, start: now, until: now + f.minutes * 60_000 };
+  setState((s) => ({ ...s, focus }));
+}
+
+export function pauseFocus() {
+  setState((s) => (s.focus && s.focus.pausedLeft === undefined ? { ...s, focus: { ...s.focus, pausedLeft: Math.max(0, s.focus.until - Date.now()) } } : s));
+}
+
+export function resumeFocus() {
+  setState((s) => (s.focus && s.focus.pausedLeft !== undefined ? { ...s, focus: { ...s.focus, until: Date.now() + s.focus.pausedLeft, pausedLeft: undefined } } : s));
+}
+
+export function extendFocus(min: number) {
+  setState((s) =>
+    s.focus
+      ? {
+          ...s,
+          focus: {
+            ...s.focus,
+            minutes: s.focus.minutes + min,
+            ...(s.focus.pausedLeft !== undefined ? { pausedLeft: s.focus.pausedLeft + min * 60_000 } : { until: s.focus.until + min * 60_000 }),
+          },
+        }
+      : s,
+  );
+}
+
+/** metas medidas em tempo recebem os minutos focados */
+const TIME_UNIT = /^(h|hs|hr|hrs|hora|horas|min|mins|minuto|minutos)$/i;
+
+/** Encerra o foco. Retorna os minutos registrados. */
+export function finishFocus(): number {
+  const s0 = getState();
+  const f = s0.focus;
+  if (!f) return 0;
+  const now = Date.now();
+  const left = f.pausedLeft ?? Math.max(0, f.until - now);
+  const minutes = Math.max(0, Math.round((f.minutes * 60_000 - left) / 60_000));
+  const goalId = f.goalId ?? (f.taskId ? s0.tasks.find((t) => t.id === f.taskId)?.goalId : undefined);
+  setState((s) => ({
+    ...s,
+    focus: null,
+    focusSessions:
+      minutes > 0
+        ? [...s.focusSessions, { id: uid(), title: f.title, taskId: f.taskId, goalId, start: new Date(f.start).toISOString(), end: new Date(now).toISOString(), minutes }].slice(-500)
+        : s.focusSessions,
+  }));
+  if (goalId && minutes > 0) {
+    const g = getState().goals.find((x) => x.id === goalId);
+    if (g && g.kind === 'numeric' && g.status === 'active' && TIME_UNIT.test((g.unit ?? '').trim())) {
+      const hours = /^h/i.test(g.unit!.trim());
+      bumpGoal(goalId, hours ? +(minutes / 60).toFixed(2) : minutes);
+    }
+  }
+  return minutes;
+}
+
+/* ---------------- Diário ---------------- */
+
+export function saveJournal(date: string, e: Omit<JournalEntry, 'at'>) {
+  setState((s) => ({ ...s, journal: { ...s.journal, [date]: { ...e, at: nowIso() } } }));
+}
+
+/* ---------------- Lugares ---------------- */
+
+export function addPlace(p: Omit<Place, 'id'>): Place {
+  const place = { ...p, id: uid() };
+  setState((s) => ({ ...s, places: [...s.places, place] }));
+  return place;
+}
+
+export function deletePlace(id: string) {
+  setState((s) => ({
+    ...s,
+    places: s.places.filter((p) => p.id !== id),
+    reminders: s.reminders.filter((r) => r.place?.placeId !== id || r.done),
+  }));
+}
+
+/* ---------------- Metas: recálculo ---------------- */
+
+export function changeGoalDeadline(id: string, deadline: string) {
+  updateGoal(id, { deadline });
+  toast({ title: 'Prazo atualizado', body: relativeDay(deadline), icon: 'check' });
+}
+
+/** Quebra o que falta de uma meta numérica em etapas com valor e data. */
+export function splitGoalIntoSteps(id: string, steps: { value: number; due: string; title: string }[]) {
+  setState((s) => ({
+    ...s,
+    goals: patchList(s.goals, id, (g) =>
+      finalizeGoal({
+        ...g,
+        milestones: [...g.milestones.filter((m) => m.done || m.value === undefined), ...steps.map((x) => ({ id: uid(), title: x.title, done: false, due: x.due, value: x.value }))],
+      }),
+    ),
+  }));
+  toast({ title: `${steps.length} etapas criadas`, body: 'O Rudge marca cada uma sozinho quando você chegar lá.', icon: 'check' });
+}
+
+export function markRetroSeen(month: string) {
+  setState((s) => (s.seenRetro && s.seenRetro >= month ? s : { ...s, seenRetro: month }));
 }

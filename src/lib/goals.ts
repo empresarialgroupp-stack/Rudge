@@ -166,3 +166,64 @@ export function habitRate(h: Habit, days = 30, today = todayKey()): number {
 export function isHabitDueOn(h: Habit, key: string): boolean {
   return !h.archived && h.days.includes(new Date(key + 'T12:00').getDay());
 }
+
+export interface Recalc {
+  /** ritmo necessário agora (por dia / semana) para fechar no prazo */
+  perDayNow: number;
+  perWeekNow: number;
+  /** ritmo planejado no início */
+  perDayPlan: number;
+  /** ritmo real até aqui (por dia) */
+  perDayReal: number;
+  /** prazo que mantém o seu ritmo real (YYYY-MM-DD) */
+  newDeadline?: string;
+  /** etapas sugeridas até o prazo atual */
+  steps: { value: number; due: string; title: string }[];
+  message: string;
+}
+
+/** Para metas fora do ritmo: novo ritmo, novo prazo e etapas menores. */
+export function recalcGoal(g: Goal, today = todayKey()): Recalc | null {
+  if (g.status !== 'active' || !g.deadline) return null;
+  const pace = goalPace(g, today);
+  if (pace.status !== 'behind' && pace.status !== 'overdue') return null;
+  const unit = g.unit ? ` ${g.unit}` : '';
+  const elapsed = Math.max(1, diffDays(today, g.start));
+  const daysLeft = Math.max(1, diffDays(g.deadline, today));
+  const total = Math.max(1, diffDays(g.deadline, g.start));
+
+  if (g.kind === 'numeric' && g.target !== undefined) {
+    const start = g.startValue ?? 0;
+    const cur = g.current ?? start;
+    const remaining = g.target - cur;
+    const perDayNow = remaining / daysLeft;
+    const perDayPlan = (g.target - start) / total;
+    const perDayReal = (cur - start) / elapsed;
+    const newDeadline = perDayReal > 0 && Math.sign(perDayReal) === Math.sign(remaining) ? addDaysKey(today, Math.ceil(remaining / perDayReal)) : undefined;
+    const n = Math.max(2, Math.min(6, Math.round(daysLeft / 7) || 2));
+    const steps = Array.from({ length: n }, (_, i) => {
+      const value = +(cur + (remaining * (i + 1)) / n).toFixed(remaining / n >= 10 ? 0 : 1);
+      return { value, due: addDaysKey(today, Math.round((daysLeft * (i + 1)) / n)), title: `Chegar a ${fmtNum(value)}${unit}` };
+    });
+    const msg =
+      perDayPlan !== 0
+        ? `Agora são ${fmtNum(Math.abs(perDayNow))}${unit} por dia (o plano era ${fmtNum(Math.abs(perDayPlan))}${unit}).`
+        : `Faltam ${fmtNum(Math.abs(remaining))}${unit} em ${daysLeft} dias.`;
+    return { perDayNow, perWeekNow: perDayNow * 7, perDayPlan, perDayReal, newDeadline: newDeadline && newDeadline > g.deadline ? newDeadline : undefined, steps, message: msg };
+  }
+
+  // metas por etapas: prazo pelo ritmo real de etapas concluídas
+  const done = g.milestones.filter((m) => m.done).length;
+  const left = g.milestones.length - done;
+  const rate = done / elapsed;
+  const newDeadline = rate > 0 ? addDaysKey(today, Math.ceil(left / rate)) : addDaysKey(g.deadline, Math.max(7, Math.round(total * 0.25)));
+  return {
+    perDayNow: left / daysLeft,
+    perWeekNow: (left / daysLeft) * 7,
+    perDayPlan: g.milestones.length / total,
+    perDayReal: rate,
+    newDeadline: newDeadline > g.deadline ? newDeadline : undefined,
+    steps: [],
+    message: `Faltam ${left} ${left === 1 ? 'etapa' : 'etapas'} em ${daysLeft} dias — cerca de ${fmtNum((left / daysLeft) * 7)} por semana.`,
+  };
+}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, ArrowRight, CalendarCheck, CheckCircle2, ListTodo, Mic, Plus } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarCheck, CheckCircle2, ListTodo, Camera, Mic, Plus } from 'lucide-react';
 import type { AreaKey, Task } from '../lib/types';
 import { useStore } from '../lib/store';
 import { moveOverdueToToday, moveTodayOpenToTomorrow } from '../lib/actions';
@@ -92,6 +92,9 @@ export function Tasks() {
           placeholder={narrow ? 'Nova tarefa… “relatório sexta 14h”' : 'Nova tarefa… ex.: “Enviar relatório sexta 14h !!! #carreira”'}
           aria-label="Nova tarefa"
         />
+        <button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
+          <Camera />
+        </button>
         <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
           <Mic />
         </button>

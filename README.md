@@ -22,6 +22,22 @@ autenticação de servidor.
 - **Hábitos**: dias da semana, lembrete diário, sequência, recorde, consistência e mapa de calor.
 - **Lembretes**: "me lembre de pagar o boleto amanhã às 10h", recorrências (diário, dias úteis,
   semanal, mensal, anual), adiar e concluir.
+- **Plano do dia automático**: 3 prioridades (metas atrasadas, tarefas vencidas, alta prioridade)
+  e tarefas encaixadas nos horários livres entre lembretes e compromissos; aviso da manhã com
+  botão "Aceitar plano" (funciona com o app fechado). `src/lib/planner.ts`
+- **Horários aprendidos**: registra quando você conclui/adia; sugere mudar lembretes recorrentes e
+  hábitos para o horário real. `src/lib/insights.ts`
+- **Modo foco**: cronômetro em tela cheia, avisos em silêncio (guardados na central; pushes chegam
+  sem som), sessões somadas às metas (metas em horas/min recebem os minutos). `src/lib/focus.ts`
+- **Metas que se recalculam**: novo ritmo, novo prazo pelo ritmo real e "quebrar em etapas" com
+  valor (marcadas sozinhas ao atingir). `recalcGoal` em `src/lib/goals.ts`
+- **Diário de 1 minuto** (`#/diario`): o que deu certo, o que travou, nota 1–5; gráfico e hábitos
+  que combinam com os melhores dias.
+- **Captura por foto**: OCR no próprio aparelho (Tesseract, arquivos em `/ocr`, sem CDN);
+  boletos pela linha digitável (valor e vencimento, dígitos conferidos). `src/lib/scan.ts`
+- **Lembrete por lugar**: lugares salvos em Configurações; "quando sair do trabalho". Funciona com
+  o app aberto ou ao abrir (navegadores não acompanham a localização com o app fechado). `src/lib/geo.ts`
+- **Retrospectiva do mês**: telas animadas no dia 1, imagem para compartilhar. `src/lib/retro.ts`
 - **Agenda** mensal, **Revisão semanal** guiada, paleta de comandos (`Ctrl/⌘ K`), atalho `N`
   para adicionar, backup/importação em JSON.
 

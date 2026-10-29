@@ -1,4 +1,4 @@
-import { AlarmClock, Bell, CalendarDays, Clock, ListChecks, Pencil, Repeat, Target, Trash2 } from 'lucide-react';
+import { AlarmClock, Bell, CalendarDays, Clock, ListChecks, Pencil, Repeat, Target, Timer, Trash2 } from 'lucide-react';
 import type { Task } from '../lib/types';
 import { deleteTask, toggleTask } from '../lib/actions';
 import { openModal } from '../lib/ui';
@@ -61,6 +61,11 @@ export function TaskRow({ task, showDate = true }: { task: Task; showDate?: bool
         </div>
       </div>
       <div className="item-actions hide-mobile">
+        {!task.done && (
+          <button className="icon-btn sm" onClick={() => openModal({ type: 'focus', taskId: task.id })} aria-label="Focar nesta tarefa" title="Modo foco">
+            <Timer />
+          </button>
+        )}
         <button className="icon-btn sm" onClick={open} aria-label="Editar">
           <Pencil />
         </button>

@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
-import { Bell, CloudCheck, Database, Download, LogOut, Palette, Upload, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, CloudCheck, Database, Download, LocateFixed, LogOut, MapPin, Palette, Trash2, Upload, User } from 'lucide-react';
 import { exportState, replaceState, resetState, useStore } from '../lib/store';
-import { updateSettings } from '../lib/actions';
+import { addPlace, deletePlace, updateSettings } from '../lib/actions';
+import { currentPosition, geoSupported } from '../lib/geo';
 import { logout, useSession } from '../lib/auth';
 import { permission } from '../lib/notify';
 import { testNotification } from '../lib/scheduler';
-import { toast } from '../lib/ui';
+import { toast, useRoute } from '../lib/ui';
 import { WEEKDAYS } from '../lib/date';
 import { cx, Field, Switch } from '../components/ui';
 import { setTheme } from '../components/ThemeToggle';
@@ -92,6 +93,8 @@ export function SettingsPage() {
             </button>
           </div>
         </section>
+
+        <PlacesCard />
 
         <section className="card glass">
           <div className="card-head">
@@ -224,8 +227,23 @@ export function SettingsPage() {
           </div>
           <div className="setting">
             <div className="s-text">
+              <b>Plano do dia automático</b>
+              <span>O Rudge escolhe 3 prioridades e encaixa as tarefas nos horários livres entre {st.plan.start} e {st.plan.end}.</span>
+            </div>
+            <Switch on={st.plan.enabled} onChange={(v) => updateSettings({ plan: { ...st.plan, enabled: v } })} />
+          </div>
+          {st.plan.enabled && (
+            <div className="row" style={{ paddingBottom: 12, gap: 8 }}>
+              <span className="muted" style={{ fontSize: 13 }}>Janela de trabalho</span>
+              <input className="input" type="time" style={{ width: 120 }} value={st.plan.start} onChange={(e) => updateSettings({ plan: { ...st.plan, start: e.target.value } })} />
+              <span className="muted">até</span>
+              <input className="input" type="time" style={{ width: 120 }} value={st.plan.end} onChange={(e) => updateSettings({ plan: { ...st.plan, end: e.target.value } })} />
+            </div>
+          )}
+          <div className="setting">
+            <div className="s-text">
               <b>Fechamento do dia</b>
-              <span>Revisar pendências e planejar amanhã.</span>
+              <span>Diário de 1 minuto e planejar amanhã.</span>
             </div>
             <input className="input" type="time" value={st.review.time} onChange={(e) => updateSettings({ review: { ...st.review, time: e.target.value } })} disabled={!st.review.enabled} />
             <Switch on={st.review.enabled} onChange={(v) => updateSettings({ review: { ...st.review, enabled: v } })} />
@@ -363,5 +381,76 @@ function PushRow({ perm }: { perm: string }) {
         </div>
       )}
     </>
+  );
+}
+
+function PlacesCard() {
+  const s = useStore();
+  const route = useRoute();
+  const [name, setName] = useState('');
+  const [radius, setRadius] = useState(200);
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (route.params.get('lugares')) setTimeout(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+  }, [route.params]);
+
+  async function save() {
+    if (!name.trim()) return;
+    if (!geoSupported()) return toast({ title: 'Este aparelho não informa a localização', icon: 'error' });
+    setBusy(true);
+    try {
+      const pos = await currentPosition();
+      addPlace({ name: name.trim(), lat: pos.lat, lng: pos.lng, radius });
+      toast({ title: `Lugar “${name.trim()}” salvo`, body: `Precisão de ~${Math.round(pos.acc)} m. Ex.: “me lembra de comprar pão quando sair do ${name.trim().toLowerCase()}”.`, icon: 'check', duration: 8000 });
+      setName('');
+    } catch {
+      toast({ title: 'Não consegui pegar sua localização', body: 'Permita o acesso à localização para o Rudge e tente de novo.', icon: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card glass" ref={ref}>
+      <div className="card-head">
+        <h2 className="card-title">
+          <MapPin /> Lugares
+        </h2>
+      </div>
+      <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+        Para lembretes como “quando sair do trabalho” ou “quando chegar em casa”. Vá até o lugar e salve sua posição atual.
+        O aviso funciona com o Rudge aberto ou ao abrir o app — o iPhone não deixa sites acompanharem a localização com o app fechado.
+      </p>
+      {s.places.map((p) => {
+        const n = s.reminders.filter((r) => !r.done && r.place?.placeId === p.id).length;
+        return (
+          <div className="setting" key={p.id}>
+            <div className="s-text">
+              <b>{p.name}</b>
+              <span>
+                raio de {p.radius} m{n ? ` · ${n} ${n === 1 ? 'lembrete' : 'lembretes'}` : ''}
+              </span>
+            </div>
+            <button className="icon-btn sm" aria-label={`Excluir ${p.name}`} onClick={() => deletePlace(p.id)}>
+              <Trash2 />
+            </button>
+          </div>
+        );
+      })}
+      <div className="row wrap" style={{ gap: 8, marginTop: 8 }}>
+        <input className="input" style={{ flex: '1 1 160px' }} placeholder="Nome: Casa, Trabalho, Academia…" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && void save()} />
+        <select className="select" style={{ width: 120 }} value={radius} onChange={(e) => setRadius(Number(e.target.value))}>
+          {[100, 200, 400, 800].map((r) => (
+            <option key={r} value={r}>
+              {r} m
+            </option>
+          ))}
+        </select>
+        <button className="btn btn-primary" disabled={!name.trim() || busy} onClick={() => void save()}>
+          <LocateFixed /> {busy ? 'Localizando…' : 'Salvar aqui'}
+        </button>
+      </div>
+    </section>
   );
 }

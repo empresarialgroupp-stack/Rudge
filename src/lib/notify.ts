@@ -20,6 +20,7 @@ export async function requestPermission(): Promise<PermissionState> {
 }
 
 export interface SystemNotif {
+  silent?: boolean;
   title: string;
   body: string;
   tag: string;
@@ -53,10 +54,11 @@ export async function showSystem(n: SystemNotif): Promise<boolean> {
     icon: asset('icons/icon-192.png'),
     badge: asset('icons/badge-96.png'),
     actions: n.actions ?? [],
-    renotify: true,
+    renotify: !n.silent,
+    silent: !!n.silent,
     requireInteraction: n.requireInteraction ?? false,
     timestamp: n.timestamp ?? Date.now(),
-    vibrate: [120, 60, 120],
+    ...(n.silent ? {} : { vibrate: [120, 60, 120] }),
   } as NotificationOptions;
   const reg = await getRegistration();
   try {

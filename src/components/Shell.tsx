@@ -9,6 +9,7 @@ import {
   House,
   ListTodo,
   LogOut,
+  NotebookPen,
   Menu,
   Mic,
   Plus,
@@ -28,6 +29,7 @@ import { BrandMark, cx, Modal } from './ui';
 import { displayName } from '../lib/summary';
 import { ThemeSwitch, ThemeToggle } from './ThemeToggle';
 import { LiquidTabBar } from './LiquidTabBar';
+import { FocusPill } from './FocusMode';
 import { NotificationCenter } from './NotificationCenter';
 
 interface NavDef {
@@ -44,6 +46,7 @@ export const NAV: NavDef[] = [
   { name: 'lembretes', label: 'Lembretes', icon: AlarmClock },
   { name: 'agenda', label: 'Agenda', icon: CalendarDays },
   { name: 'revisao', label: 'Revisão semanal', icon: ClipboardCheck },
+  { name: 'diario', label: 'Diário', icon: NotebookPen },
 ];
 
 export const PAGE_META: Record<RouteName, { title: string; sub?: string }> = {
@@ -54,6 +57,7 @@ export const PAGE_META: Record<RouteName, { title: string; sub?: string }> = {
   lembretes: { title: 'Lembretes', sub: 'Peça e o Rudge lembra você na hora certa.' },
   agenda: { title: 'Agenda', sub: 'Tarefas, lembretes e prazos no calendário.' },
   revisao: { title: 'Revisão semanal', sub: 'Feche a semana e planeje a próxima em 5 minutos.' },
+  diario: { title: 'Diário', sub: 'Um minuto por noite: o que deu certo, o que travou e a nota do dia.' },
   instalar: { title: 'Instalar o Rudge', sub: 'Use como aplicativo no computador e no celular.' },
   configuracoes: { title: 'Configurações', sub: 'Aparência, notificações, dados e conta.' },
 };
@@ -65,7 +69,7 @@ function useBadges() {
     const tasks = s.tasks.filter((t) => !t.done && t.due && t.due <= today).length;
     const now = Date.now();
     const reminders = s.reminders
-      .filter((r) => !r.done)
+      .filter((r) => !r.done && !r.place)
       .reduce((n, r) => n + occurrencesBetween({ at: Date.parse(r.at), repeat: r.repeat, days: r.days }, now, now + 86_400_000).length, 0);
     const habits = s.habits.filter((h) => isHabitDueOn(h, today) && !h.log.includes(today)).length;
     return { tarefas: tasks, lembretes: reminders, habitos: habits } as Partial<Record<RouteName, number>>;
@@ -83,6 +87,7 @@ const GROUPS: { name: RouteName; label: string }[][] = [
     { name: 'inicio', label: 'Visão geral' },
     { name: 'agenda', label: 'Agenda' },
     { name: 'revisao', label: 'Revisão' },
+    { name: 'diario', label: 'Diário' },
   ],
   [
     { name: 'tarefas', label: 'Tarefas' },
@@ -104,7 +109,7 @@ function PillTabs({ route, onGo, id }: { route: RouteName; onGo: (r: RouteName) 
   return <LiquidTabBar key={group[0].name} id={id} label="Páginas desta seção" labels="always" tabs={tabs} value={route} onValueChange={(v) => onGo(v as RouteName)} />;
 }
 
-const MORE: RouteName[] = ['habitos', 'lembretes', 'agenda', 'revisao', 'instalar', 'configuracoes'];
+const MORE: RouteName[] = ['habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'instalar', 'configuracoes'];
 
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
@@ -291,6 +296,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </Modal>
       )}
 
+      <FocusPill />
       {bellOpen && <NotificationCenter onClose={() => setBellOpen(false)} />}
     </div>
   );

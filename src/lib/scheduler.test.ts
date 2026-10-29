@@ -17,6 +17,11 @@ function state(patch: Partial<AppState> = {}): AppState {
     snoozes: [],
     inbox: [],
     dismissedSuggestions: {},
+    dayPlans: {},
+    focusSessions: [],
+    journal: {},
+    places: [],
+    history: [],
     settings: { ...defaultSettings, briefing: { enabled: false, time: '08:00' }, review: { enabled: false, time: '21:00' }, weekly: { enabled: false, weekday: 0, time: '18:00' } },
     ...patch,
   };

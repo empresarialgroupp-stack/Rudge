@@ -13,6 +13,10 @@ import {
   Sparkles,
   Trash2,
   X,
+  RefreshCw,
+  CalendarClock,
+  ListOrdered,
+  Timer,
 } from 'lucide-react';
 import type { AreaKey, CheckinFreq, Goal, Milestone } from '../lib/types';
 import { useStore, uid } from '../lib/store';
@@ -26,10 +30,12 @@ import {
   setMilestones,
   toggleMilestone,
   updateGoal,
+  changeGoalDeadline,
+  splitGoalIntoSteps,
 } from '../lib/actions';
 import { closeModal, openModal, toast } from '../lib/ui';
 import { addDays, addDaysKey, dateKey, diffDays, formatWhen, parseKey, shortDate, todayKey, WEEKDAYS } from '../lib/date';
-import { AREA_LABEL, AREAS, fmtNum, goalPace, goalProgress, habitStreak } from '../lib/goals';
+import { AREA_LABEL, AREAS, fmtNum, goalPace, goalProgress, habitStreak, recalcGoal } from '../lib/goals';
 import { TEMPLATES, templateById, type GoalTemplate } from '../lib/templates';
 import { AreaIcon, cx, DayPicker, Field, Modal, ProgressBar, ProgressRing, Segmented, Switch } from './ui';
 
@@ -495,6 +501,8 @@ export function GoalDetail({ id }: { id: string }) {
 
   if (!goal) return null;
   const pace = goalPace(goal);
+  const recalc = recalcGoal(goal);
+  const focusMin = s.focusSessions.filter((f) => f.goalId === goal.id).reduce((n, f) => n + f.minutes, 0);
   const progress = goalProgress(goal);
   const unit = goal.unit ?? '';
   const step = goal.target !== undefined && Math.abs(goal.target - (goal.startValue ?? 0)) >= 50 ? 10 : 1;
@@ -575,6 +583,45 @@ export function GoalDetail({ id }: { id: string }) {
         </div>
 
         {goal.status !== 'done' && <div className="g-advice">{pace.advice}</div>}
+
+        {recalc && (
+          <div className="recalc glass flat">
+            <div className="recalc-head">
+              <RefreshCw /> <b>Ritmo recalculado</b>
+            </div>
+            <p>{recalc.message}</p>
+            <div className="row wrap" style={{ gap: 8 }}>
+              {recalc.newDeadline && (
+                <button className="btn btn-sm btn-primary" onClick={() => changeGoalDeadline(goal.id, recalc.newDeadline!)}>
+                  <CalendarClock /> Mudar prazo para {shortDate(recalc.newDeadline)}
+                </button>
+              )}
+              {recalc.steps.length > 0 && (
+                <button className="btn btn-sm btn-glass" onClick={() => splitGoalIntoSteps(goal.id, recalc.steps)}>
+                  <ListOrdered /> Quebrar em {recalc.steps.length} etapas
+                </button>
+              )}
+            </div>
+            {recalc.steps.length > 0 && (
+              <div className="recalc-steps">
+                {recalc.steps.map((x) => (
+                  <span key={x.due + x.value} className="chip outline">
+                    {x.title} · {shortDate(x.due)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {focusMin > 0 && (
+          <div className="callout">
+            <Timer />
+            <span>
+              <b>{focusMin >= 60 ? `${fmtNum(focusMin / 60)} h` : `${focusMin} min`}</b> de foco dedicados a esta meta.
+            </span>
+          </div>
+        )}
 
         {goal.kind === 'numeric' && (
           <div className="glass flat" style={{ padding: 16, borderRadius: 16 }}>

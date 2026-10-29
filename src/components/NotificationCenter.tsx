@@ -10,6 +10,9 @@ import {
   Trash2,
   Moon,
   Bell,
+  Timer,
+  MapPin,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import type { NotifKind } from '../lib/types';
@@ -30,6 +33,9 @@ export const KIND_ICON: Record<NotifKind, LucideIcon> = {
   review: Moon,
   weekly: ClipboardCheck,
   snooze: AlarmClock,
+  focus: Timer,
+  place: MapPin,
+  retro: Sparkles,
   test: Bell,
 };
 
