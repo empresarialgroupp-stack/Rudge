@@ -4,10 +4,12 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { supabase } from './supabase';
 import { getSession } from './auth';
 
-export type PlanId = 'music' | 'app' | 'combo' | 'free' | string;
+export type PlanId = 'music_essencial' | 'music_plus' | 'music_max' | 'rudge_app' | 'combo' | string;
 
 export interface Access {
   plan: PlanId | null;
+  /** nome do plano para exibir (vem do servidor) */
+  planName?: string;
   /** libera o Rudge Music */
   music: boolean;
   /** libera o Rudge app (este organizador) */
@@ -47,6 +49,7 @@ export function parseAccess(raw: unknown): Access | null {
   if (typeof r.app !== 'boolean' && typeof r.music !== 'boolean') return null;
   return {
     plan: typeof r.plan === 'string' ? r.plan : null,
+    planName: typeof r.plan_name === 'string' ? r.plan_name : undefined,
     music: r.music === true,
     app: r.app === true,
     storageGb: typeof r.storage_gb === 'number' ? r.storage_gb : undefined,
@@ -101,11 +104,16 @@ export function appBlocked(s: AccessState): boolean {
 }
 
 export const PLAN_LABEL: Record<string, string> = {
-  music: 'Rudge Music',
-  app: 'Rudge app',
+  music_essencial: 'Rudge Music Essencial',
+  music_plus: 'Rudge Music Plus',
+  music_max: 'Rudge Music Max',
+  rudge_app: 'Rudge app',
   combo: 'Pacote Rudge (app + Music)',
-  free: 'Gratuito',
 };
+
+export function planLabel(a: Access): string | null {
+  return a.planName || (a.plan ? (PLAN_LABEL[a.plan] ?? a.plan) : null);
+}
 
 /* ---------------- integrações ---------------- */
 

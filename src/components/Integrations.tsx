@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { ExternalLink, Lock, LogOut, Music2, Plug, Sparkles } from 'lucide-react';
-import { loadIntegrations, PLAN_LABEL, setIntegration, useAccess, type Integration } from '../lib/access';
+import { loadIntegrations, planLabel, setIntegration, useAccess, type Integration } from '../lib/access';
 import { logout, useSession } from '../lib/auth';
 import { RUDGE_MUSIC_URL } from '../lib/supabase';
 import { toast } from '../lib/ui';
@@ -59,7 +59,7 @@ export function IntegrationsCard() {
   }, []);
 
   const hasMusic = access.status === 'ready' && access.access.music;
-  const plan = access.status === 'ready' ? access.access.plan : null;
+  const plan = access.status === 'ready' ? planLabel(access.access) : null;
 
   async function update(next: MusicLink) {
     const prev = link;
@@ -95,9 +95,7 @@ export function IntegrationsCard() {
           <span>
             {access.status === 'loading'
               ? 'Consultando…'
-              : plan
-                ? (PLAN_LABEL[plan] ?? plan)
-                : 'Ainda não definido'}
+              : (plan ?? 'Ainda não definido')}
           </span>
         </div>
       </div>
