@@ -6,9 +6,17 @@ PWA instalável no computador (Chrome/Edge/Safari) e no celular (Android/iPhone)
 
 ## Acesso
 
-Login com e-mail e senha. A senha é verificada por hash SHA-256 (`src/lib/auth.ts`); qualquer
-e-mail válido é aceito. É uma trava de acesso pessoal no próprio dispositivo — não substitui
-autenticação de servidor.
+Conta Rudge: a mesma do Rudge Music (Supabase Auth do projeto `rudge`). Login por e-mail com código
+de 6 dígitos; só contas existentes entram (a conta nasce por convite). `src/lib/auth.ts`
+
+- Depois do login o servidor de avisos emite um **token deste aparelho** (`/device`), usado pelo app e
+  pelo service worker com o app fechado. Só o hash fica no banco (`rudge.device_tokens`).
+- No primeiro login de quem usava a senha antiga, os avisos do dono antigo (`owner`) passam para a
+  conta e a senha antiga deixa de valer (`rudge.legacy_claim`).
+- **Plano**: o app consulta `public.my_access()` e só bloqueia quando o plano não inclui o Rudge app
+  (sem resposta do servidor, segue liberado). `src/lib/access.ts`
+- **Integrações** (Configurações → Conta e integrações): conectar o Rudge Music (`public.integrations`)
+  e atalho para ele no modo foco. Os dois continuam apps separados.
 
 ## O que o Rudge faz
 

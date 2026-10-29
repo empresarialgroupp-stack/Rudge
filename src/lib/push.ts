@@ -84,7 +84,7 @@ function sameKey(a: ArrayBuffer | null | undefined, b: Uint8Array): boolean {
 }
 
 /** Configuração que o service worker usa para falar com o servidor com o app fechado. */
-async function saveServiceWorkerConfig() {
+export async function saveServiceWorkerConfig() {
   const token = getSession()?.token;
   if (token) await idbSet('push-config', { api: PUSH_API, token, deviceId: deviceId() });
 }

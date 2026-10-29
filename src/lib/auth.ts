@@ -1,22 +1,26 @@
-// Acesso pessoal: e-mail + senha verificada por hash SHA-256 (a senha não fica em texto no código).
+// Conta Rudge: login por e-mail com código de 6 dígitos (Supabase Auth), a mesma conta do
+// Rudge Music. Depois de entrar, o servidor de avisos emite um token deste aparelho, que o
+// service worker usa com o app fechado (o JWT da conta vence em 1 hora).
 import { useSyncExternalStore } from 'react';
+import { supabase } from './supabase';
+import { deviceId, PUSH_API, saveServiceWorkerConfig } from './push';
 
-const PASSWORD_SHA256 = 'ce7f3cefbd0d0486754e834ec116b6376cd0d6a3c19f669a6a494690a2e36db0';
-const SESSION_KEY = 'rudge:session';
-const SESSION_DAYS = 30;
+const SESSION_KEY = 'rudge:account';
+/** sessão da época da senha única; o token dela migra os avisos para a conta no 1º login */
+const LEGACY_KEY = 'rudge:session';
 
 export interface Session {
   email: string;
+  userId: string;
   at: number;
-  /** token do servidor de notificações (derivado da senha; a senha não é guardada) */
+  /** token deste aparelho no servidor de avisos (só o hash fica no servidor) */
   token: string;
 }
 
 function readSession(): Session | null {
   try {
     const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') as Session | null;
-    // sessões antigas (sem token do servidor) pedem um novo login
-    if (s && s.token && Date.now() - s.at < SESSION_DAYS * 86_400_000) return s;
+    if (s && s.token && s.userId) return s;
   } catch {
     /* ignora */
   }
@@ -25,6 +29,13 @@ function readSession(): Session | null {
 
 let session: Session | null = typeof window !== 'undefined' ? readSession() : null;
 const listeners = new Set<() => void>();
+
+function setSession(next: Session | null) {
+  session = next;
+  if (next) localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+  else localStorage.removeItem(SESSION_KEY);
+  listeners.forEach((l) => l());
+}
 
 export function useSession(): Session | null {
   return useSyncExternalStore(
@@ -40,32 +51,74 @@ export function getSession() {
   return session;
 }
 
-async function sha256(text: string): Promise<string> {
-  const data = new TextEncoder().encode(text);
-  if (globalThis.crypto?.subtle) {
-    const buf = await crypto.subtle.digest('SHA-256', data);
-    return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-  }
-  return sha256Fallback(data);
-}
-
 export function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
 }
 
-export async function login(email: string, password: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (!isValidEmail(email)) return { ok: false, error: 'Digite um e-mail válido.' };
-  if ((await sha256(password)) !== PASSWORD_SHA256) return { ok: false, error: 'Senha incorreta.' };
-  session = { email: email.trim().toLowerCase(), at: Date.now(), token: await sha256(`rudge-sync:${password}`) };
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  listeners.forEach((l) => l());
-  return { ok: true };
+type Result = { ok: true } | { ok: false; error: string };
+
+function authError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes('signups not allowed') || m.includes('user not found')) {
+    return 'Este e-mail ainda não tem conta Rudge. Peça um convite para criar a sua.';
+  }
+  if (m.includes('expired') || m.includes('invalid')) return 'Código inválido ou vencido. Peça um novo.';
+  if (m.includes('rate') || m.includes('seconds')) return 'Aguarde alguns segundos antes de pedir outro código.';
+  return 'Não foi possível entrar agora. Confira a conexão e tente de novo.';
 }
 
-export function logout() {
-  session = null;
-  localStorage.removeItem(SESSION_KEY);
-  listeners.forEach((l) => l());
+/** Envia o código de 6 dígitos para o e-mail. Só contas existentes (criadas por convite). */
+export async function sendCode(email: string): Promise<Result> {
+  if (!isValidEmail(email)) return { ok: false, error: 'Digite um e-mail válido.' };
+  const { error } = await supabase.auth.signInWithOtp({
+    email: email.trim().toLowerCase(),
+    options: { shouldCreateUser: false },
+  });
+  return error ? { ok: false, error: authError(error.message) } : { ok: true };
+}
+
+/** Confere o código e registra este aparelho no servidor de avisos. */
+export async function verifyCode(email: string, code: string): Promise<Result & { migrated?: boolean }> {
+  const token = code.replace(/\D/g, '');
+  if (token.length < 6) return { ok: false, error: 'Digite o código de 6 dígitos.' };
+  const { data, error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token, type: 'email' });
+  if (error || !data.session || !data.user) return { ok: false, error: authError(error?.message ?? 'invalid') };
+
+  let legacyToken: string | undefined;
+  try {
+    legacyToken = (JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null') as { token?: string } | null)?.token;
+  } catch {
+    /* ignora */
+  }
+  try {
+    const res = await fetch(`${PUSH_API}/device`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session.access_token}` },
+      body: JSON.stringify({ deviceId: deviceId(), legacyToken }),
+    });
+    if (!res.ok) throw new Error(String(res.status));
+    const r = (await res.json()) as { token: string; migrated?: boolean };
+    localStorage.removeItem(LEGACY_KEY);
+    setSession({ email: data.user.email ?? email.trim().toLowerCase(), userId: data.user.id, at: Date.now(), token: r.token });
+    void saveServiceWorkerConfig();
+    return { ok: true, migrated: !!r.migrated };
+  } catch {
+    await supabase.auth.signOut({ scope: 'local' });
+    return { ok: false, error: 'Conta confirmada, mas o servidor do Rudge não respondeu. Tente de novo.' };
+  }
+}
+
+export async function logout() {
+  const s = session;
+  setSession(null);
+  if (s) {
+    fetch(`${PUSH_API}/signout`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-rudge-token': s.token },
+      body: JSON.stringify({ deviceId: deviceId() }),
+    }).catch(() => {});
+  }
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
 }
 
 // SHA-256 em JS puro para contextos sem crypto.subtle (ex.: http fora do localhost)
