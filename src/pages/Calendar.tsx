@@ -6,7 +6,7 @@ import { addDays, dateKey, longDate, MONTHS, parseKey, timeOf, todayKey, WEEKDAY
 import { occurrencesBetween } from '../lib/recurrence';
 import { isHabitDueOn } from '../lib/goals';
 import { toggleHabit } from '../lib/actions';
-import { Checkbox, cx, Empty } from '../components/ui';
+import { Checkbox, cx, Empty, StatCard, StatRow } from '../components/ui';
 import { TaskRow, sortTasks } from '../components/TaskRow';
 
 export function CalendarPage() {
@@ -47,7 +47,30 @@ export function CalendarPage() {
   const selHabits = s.habits.filter((h) => isHabitDueOn(h, sel));
   const selDate = parseKey(sel);
 
+  const monthKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+  const month = Object.entries(index).filter(([k]) => k.startsWith(monthKey));
+  const mTasks = month.reduce((n, [, v]) => n + v.tasks, 0);
+  const mRems = month.reduce((n, [, v]) => n + v.rems.length, 0);
+  const mGoals = month.reduce((n, [, v]) => n + v.goals.length, 0);
+  const busiest = month.reduce<[string, number] | null>((b, [k, v]) => {
+    const n = v.tasks + v.rems.length + v.goals.length;
+    return !b || n > b[1] ? [k, n] : b;
+  }, null);
+
   return (
+    <>
+    <StatRow>
+      <StatCard icon={ListTodo} label="Tarefas no mês" value={mTasks} hint={MONTHS[cursor.getMonth()]} />
+      <StatCard icon={AlarmClock} label="Lembretes" value={mRems} hint="programados" />
+      <StatCard icon={Target} label="Prazos e etapas" value={mGoals} hint="de metas" />
+      <StatCard
+        icon={CalendarDays}
+        label="Dia mais cheio"
+        value={busiest ? Number(busiest[0].slice(8)) : 0}
+        hint={busiest ? `${busiest[1]} ${busiest[1] === 1 ? 'item' : 'itens'}` : 'mês livre'}
+        onClick={busiest ? () => setSel(busiest[0]) : undefined}
+      />
+    </StatRow>
     <div className="cal-layout">
       <section className="cal glass">
         <div className="cal-head">
@@ -208,5 +231,6 @@ export function CalendarPage() {
         )}
       </section>
     </div>
+    </>
   );
 }

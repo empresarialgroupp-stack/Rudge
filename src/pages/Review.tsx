@@ -1,16 +1,20 @@
 import { useMemo, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Flame, ListTodo, Target, Trash2 } from 'lucide-react';
+import { Activity, ArrowLeft, ArrowRight, Check, CheckCircle2, Flame, ListTodo, Target, Trash2 } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { addTask, deleteTask, finishWeeklyReview, rescheduleTasks, toggleTask, bumpGoal } from '../lib/actions';
 import { navigate, openModal, toast } from '../lib/ui';
 import { addDays, addDaysKey, dateKey, relativeDay, todayKey } from '../lib/date';
 import { fmtNum, goalPace, isHabitDueOn } from '../lib/goals';
-import { AreaIcon, cx, Empty, ProgressBar } from '../components/ui';
+import { AreaIcon, cx, Empty, ProgressBar, Segmented, StatCard, StatRow } from '../components/ui';
+import { LineChart } from '../components/charts';
+import { dailyBreakdown } from '../lib/stats';
 
 export function Review() {
   const s = useStore();
   const [step, setStep] = useState(0);
   const [prios, setPrios] = useState(['', '', '']);
+  const [range, setRange] = useState<14 | 30 | 90>(30);
+  const series = useMemo(() => dailyBreakdown(s, range), [s, range]);
   const today = todayKey();
   const weekAgo = addDaysKey(today, -6);
   const nextMonday = dateKey(addDays(new Date(), ((8 - new Date().getDay()) % 7) || 7));
@@ -44,7 +48,7 @@ export function Review() {
   }
 
   return (
-    <div style={{ maxWidth: 820 }}>
+    <div style={{ maxWidth: 980 }}>
       <div className="steps">
         {steps.map((_, i) => (
           <i key={i} className={i <= step ? 'on' : ''} />
@@ -59,35 +63,47 @@ export function Review() {
 
       {step === 0 && (
         <div className="stack">
-          <div className="kpis" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-            <div className="kpi glass">
-              <div className="kpi-body">
-                <div className="kpi-label">
-                  <CheckCircle2 /> Tarefas concluídas
-                </div>
-                <div className="kpi-value">{stats.doneTasks}</div>
-                <div className="kpi-hint">nos últimos 7 dias</div>
+          <StatRow cols={3}>
+            <StatCard icon={CheckCircle2} label="Tarefas concluídas" value={stats.doneTasks} hint="últimos 7 dias" />
+            <StatCard icon={Flame} label="Hábitos" value={stats.habitRate * 100} suffix="%" hint={`${stats.habitDone} check-ins`} />
+            <StatCard icon={Target} label="Registros em metas" value={stats.goalLogs} hint="atualizações" />
+          </StatRow>
+          <section className="card glass">
+            <div className="card-head">
+              <h2 className="card-title">
+                <Activity /> Seu ritmo
+              </h2>
+              <div className="legend-inline">
+                <span>
+                  <i className="dot solid" /> Tarefas
+                </span>
+                <span>
+                  <i className="dot soft" /> Hábitos
+                </span>
+                <span>
+                  <i className="dot dim" /> Lembretes
+                </span>
               </div>
+              <Segmented
+                value={range}
+                onChange={setRange}
+                options={[
+                  { value: 14, label: '14 d' },
+                  { value: 30, label: '30 d' },
+                  { value: 90, label: '90 d' },
+                ]}
+              />
             </div>
-            <div className="kpi glass">
-              <div className="kpi-body">
-                <div className="kpi-label">
-                  <Flame /> Hábitos
-                </div>
-                <div className="kpi-value">{Math.round(stats.habitRate * 100)}%</div>
-                <div className="kpi-hint">{stats.habitDone} check-ins</div>
-              </div>
-            </div>
-            <div className="kpi glass">
-              <div className="kpi-body">
-                <div className="kpi-label">
-                  <Target /> Registros em metas
-                </div>
-                <div className="kpi-value">{stats.goalLogs}</div>
-                <div className="kpi-hint">atualizações de progresso</div>
-              </div>
-            </div>
-          </div>
+            <LineChart
+              key={range}
+              labels={series.labels}
+              series={[
+                { name: 'Tarefas', values: series.tasks, tone: 'solid' },
+                { name: 'Hábitos', values: series.habits, tone: 'soft' },
+                { name: 'Lembretes', values: series.reminders, tone: 'dim' },
+              ]}
+            />
+          </section>
           <div className="callout">
             <Check />
             <span>

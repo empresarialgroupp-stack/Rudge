@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { CountUp } from './charts';
 import {
   Briefcase,
   Check,
@@ -304,6 +305,77 @@ export function DayPicker({ value, onChange }: { value: number[]; onChange: (v: 
           aria-label={['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][d]}
         >
           {labels[d]}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Cartão de número (estilo painel): ícone em círculo, rótulo, valor animado e selo. */
+export function StatCard({
+  icon: I,
+  label,
+  value,
+  suffix,
+  decimals,
+  hint,
+  tone,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  suffix?: ReactNode;
+  decimals?: number;
+  hint?: ReactNode;
+  tone?: 'warn';
+  onClick?: () => void;
+}) {
+  const Tag = onClick ? 'button' : 'div';
+  return (
+    <Tag className={cx('stat2 glass', onClick && 'clickable')} onClick={onClick}>
+      <span className="s2-head">
+        <span className="s2-icon">
+          <I />
+        </span>
+        {label}
+      </span>
+      <span className="s2-row">
+        <b className="s2-value">
+          <CountUp value={value} decimals={decimals} />
+          {suffix && <small>{suffix}</small>}
+        </b>
+        {hint !== undefined && hint !== '' && <span className={cx('s2-chip', tone)}>{hint}</span>}
+      </span>
+    </Tag>
+  );
+}
+
+export function StatRow({ children, cols = 4 }: { children: ReactNode; cols?: number }) {
+  return (
+    <div className={`stat-row2 stagger c${cols}`} style={{ ['--cols' as string]: cols }}>
+      {children}
+    </div>
+  );
+}
+
+/** Filtros em chips com bolinha e contagem ("Todas 12"). */
+export function ChipTabs<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { value: T; label: ReactNode; count?: number }[];
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div className="chip-tabs" role="tablist">
+      {options.map((o) => (
+        <button key={o.value} role="tab" aria-selected={o.value === value} className={cx(o.value === value && 'on')} onClick={() => onChange(o.value)}>
+          <i className="ct-dot" />
+          {o.label}
+          {o.count !== undefined && <span className="ct-count">{o.count}</span>}
         </button>
       ))}
     </div>

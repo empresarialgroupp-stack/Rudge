@@ -56,3 +56,22 @@ export function periodSeries(s: AppState, mode: PeriodMode, now = new Date()) {
   const labels = starts.map((d) => (mode === 'semanas' ? `${d.getDate()}/${d.getMonth() + 1}` : capitalize(MONTHS[d.getMonth()].slice(0, 3))));
   return { labels, tasks, habits };
 }
+
+/** Série diária detalhada para gráficos de linha (últimos `days` dias). */
+export function dailyBreakdown(s: AppState, days: number, now = new Date()) {
+  const base = dailyCounts(s, days, now);
+  const idx = new Map(base.keys.map((k, i) => [k, i]));
+  const reminders = new Array(days).fill(0);
+  for (const r of s.reminders) {
+    const i = r.done && r.doneAt ? idx.get(dateKey(new Date(r.doneAt))) : undefined;
+    if (i !== undefined) reminders[i]++;
+  }
+  // hábitos programados por dia (ativos, já criados, no dia da semana certo)
+  const scheduled = base.keys.map((k) => {
+    const [y, m, d] = k.split('-').map(Number);
+    const dow = new Date(y, m - 1, d).getDay();
+    return s.habits.filter((h) => !h.archived && h.days.includes(dow) && h.createdAt.slice(0, 10) <= k).length;
+  });
+  const labels = base.keys.map((k) => `${Number(k.slice(8))}/${Number(k.slice(5, 7))}`);
+  return { ...base, labels, reminders, scheduled };
+}

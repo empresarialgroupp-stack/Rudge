@@ -40,8 +40,12 @@ function smooth(points: [number, number][]) {
     const p1 = points[i];
     const p2 = points[i + 1];
     const p3 = points[i + 2] ?? p2;
-    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
-    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    // pontos de controle presos entre os dois extremos: a curva não "passa" do valor (nem abaixo de zero)
+    const lo = Math.min(p1[1], p2[1]);
+    const hi = Math.max(p1[1], p2[1]);
+    const clampY = (y: number) => Math.min(hi, Math.max(lo, y));
+    const c1 = [p1[0] + (p2[0] - p0[0]) / 6, clampY(p1[1] + (p2[1] - p0[1]) / 6)];
+    const c2 = [p2[0] - (p3[0] - p1[0]) / 6, clampY(p2[1] - (p3[1] - p1[1]) / 6)];
     d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0]},${p2[1].toFixed(1)}`;
   }
   return d;
@@ -176,5 +180,112 @@ export function Gauge({ value, ticks = 64, size = 280 }: { value: number; ticks?
         );
       })}
     </svg>
+  );
+}
+
+export interface LineSeries {
+  name: string;
+  values: number[];
+  /** 'solid' (linha forte com área), 'soft' (média) ou 'dim' (tracejada) */
+  tone: 'solid' | 'soft' | 'dim';
+}
+
+/** Linhas suaves com área, grade e marcador ao passar o mouse/tocar. */
+export function LineChart({ labels, series, height = 240 }: { labels: string[]; series: LineSeries[]; height?: number }) {
+  const id = 'lc' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(600);
+  const [hover, setHover] = useState<number | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.max(200, Math.round(e.contentRect.width))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const padL = 30;
+  const padB = 24;
+  const padT = 10;
+  const plotW = w - padL - 6;
+  const plotH = height - padB - padT;
+  const max = Math.max(4, ...series.flatMap((s) => s.values));
+  const step = niceStep(max);
+  const top = Math.ceil(max / step) * step;
+  const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step);
+  const n = labels.length;
+  const xAt = (i: number) => padL + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
+  const yAt = (v: number) => padT + plotH * (1 - v / top);
+  const every = Math.max(1, Math.ceil(n / Math.max(3, Math.floor(plotW / 80))));
+
+  const onMove = (clientX: number) => {
+    const r = ref.current!.getBoundingClientRect();
+    const x = clientX - r.left - padL;
+    setHover(Math.max(0, Math.min(n - 1, Math.round((x / plotW) * (n - 1)))));
+  };
+
+  return (
+    <div
+      className="linechart"
+      ref={ref}
+      style={{ height }}
+      onMouseMove={(e) => onMove(e.clientX)}
+      onMouseLeave={() => setHover(null)}
+      onTouchStart={(e) => onMove(e.touches[0].clientX)}
+      onTouchMove={(e) => onMove(e.touches[0].clientX)}
+    >
+      <svg width={w} height={height} aria-hidden="true">
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="currentColor" stopOpacity="0.2" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {ticks.map((t) => (
+          <g key={t}>
+            <line x1={padL} x2={w - 6} y1={yAt(t)} y2={yAt(t)} className="lc-grid" />
+            <text x={padL - 8} y={yAt(t) + 3.5} textAnchor="end" className="lc-axis">
+              {t}
+            </text>
+          </g>
+        ))}
+        {labels.map((l, i) =>
+          i === n - 1 || (i % every === 0 && n - 1 - i >= every * 0.6) ? (
+            <text key={l + i} x={xAt(i)} y={height - 6} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'} className="lc-axis">
+              {l}
+            </text>
+          ) : null,
+        )}
+        {[...series].reverse().map((s) => {
+          const pts = s.values.map((v, i): [number, number] => [xAt(i), yAt(v)]);
+          const d = smooth(pts);
+          return (
+            <g key={s.name} className={cx('lc-series', s.tone)}>
+              {s.tone === 'solid' && <path d={`${d} L${xAt(n - 1)},${yAt(0)} L${xAt(0)},${yAt(0)} Z`} fill={`url(#${id})`} className="lc-area" />}
+              <path d={d} fill="none" pathLength={1} className="lc-line" />
+            </g>
+          );
+        })}
+        {hover !== null && (
+          <g>
+            <line x1={xAt(hover)} x2={xAt(hover)} y1={padT} y2={padT + plotH} className="lc-cursor" />
+            {series.map((s) => (
+              <circle key={s.name} cx={xAt(hover)} cy={yAt(s.values[hover])} r={4} className={cx('lc-dot', s.tone)} />
+            ))}
+          </g>
+        )}
+      </svg>
+      {hover !== null && (
+        <div className={cx('bc-tip glass strong lc-tip', xAt(hover) > w / 2 && 'flip')} style={{ left: xAt(hover) }}>
+          <b>{labels[hover]}</b>
+          {series.map((s) => (
+            <div key={s.name} className="row-tip">
+              <span className={cx('dot', s.tone)} />
+              {s.name}
+              <span className="v">{s.values[hover]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

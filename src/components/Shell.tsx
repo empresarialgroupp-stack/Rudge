@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -27,6 +27,7 @@ import { occurrencesBetween } from '../lib/recurrence';
 import { BrandMark, cx, Modal } from './ui';
 import { displayName } from '../lib/summary';
 import { ThemeSwitch, ThemeToggle } from './ThemeToggle';
+import { LiquidTabBar } from './LiquidTabBar';
 import { NotificationCenter } from './NotificationCenter';
 
 interface NavDef {
@@ -97,25 +98,13 @@ const GROUPS: { name: RouteName; label: string }[][] = [
   ],
 ];
 
-function PillTabs({ route, onGo }: { route: RouteName; onGo: (r: RouteName) => void }) {
+function PillTabs({ route, onGo, id }: { route: RouteName; onGo: (r: RouteName) => void; id: string }) {
   const group = GROUPS.find((g) => g.some((t) => t.name === route)) ?? GROUPS[0];
-  const ref = useRef<HTMLDivElement>(null);
-  const [thumb, setThumb] = useState<{ left: number; width: number } | null>(null);
-  useLayoutEffect(() => {
-    const el = ref.current?.querySelector<HTMLElement>('button.on');
-    setThumb(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
-  }, [route]);
-  return (
-    <div className="pill-tabs" ref={ref} role="tablist" key={group[0].name}>
-      {thumb && <span className="pt-thumb" style={{ transform: `translateX(${thumb.left}px)`, width: thumb.width }} aria-hidden="true" />}
-      {group.map((t) => (
-        <button key={t.name} role="tab" aria-selected={t.name === route} className={cx(t.name === route && 'on')} onClick={() => onGo(t.name)}>
-          {t.label}
-        </button>
-      ))}
-    </div>
-  );
+  const tabs = useMemo(() => group.map((t) => ({ value: t.name, label: t.label })), [group]);
+  return <LiquidTabBar key={group[0].name} id={id} label="Páginas desta seção" labels="always" tabs={tabs} value={route} onValueChange={(v) => onGo(v as RouteName)} />;
 }
+
+const MORE: RouteName[] = ['habitos', 'lembretes', 'agenda', 'revisao', 'instalar', 'configuracoes'];
 
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
@@ -136,6 +125,17 @@ export function Shell({ children }: { children: ReactNode }) {
     setUserOpen(false);
   };
 
+  const moreBadge = (badges.lembretes ?? 0) + (badges.habitos ?? 0);
+  const dockTabs = useMemo(
+    () => [
+      { value: 'inicio', label: 'Início', icon: <House /> },
+      { value: 'tarefas', label: 'Tarefas', icon: <ListTodo />, badge: badges.tarefas || undefined, badgeLabel: badges.tarefas ? `${badges.tarefas} para hoje` : undefined },
+      { value: 'metas', label: 'Metas', icon: <Target /> },
+      { value: 'mais', label: 'Mais', icon: <Menu />, badge: moreBadge || undefined, badgeLabel: moreBadge ? `${moreBadge} pendentes` : undefined },
+    ],
+    [badges.tarefas, moreBadge],
+  );
+
   const railItems: NavDef[] = [...NAV, { name: 'instalar', label: 'Instalar app', icon: Download }, { name: 'configuracoes', label: 'Configurações', icon: Settings }];
 
   return (
@@ -149,7 +149,7 @@ export function Shell({ children }: { children: ReactNode }) {
             <small>Organização pessoal</small>
           </span>
         </button>
-        <PillTabs route={route.name} onGo={go} />
+        <PillTabs id="top-tabs" route={route.name} onGo={go} />
         <div className="topnav-right">
           <button className="search-pill" onClick={() => openModal({ type: 'command' })}>
             <Search /> <span>Buscar</span> <kbd>Ctrl K</kbd>
@@ -239,7 +239,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <main className="main">
         <div className="mobile-tabs only-mobile">
-          <PillTabs route={route.name} onGo={go} />
+          <PillTabs id="m-tabs" route={route.name} onGo={go} />
         </div>
         {route.name !== 'inicio' && (
           <div className="page-head" key={`h-${route.name}`}>
@@ -252,27 +252,21 @@ export function Shell({ children }: { children: ReactNode }) {
         </div>
       </main>
 
-      {/* Barra de abas (mobile) */}
-      <nav className="tabbar glass liquid">
-        <button className={cx('tab', route.name === 'inicio' && 'on')} onClick={() => go('inicio')}>
-          <House /> Início
-        </button>
-        <button className={cx('tab', route.name === 'tarefas' && 'on')} onClick={() => go('tarefas')}>
-          <ListTodo /> Tarefas
-        </button>
-        <button className="tab-add" onClick={() => openModal({ type: 'quick-add' })} aria-label="Adicionar">
+      {/* Barra de abas líquida (mobile) */}
+      <div className="tabdock">
+        <div className="dock-bar glass liquid">
+          <LiquidTabBar
+            id="dock"
+            label="Navegação principal"
+            tabs={dockTabs}
+            value={moreOpen ? 'mais' : MORE.includes(route.name) ? 'mais' : route.name}
+            onValueChange={(v) => (v === 'mais' ? setMoreOpen(true) : go(v as RouteName))}
+          />
+        </div>
+        <button className="dock-add" onClick={() => openModal({ type: 'quick-add' })} aria-label="Adicionar">
           <Plus />
         </button>
-        <button className={cx('tab', route.name === 'metas' && 'on')} onClick={() => go('metas')}>
-          <Target /> Metas
-        </button>
-        <button
-          className={cx('tab', ['habitos', 'lembretes', 'agenda', 'revisao', 'instalar', 'configuracoes'].includes(route.name) && 'on')}
-          onClick={() => setMoreOpen(true)}
-        >
-          <Menu /> Mais
-        </button>
-      </nav>
+      </div>
 
       {moreOpen && (
         <Modal title="Menu" onClose={() => setMoreOpen(false)} size="narrow">

@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, ListTodo, Mic, Plus } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CalendarCheck, CheckCircle2, ListTodo, Mic, Plus } from 'lucide-react';
 import type { AreaKey, Task } from '../lib/types';
 import { useStore } from '../lib/store';
 import { moveOverdueToToday, moveTodayOpenToTomorrow } from '../lib/actions';
 import { openModal, useRoute, navigate, useNarrow } from '../lib/ui';
-import { addDaysKey, todayKey } from '../lib/date';
+import { addDaysKey, dateKey, todayKey } from '../lib/date';
 import { parseInput } from '../lib/nlp';
 import { AREAS } from '../lib/goals';
-import { cx, Empty, Segmented } from '../components/ui';
+import { ChipTabs, cx, Empty, StatCard, StatRow } from '../components/ui';
 import { TaskRow, sortTasks } from '../components/TaskRow';
 import { createFromText, ParseChips } from '../components/Quick';
 
@@ -68,8 +68,21 @@ export function Tasks() {
     if (createFromText(text, 'task')) setText('');
   }
 
+  const overdueN = open.filter((t) => t.due && t.due < today).length;
+  const weekAgo = addDaysKey(today, -6);
+  const doneWeek = tasks.filter((t) => t.done && t.doneAt && dateKey(new Date(t.doneAt)) >= weekAgo).length;
+  const allOpen = s.tasks.filter((t) => !t.done);
+  const areaCount = (a: AreaKey) => allOpen.filter((t) => t.area === a || s.goals.find((g) => g.id === t.goalId)?.area === a).length;
+
   return (
     <>
+      <StatRow>
+        <StatCard icon={ListTodo} label="Pendentes" value={counts.pendentes} hint={`${counts.semana} em 7 dias`} onClick={() => setFilter('pendentes')} />
+        <StatCard icon={CalendarCheck} label="Para hoje" value={counts.hoje} hint={counts.hoje ? 'foco do dia' : 'dia livre'} onClick={() => setFilter('hoje')} />
+        <StatCard icon={AlertTriangle} label="Atrasadas" value={overdueN} hint={overdueN ? 'mover para hoje?' : 'em dia'} tone={overdueN ? 'warn' : undefined} />
+        <StatCard icon={CheckCircle2} label="Concluídas" value={doneWeek} hint="últimos 7 dias" onClick={() => setFilter('concluidas')} />
+      </StatRow>
+
       <div className="capture glass liquid">
         <Plus />
         <input
@@ -93,7 +106,7 @@ export function Tasks() {
       )}
 
       <div className="toolbar">
-        <Segmented
+        <ChipTabs
           value={filter}
           onChange={setFilter}
           options={[
@@ -108,15 +121,19 @@ export function Tasks() {
           <Plus /> Nova tarefa
         </button>
       </div>
-      <div className="row wrap" style={{ marginBottom: 14 }}>
+      <div className="area-chips">
         <button className={cx('chip', !area && 'on')} onClick={() => setArea('')}>
-          Todas as áreas
+          Todas as áreas <span className="ct-count">{allOpen.length}</span>
         </button>
-        {AREAS.map((a) => (
-          <button key={a.key} className={cx('chip', area === a.key && 'on')} onClick={() => setArea(area === a.key ? '' : a.key)}>
-            {a.label}
-          </button>
-        ))}
+        {AREAS.map((a) => {
+          const n = areaCount(a.key);
+          return (
+            <button key={a.key} className={cx('chip', area === a.key && 'on')} onClick={() => setArea(area === a.key ? '' : a.key)}>
+              {a.label}
+              {n > 0 && <span className="ct-count">{n}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {visible.length ? (

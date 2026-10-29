@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AlarmClock, ArrowRight, Bell, BellRing, Check, Mic, Pencil, Repeat, RotateCcw, Trash2 } from 'lucide-react';
+import { AlarmClock, ArrowRight, Bell, BellRing, Check, CheckCircle2, Clock, Mic, Pencil, Repeat, RotateCcw, Trash2 } from 'lucide-react';
 import type { Reminder } from '../lib/types';
 import { useStore } from '../lib/store';
 import { completeReminder, deleteReminder, postponeReminder, reopenReminder } from '../lib/actions';
@@ -8,7 +8,7 @@ import { addDays, formatWhen, fromNow } from '../lib/date';
 import { describeRule, nextOccurrence } from '../lib/recurrence';
 import { parseInput } from '../lib/nlp';
 import { permission } from '../lib/notify';
-import { cx, Empty } from '../components/ui';
+import { cx, Empty, StatCard, StatRow } from '../components/ui';
 import { createFromText, ParseChips } from '../components/Quick';
 import { enableNotifications } from './Dashboard';
 
@@ -130,8 +130,18 @@ export function Reminders() {
 
   const empty = !sections.length && !recurring.length;
 
+  const activeN = s.reminders.filter((r) => !r.done).length;
+  const doneWeek = s.reminders.filter((r) => r.done && r.doneAt && Date.parse(r.doneAt) >= now - 7 * 86_400_000).length;
+
   return (
     <>
+      <StatRow>
+        <StatCard icon={Bell} label="Ativos" value={activeN} hint={overdue.length ? `${overdue.length} aguardando` : 'em dia'} tone={overdue.length ? 'warn' : undefined} />
+        <StatCard icon={Clock} label="Próximas 24 h" value={soon.length} hint={soon[0] ? fromNow(Date.parse(soon[0].at)) : 'nenhum'} />
+        <StatCard icon={Repeat} label="Recorrentes" value={recurring.length} hint={recurring[0]?.next ? fromNow(recurring[0].next) : '—'} />
+        <StatCard icon={CheckCircle2} label="Concluídos" value={doneWeek} hint="últimos 7 dias" />
+      </StatRow>
+
       {perm !== 'granted' || !s.settings.notifications ? (
         <div className="banner glass">
           <BellRing />

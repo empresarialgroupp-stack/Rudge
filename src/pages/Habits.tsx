@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { Bell, Check, Flame, Plus, Target, Trophy } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Activity, Bell, Check, Flame, Plus, Target, Trophy } from 'lucide-react';
 import type { Habit } from '../lib/types';
 import { useStore } from '../lib/store';
 import { toggleHabit } from '../lib/actions';
 import { openModal } from '../lib/ui';
 import { addDays, dateKey, todayKey, WEEKDAYS_MIN, startOfWeek } from '../lib/date';
 import { habitBestStreak, habitRate, habitStreak, isHabitDueOn } from '../lib/goals';
-import { cx, Empty, ProgressRing, Segmented } from '../components/ui';
+import { ChipTabs, cx, Empty, Segmented, StatCard, StatRow } from '../components/ui';
+import { LineChart } from '../components/charts';
+import { dailyBreakdown } from '../lib/stats';
 
 function Heatmap({ habit }: { habit: Habit }) {
   const weeks = 18;
@@ -33,52 +35,56 @@ export function Habits() {
   const due = s.habits.filter((h) => isHabitDueOn(h, today));
   const done = due.filter((h) => h.log.includes(today)).length;
   const days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i - 6));
+  const [range, setRange] = useState<30 | 90>(30);
+  const series = useMemo(() => dailyBreakdown(s, range), [s, range]);
+  const activeHabits = s.habits.filter((h) => !h.archived);
+  const rate = activeHabits.length ? activeHabits.reduce((n, h) => n + habitRate(h), 0) / activeHabits.length : 0;
 
   return (
     <>
-      <div className="kpis" style={{ marginBottom: 18 }}>
-        <div className="kpi glass">
-          <ProgressRing value={due.length ? done / due.length : 0} size={50} stroke={5} />
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <Check /> Hoje
+      <StatRow>
+        <StatCard icon={Check} label="Hoje" value={done} suffix={`/${due.length}`} hint={due.length && done === due.length ? 'tudo feito' : `${due.length - done} faltando`} />
+        <StatCard icon={Flame} label="Maior sequência" value={s.habits.reduce((m, h) => Math.max(m, habitStreak(h)), 0)} suffix=" d" hint="atual" />
+        <StatCard icon={Trophy} label="Recorde" value={s.habits.reduce((m, h) => Math.max(m, habitBestStreak(h)), 0)} suffix=" d" hint="melhor sequência" />
+        <StatCard icon={Target} label="Consistência" value={rate * 100} suffix="%" hint="últimos 30 dias" />
+      </StatRow>
+
+      {activeHabits.length > 0 && (
+        <section className="card glass" style={{ marginBottom: 14 }}>
+          <div className="card-head">
+            <h2 className="card-title">
+              <Activity /> Consistência diária
+            </h2>
+            <div className="legend-inline">
+              <span>
+                <i className="dot solid" /> Feitos
+              </span>
+              <span>
+                <i className="dot dim" /> Programados
+              </span>
             </div>
-            <div className="kpi-value">
-              {done}
-              <small>/{due.length}</small>
-            </div>
+            <Segmented
+              value={range}
+              onChange={setRange}
+              options={[
+                { value: 30, label: '30 dias' },
+                { value: 90, label: '90 dias' },
+              ]}
+            />
           </div>
-        </div>
-        <div className="kpi glass">
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <Flame /> Maior sequência atual
-            </div>
-            <div className="kpi-value">{s.habits.reduce((m, h) => Math.max(m, habitStreak(h)), 0)} d</div>
-          </div>
-        </div>
-        <div className="kpi glass">
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <Trophy /> Recorde
-            </div>
-            <div className="kpi-value">{s.habits.reduce((m, h) => Math.max(m, habitBestStreak(h)), 0)} d</div>
-          </div>
-        </div>
-        <div className="kpi glass">
-          <div className="kpi-body">
-            <div className="kpi-label">
-              <Target /> Consistência 30d
-            </div>
-            <div className="kpi-value">
-              {s.habits.length ? Math.round((s.habits.filter((h) => !h.archived).reduce((n, h) => n + habitRate(h), 0) / Math.max(1, s.habits.filter((h) => !h.archived).length)) * 100) : 0}%
-            </div>
-          </div>
-        </div>
-      </div>
+          <LineChart
+            key={range}
+            labels={series.labels}
+            series={[
+              { name: 'Feitos', values: series.habits, tone: 'solid' },
+              { name: 'Programados', values: series.scheduled, tone: 'dim' },
+            ]}
+          />
+        </section>
+      )}
 
       <div className="toolbar">
-        <Segmented
+        <ChipTabs
           value={view}
           onChange={setView}
           options={[
