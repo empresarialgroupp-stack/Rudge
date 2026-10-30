@@ -10,6 +10,8 @@ import { applyTheme } from './components/ThemeToggle';
 import { Shell } from './components/Shell';
 import { ModalHost, Toaster } from './components/Host';
 import { Login } from './pages/Login';
+import { PlanLocked } from './components/Integrations';
+import { appBlocked, useAccess } from './lib/access';
 import { Dashboard } from './pages/Dashboard';
 import { Tasks } from './pages/Tasks';
 import { Goals } from './pages/Goals';
@@ -137,6 +139,12 @@ function Authed() {
   );
 }
 
+/** Plano da conta: bloqueia só quando o servidor diz que o plano não inclui o Rudge app. */
+function Gate() {
+  const access = useAccess();
+  return appBlocked(access) ? <PlanLocked /> : <Authed />;
+}
+
 export function App() {
   const session = useSession();
   const { settings } = useStore();
@@ -149,7 +157,7 @@ export function App() {
   return (
     <>
       <Ambient />
-      {session ? <Authed /> : <Login />}
+      {session ? <Gate /> : <Login />}
       <Toaster />
     </>
   );

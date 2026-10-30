@@ -3061,6 +3061,18 @@ kbd,
   height: 15px;
 }
 
+.login-card .input.otp {
+  letter-spacing: 0.45em;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+}
+
+.login-alt {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .shake {
   animation: shake 0.45s var(--ease);
 }
@@ -5932,4 +5944,62 @@ kbd,
   .focus-pill {
     top: calc(64px + var(--safe-t));
   }
+}
+
+/* Conta e integrações */
+.integration {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+}
+
+.integration-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.integration-head .s-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.integration-head .s-text b {
+  font-size: 14px;
+}
+
+.integration-head .s-text span {
+  font-size: 12.5px;
+  color: var(--fg-3);
+}
+
+.integration-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--chip);
+  border: 1px solid var(--glass-border);
+  color: var(--fg);
+  flex: none;
+}
+
+.integration-icon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.login-card h2 svg {
+  vertical-align: -2px;
+  margin-right: 6px;
+}
+
+.login-card > .btn + .btn {
+  margin-top: 8px;
 }

@@ -11,6 +11,7 @@ import { WEEKDAYS } from '../lib/date';
 import { cx, Field, Switch } from '../components/ui';
 import { setTheme } from '../components/ThemeToggle';
 import { enableNotifications } from './Dashboard';
+import { IntegrationsCard } from '../components/Integrations';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
 
@@ -94,6 +95,8 @@ export function SettingsPage() {
           </div>
         </section>
 
+        <IntegrationsCard />
+
         <PlacesCard />
 
         <section className="card glass">
@@ -154,9 +157,9 @@ export function SettingsPage() {
           <div className="setting" style={{ padding: 0 }}>
             <div className="s-text">
               <b>Sair do Rudge</b>
-              <span>Seus dados continuam salvos neste dispositivo.</span>
+              <span>Sai da conta Rudge neste aparelho. Seus dados continuam salvos aqui.</span>
             </div>
-            <button className="btn btn-glass" onClick={logout}>
+            <button className="btn btn-glass" onClick={() => void logout()}>
               <LogOut /> Sair
             </button>
           </div>

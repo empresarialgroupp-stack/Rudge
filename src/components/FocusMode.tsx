@@ -8,6 +8,7 @@ import { completeFocus, focusLeft } from '../lib/focus';
 import { sortTasks } from './TaskRow';
 import { LiquidTabBar } from './LiquidTabBar';
 import { cx } from './ui';
+import { FocusMusicButton } from './Integrations';
 
 const DURATIONS = ['15', '25', '45', '60'];
 
@@ -157,6 +158,7 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
           >
             <Square /> Encerrar
           </button>
+          <FocusMusicButton />
         </div>
         <p className="muted focus-note">
           <BellOff width={14} /> {held ? `${held} ${held === 1 ? 'aviso guardado' : 'avisos guardados'} para depois` : 'Avisos em silêncio'}

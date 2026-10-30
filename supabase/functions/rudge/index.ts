@@ -8,9 +8,13 @@
 //   /test         agenda um aviso de teste para daqui a N segundos
 //   /ai           interpreta uma fala (voz) em lembretes/tarefas com o Claude
 //   /status       resumo (assinaturas e avisos programados)
+//   /device       troca o login da conta Rudge (JWT) por um token deste aparelho
+//   /signout      invalida o token deste aparelho
 //   /dispatch     chamado pelo pg_cron a cada minuto: envia o que venceu
 //
-// Autenticação: header x-rudge-token (derivado da senha no login) ou x-cron-secret (cron).
+// Autenticação: header x-rudge-token (token do aparelho emitido em /device; o token antigo
+// derivado da senha vale até a conta reivindicar os dados) ou x-cron-secret (cron).
+// /device recebe o JWT da conta Rudge (Supabase Auth, a mesma do Rudge Music).
 // Os dados ficam no schema "rudge", que não é exposto pela API REST.
 
 import postgres from 'npm:postgres@3.4.5';
@@ -18,13 +22,13 @@ import { sendWebPush, type VapidKeys } from './webpush.ts';
 
 const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false, max: 3, idle_timeout: 20 });
 
-/** Hoje há um único dono; no SaaS isso vira o id do usuário autenticado. */
+/** Dono da época da senha única; ao entrar com a conta, os dados dele passam para o id do usuário. */
 const OWNER = 'owner';
 const MAX_ITEMS = 3000;
 
 const CORS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'content-type, x-rudge-token',
+  'Access-Control-Allow-Headers': 'content-type, x-rudge-token, authorization, apikey',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
 };
@@ -57,8 +61,65 @@ function safeEqual(a: string, b: string) {
 async function ownerFrom(req: Request): Promise<string | null> {
   const token = req.headers.get('x-rudge-token');
   if (!token || token.length > 200) return null;
+  const hash = await sha256Hex(token);
+  const [dev] = await sql<{ owner_id: string }[]>`
+    update rudge.device_tokens set last_used_at = now() where token_sha256 = ${hash} returning owner_id`;
+  if (dev) return dev.owner_id;
   const s = await secrets();
-  return safeEqual(await sha256Hex(token), s.rudge_token_sha256 ?? '') ? OWNER : null;
+  if (!safeEqual(hash, s.rudge_token_sha256 ?? '')) return null;
+  const [claimed] = await sql`select 1 from rudge.legacy_claim`;
+  return claimed ? null : OWNER;
+}
+
+/** Usuário da conta Rudge a partir do JWT do Supabase Auth. */
+async function userFrom(req: Request): Promise<{ id: string; email?: string } | null> {
+  const auth = req.headers.get('authorization') ?? '';
+  if (!auth.startsWith('Bearer ')) return null;
+  const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/user`, {
+    headers: { authorization: auth, apikey: Deno.env.get('SUPABASE_ANON_KEY')! },
+  });
+  if (!res.ok) return null;
+  const u = (await res.json()) as { id?: string; email?: string };
+  return u.id ? { id: u.id, email: u.email } : null;
+}
+
+/**
+ * Emite o token deste aparelho para a conta. Se vier o token antigo (senha única) e os
+ * dados do dono antigo ainda não foram reivindicados, eles passam para esta conta.
+ */
+async function device(req: Request, body: Record<string, unknown>) {
+  const user = await userFrom(req);
+  if (!user) return json({ error: 'não autorizado' }, 401);
+  const deviceId = str(body.deviceId, 100);
+  if (!deviceId) return json({ error: 'payload inválido' }, 400);
+
+  let migrated = false;
+  const legacy = str(body.legacyToken, 200);
+  if (legacy) {
+    const s = await secrets();
+    if (safeEqual(await sha256Hex(legacy), s.rudge_token_sha256 ?? '')) {
+      await sql.begin(async (tx) => {
+        const [done] = await tx`insert into rudge.legacy_claim (owner_id) values (${user.id}) on conflict do nothing returning 1`;
+        if (!done) return;
+        await tx`update rudge.push_subscriptions set owner_id = ${user.id} where owner_id = ${OWNER}`;
+        await tx`update rudge.notifications set owner_id = ${user.id} where owner_id = ${OWNER}`;
+        await tx`delete from rudge.owners where owner_id = ${user.id}`;
+        await tx`update rudge.owners set owner_id = ${user.id} where owner_id = ${OWNER}`;
+        migrated = true;
+      });
+    }
+  }
+
+  const token = [...crypto.getRandomValues(new Uint8Array(32))].map((b) => b.toString(16).padStart(2, '0')).join('');
+  await sql`insert into rudge.device_tokens (token_sha256, owner_id, device_id) values (${await sha256Hex(token)}, ${user.id}, ${deviceId})
+    on conflict (owner_id, device_id) do update set token_sha256 = excluded.token_sha256, created_at = now(), last_used_at = now()`;
+  return json({ ok: true, token, userId: user.id, migrated });
+}
+
+/** Sair: o token deste aparelho deixa de valer. */
+async function signout(owner: string, body: Record<string, unknown>) {
+  await sql`delete from rudge.device_tokens where owner_id = ${owner} and device_id = ${str(body.deviceId, 100)}`;
+  return json({ ok: true });
 }
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '');
@@ -339,9 +400,11 @@ Deno.serve(async (req) => {
       return await dispatch();
     }
 
+    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+    if (route === 'device') return await device(req, body);
+
     const owner = await ownerFrom(req);
     if (!owner) return json({ error: 'não autorizado' }, 401);
-    const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     switch (route) {
       case 'sync':
         return await sync(owner, body);
@@ -357,6 +420,8 @@ Deno.serve(async (req) => {
         return await interpret(body);
       case 'status':
         return await status(owner, body);
+      case 'signout':
+        return await signout(owner, body);
       default:
         return json({ error: 'rota desconhecida' }, 404);
     }
