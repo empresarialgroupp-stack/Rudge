@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AlertCircle, ArrowLeft, ArrowRight, KeyRound, Mail, ShieldCheck } from 'lucide-react';
-import { sendCode, verifyCode } from '../lib/auth';
+import { linkError, onLinkLogin, sendCode, verifyCode } from '../lib/auth';
 import { toast } from '../lib/ui';
 import { BrandMark, cx } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -14,6 +14,16 @@ export function Login() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(false);
+
+  // login pelo link do e-mail (aberto neste navegador)
+  useEffect(() => {
+    const err = linkError();
+    if (err) setError(err);
+    return onLinkLogin((r) => {
+      if (!r.ok) setError(r.error);
+      else if (r.migrated) toast({ title: 'Conta conectada', body: 'Seus avisos agora ficam na sua conta Rudge.', icon: 'check' });
+    });
+  }, []);
 
   function fail(msg: string) {
     setError(msg);
@@ -58,7 +68,8 @@ export function Login() {
               'Use sua conta Rudge, a mesma do Rudge Music.'
             ) : (
               <>
-                Enviamos um código de 6 dígitos para <b>{email.trim()}</b>.
+                Enviamos um e-mail para <b>{email.trim()}</b>. Toque no link de acesso neste aparelho ou digite o código, se
+                ele vier no e-mail.
               </>
             )}
           </p>
@@ -110,7 +121,7 @@ export function Login() {
               type="submit"
               disabled={busy || (step === 'email' ? !email : code.length < 6)}
             >
-              {busy ? <span className="spinner" /> : <>{step === 'email' ? 'Receber código' : 'Entrar'} <ArrowRight /></>}
+              {busy ? <span className="spinner" /> : <>{step === 'email' ? 'Receber acesso por e-mail' : 'Entrar com o código'} <ArrowRight /></>}
             </button>
             {step === 'code' && (
               <div className="login-alt">
@@ -123,11 +134,11 @@ export function Login() {
                   disabled={busy}
                   onClick={async () => {
                     const r = await sendCode(email);
-                    if (r.ok) toast({ title: 'Código reenviado', icon: 'check' });
+                    if (r.ok) toast({ title: 'E-mail reenviado', icon: 'check' });
                     else fail(r.error);
                   }}
                 >
-                  Reenviar código
+                  Reenviar e-mail
                 </button>
               </div>
             )}

@@ -6,7 +6,9 @@ export const SUPABASE_URL = 'https://btpbarqvsglqzpcpezvz.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_dIg91iW6N6hpiZrE_ROmXA_trqjM6tV';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'rudge:auth', detectSessionInUrl: false },
+  // implicit: o link do e-mail volta com a sessão no endereço (#access_token=…), o que funciona
+  // mesmo quando o link abre em outro navegador do aparelho
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'rudge:auth', detectSessionInUrl: true, flowType: 'implicit' },
 });
 
 /** Endereço do Rudge Music (app separado, mesma conta). */

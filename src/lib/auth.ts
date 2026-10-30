@@ -1,7 +1,8 @@
-// Conta Rudge: login por e-mail com código de 6 dígitos (Supabase Auth), a mesma conta do
-// Rudge Music. Depois de entrar, o servidor de avisos emite um token deste aparelho, que o
+// Conta Rudge: login por e-mail (Supabase Auth), a mesma conta do Rudge Music. O e-mail traz
+// um link de acesso e, quando o modelo de e-mail tiver {{ .Token }}, também o código de 6 dígitos. Depois de entrar, o servidor de avisos emite um token deste aparelho, que o
 // service worker usa com o app fechado (o JWT da conta vence em 1 hora).
 import { useSyncExternalStore } from 'react';
+import type { Session as AuthSession } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { deviceId, PUSH_API, saveServiceWorkerConfig } from './push';
 
@@ -62,50 +63,91 @@ function authError(message: string): string {
   if (m.includes('signups not allowed') || m.includes('user not found')) {
     return 'Este e-mail ainda não tem conta Rudge. Peça um convite para criar a sua.';
   }
-  if (m.includes('expired') || m.includes('invalid')) return 'Código inválido ou vencido. Peça um novo.';
+  if (m.includes('expired') || m.includes('invalid')) return 'Código ou link inválido ou vencido. Peça um novo.';
   if (m.includes('rate') || m.includes('seconds')) return 'Aguarde alguns segundos antes de pedir outro código.';
   return 'Não foi possível entrar agora. Confira a conexão e tente de novo.';
 }
 
-/** Envia o código de 6 dígitos para o e-mail. Só contas existentes (criadas por convite). */
+/** Envia o link de acesso (e o código, se houver) para o e-mail. Só contas existentes (criadas por convite). */
 export async function sendCode(email: string): Promise<Result> {
   if (!isValidEmail(email)) return { ok: false, error: 'Digite um e-mail válido.' };
   const { error } = await supabase.auth.signInWithOtp({
     email: email.trim().toLowerCase(),
-    options: { shouldCreateUser: false },
+    options: { shouldCreateUser: false, emailRedirectTo: location.origin + location.pathname },
   });
   return error ? { ok: false, error: authError(error.message) } : { ok: true };
 }
 
-/** Confere o código e registra este aparelho no servidor de avisos. */
+/** Confere o código digitado e registra este aparelho no servidor de avisos. */
 export async function verifyCode(email: string, code: string): Promise<Result & { migrated?: boolean }> {
   const token = code.replace(/\D/g, '');
   if (token.length < 6) return { ok: false, error: 'Digite o código de 6 dígitos.' };
   const { data, error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token, type: 'email' });
-  if (error || !data.session || !data.user) return { ok: false, error: authError(error?.message ?? 'invalid') };
+  if (error || !data.session) return { ok: false, error: authError(error?.message ?? 'invalid') };
+  return finishLogin(data.session);
+}
 
-  let legacyToken: string | undefined;
-  try {
-    legacyToken = (JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null') as { token?: string } | null)?.token;
-  } catch {
-    /* ignora */
-  }
-  try {
-    const res = await fetch(`${PUSH_API}/device`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session.access_token}` },
-      body: JSON.stringify({ deviceId: deviceId(), legacyToken }),
-    });
-    if (!res.ok) throw new Error(String(res.status));
-    const r = (await res.json()) as { token: string; migrated?: boolean };
-    localStorage.removeItem(LEGACY_KEY);
-    setSession({ email: data.user.email ?? email.trim().toLowerCase(), userId: data.user.id, at: Date.now(), token: r.token });
-    void saveServiceWorkerConfig();
-    return { ok: true, migrated: !!r.migrated };
-  } catch {
-    await supabase.auth.signOut({ scope: 'local' });
-    return { ok: false, error: 'Conta confirmada, mas o servidor do Rudge não respondeu. Tente de novo.' };
-  }
+let finishing: Promise<Result & { migrated?: boolean }> | null = null;
+
+/** Com a conta confirmada (código ou link), registra este aparelho no servidor de avisos. */
+function finishLogin(auth: AuthSession): Promise<Result & { migrated?: boolean }> {
+  if (finishing) return finishing;
+  finishing = (async (): Promise<Result & { migrated?: boolean }> => {
+    let legacyToken: string | undefined;
+    try {
+      legacyToken = (JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null') as { token?: string } | null)?.token;
+    } catch {
+      /* ignora */
+    }
+    try {
+      const res = await fetch(`${PUSH_API}/device`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${auth.access_token}` },
+        body: JSON.stringify({ deviceId: deviceId(), legacyToken }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const r = (await res.json()) as { token: string; migrated?: boolean };
+      localStorage.removeItem(LEGACY_KEY);
+      setSession({ email: auth.user.email ?? '', userId: auth.user.id, at: Date.now(), token: r.token });
+      void saveServiceWorkerConfig();
+      return { ok: true, migrated: !!r.migrated };
+    } catch {
+      await supabase.auth.signOut({ scope: 'local' });
+      return { ok: false, error: 'Conta confirmada, mas o servidor do Rudge não respondeu. Tente de novo.' };
+    }
+  })().finally(() => {
+    finishing = null;
+  });
+  return finishing;
+}
+
+/* Link de acesso do e-mail: o Supabase lê a sessão do endereço ao abrir o app. */
+const linkListeners = new Set<(r: Result & { migrated?: boolean }) => void>();
+/** Resultado do login por link (para a tela de entrar mostrar erro ou aviso). */
+export function onLinkLogin(fn: (r: Result & { migrated?: boolean }) => void) {
+  linkListeners.add(fn);
+  return () => {
+    linkListeners.delete(fn);
+  };
+}
+
+/** Erro devolvido no endereço quando o link venceu ou já foi usado. */
+export function linkError(): string | null {
+  if (typeof location === 'undefined') return null;
+  const p = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const code = p.get('error_code') || p.get('error');
+  if (!code) return null;
+  history.replaceState(null, '', location.pathname + location.search);
+  return code.includes('expired') ? 'Este link venceu ou já foi usado. Peça um novo.' : 'Não foi possível entrar com este link. Peça um novo.';
+}
+
+if (typeof window !== 'undefined') {
+  supabase.auth.onAuthStateChange((event, auth) => {
+    if (event !== 'SIGNED_IN' || !auth || session?.userId === auth.user.id) return;
+    // o login por código já registra o aparelho em verifyCode
+    if (finishing) return;
+    void finishLogin(auth).then((r) => linkListeners.forEach((l) => l(r)));
+  });
 }
 
 export async function logout() {

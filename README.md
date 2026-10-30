@@ -6,8 +6,13 @@ PWA instalável no computador (Chrome/Edge/Safari) e no celular (Android/iPhone)
 
 ## Acesso
 
-Conta Rudge: a mesma do Rudge Music (Supabase Auth do projeto `rudge`). Login por e-mail com código
-de 6 dígitos; só contas existentes entram (a conta nasce por convite). `src/lib/auth.ts`
+Conta Rudge: a mesma do Rudge Music (Supabase Auth do projeto `rudge`). Login por e-mail: link de
+acesso (volta para o app com a sessão no endereço) ou código de 6 dígitos, quando o modelo de e-mail
+tiver `{{ .Token }}` (exige SMTP próprio no Supabase). Só contas existentes entram (a conta nasce por
+convite). `src/lib/auth.ts`
+
+- No iPhone, o link abre no Safari, que tem armazenamento separado do app instalado: no app instalado
+  o login precisa do código. Administradores (`public.is_admin()`) usam o app qualquer que seja o plano.
 
 - Depois do login o servidor de avisos emite um **token deste aparelho** (`/device`), usado pelo app e
   pelo service worker com o app fechado. Só o hash fica no banco (`rudge.device_tokens`).
