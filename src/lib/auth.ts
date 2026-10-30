@@ -81,7 +81,7 @@ export async function sendCode(email: string): Promise<Result> {
 /** Confere o código digitado e registra este aparelho no servidor de avisos. */
 export async function verifyCode(email: string, code: string): Promise<Result & { migrated?: boolean }> {
   const token = code.replace(/\D/g, '');
-  if (token.length < 6) return { ok: false, error: 'Digite o código de 6 dígitos.' };
+  if (token.length < 6 || token.length > 8) return { ok: false, error: 'Digite o código que chegou no e-mail.' };
   const { data, error } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token, type: 'email' });
   if (error || !data.session) return { ok: false, error: authError(error?.message ?? 'invalid') };
   return finishLogin(data.session);
