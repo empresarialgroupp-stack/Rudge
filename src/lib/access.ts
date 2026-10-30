@@ -15,6 +15,8 @@ export interface Access {
   /** libera o Rudge app (este organizador) */
   app: boolean;
   storageGb?: number;
+  /** administrador da plataforma: acesso aos dois apps */
+  admin?: boolean;
 }
 
 export type AccessState =
@@ -69,6 +71,11 @@ export function refreshAccess(): Promise<void> {
     }
     const { data, error } = await supabase.rpc('my_access');
     const access = error ? null : parseAccess(data);
+    // administradores usam os dois apps qualquer que seja o plano
+    if (access && !access.app) {
+      const { data: admin } = await supabase.rpc('is_admin');
+      if (admin === true) Object.assign(access, { app: true, music: true, admin: true });
+    }
     if (access) {
       localStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), userId: getSession()?.userId, access }));
       set({ status: 'ready', access });
