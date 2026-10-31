@@ -27,6 +27,11 @@ export function WalletConnect({ onClose, onImport }: { onClose: () => void; onIm
 
   const done = (err?: string) => {
     setBusy(false);
+    // conta trial da Pluggy não cria conexões pelo widget: conecta no painel e cola os Item IDs
+    if (err && /TRIAL_CLIENT/i.test(err)) {
+      setManual(true);
+      return setError('No trial, a Pluggy só aceita conexões feitas pelo painel dela. Em dashboard.pluggy.ai, abra sua aplicação → Demo → Connect Account → MeuPluggy, copie os Item IDs e cole aqui.');
+    }
     if (err) return setError(err);
     toast({ title: 'Banco conectado', body: 'A Carteira agora se atualiza sozinha.', icon: 'check' });
     onClose();
