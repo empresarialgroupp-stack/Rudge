@@ -20,6 +20,7 @@ import { Reminders } from './pages/Reminders';
 import { CalendarPage } from './pages/Calendar';
 import { Review } from './pages/Review';
 import { Journal } from './pages/Journal';
+import { WalletPage } from './pages/Wallet';
 import { Install } from './pages/Install';
 import { SettingsPage } from './pages/Settings';
 
@@ -80,6 +81,8 @@ function Page() {
       return <Review />;
     case 'diario':
       return <Journal />;
+    case 'carteira':
+      return <WalletPage />;
     case 'instalar':
       return <Install />;
     case 'configuracoes':

@@ -17,6 +17,7 @@ import {
   Settings,
   Target,
   AlarmClock,
+  WalletCards,
   type LucideIcon,
 } from 'lucide-react';
 import { useStore } from '../lib/store';
@@ -47,6 +48,7 @@ export const NAV: NavDef[] = [
   { name: 'agenda', label: 'Agenda', icon: CalendarDays },
   { name: 'revisao', label: 'Revisão semanal', icon: ClipboardCheck },
   { name: 'diario', label: 'Diário', icon: NotebookPen },
+  { name: 'carteira', label: 'Carteira', icon: WalletCards },
 ];
 
 export const PAGE_META: Record<RouteName, { title: string; sub?: string }> = {
@@ -58,6 +60,7 @@ export const PAGE_META: Record<RouteName, { title: string; sub?: string }> = {
   agenda: { title: 'Agenda', sub: 'Tarefas, lembretes e prazos no calendário.' },
   revisao: { title: 'Revisão semanal', sub: 'Feche a semana e planeje a próxima em 5 minutos.' },
   diario: { title: 'Diário', sub: 'Um minuto por noite: o que deu certo, o que travou e a nota do dia.' },
+  carteira: { title: 'Carteira', sub: 'Seus cartões, quanto entrou, quanto saiu e os 10% para guardar.' },
   instalar: { title: 'Instalar o Rudge', sub: 'Use como aplicativo no computador e no celular.' },
   configuracoes: { title: 'Configurações', sub: 'Aparência, notificações, dados e conta.' },
 };
@@ -97,6 +100,7 @@ const GROUPS: { name: RouteName; label: string }[][] = [
     { name: 'metas', label: 'Metas' },
     { name: 'habitos', label: 'Hábitos' },
   ],
+  [{ name: 'carteira', label: 'Carteira' }],
   [
     { name: 'configuracoes', label: 'Configurações' },
     { name: 'instalar', label: 'Instalar' },
@@ -109,7 +113,7 @@ function PillTabs({ route, onGo, id }: { route: RouteName; onGo: (r: RouteName) 
   return <LiquidTabBar key={group[0].name} id={id} label="Páginas desta seção" labels="always" tabs={tabs} value={route} onValueChange={(v) => onGo(v as RouteName)} />;
 }
 
-const MORE: RouteName[] = ['habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'instalar', 'configuracoes'];
+const MORE: RouteName[] = ['habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'carteira', 'instalar', 'configuracoes'];
 
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();

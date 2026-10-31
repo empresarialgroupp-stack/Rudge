@@ -94,6 +94,7 @@ export type RouteName =
   | 'agenda'
   | 'revisao'
   | 'diario'
+  | 'carteira'
   | 'instalar'
   | 'configuracoes';
 
@@ -102,7 +103,7 @@ export interface Route {
   params: URLSearchParams;
 }
 
-const ROUTES: RouteName[] = ['inicio', 'tarefas', 'metas', 'habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'instalar', 'configuracoes'];
+const ROUTES: RouteName[] = ['inicio', 'tarefas', 'metas', 'habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'carteira', 'instalar', 'configuracoes'];
 
 function parseHash(): Route {
   const h = (typeof location !== 'undefined' ? location.hash : '').replace(/^#\/?/, '');

@@ -51,6 +51,9 @@ convite). `src/lib/auth.ts`
 - **Lembrete por lugar**: lugares salvos em Configurações; "quando sair do trabalho". Funciona com
   o app aberto ou ao abrir (navegadores não acompanham a localização com o app fechado). `src/lib/geo.ts`
 - **Retrospectiva do mês**: telas animadas no dia 1, imagem para compartilhar. `src/lib/retro.ts`
+- **Carteira** (`#/carteira`): pilha de cartões animada (arraste, setas ou toque para abrir) e,
+  abaixo do cartão aberto, quanto entrou, quanto saiu, dicas e o aviso de guardar 10% de cada
+  entrada. Hoje com dados de exemplo; conexão com os bancos em `docs/open-finance.md`.
 - **Agenda** mensal, **Revisão semanal** guiada, paleta de comandos (`Ctrl/⌘ K`), atalho `N`
   para adicionar, backup/importação em JSON.
 
