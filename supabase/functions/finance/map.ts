@@ -97,3 +97,12 @@ export function mapAccount(a: PluggyAccount, item: PluggyItem | undefined, txs: 
       .sort((x, y) => y.date.localeCompare(x.date)),
   };
 }
+
+/**
+ * No Meu Pluggy cada banco vira um item. O cartão costuma vir só com o nome do produto
+ * ("Gold"), então herda o banco das outras contas do mesmo item.
+ */
+export function inheritBank(accounts: SyncedAccount[]): SyncedAccount[] {
+  const known = accounts.find((a) => a.bank !== 'outro')?.bank;
+  return known ? accounts.map((a) => (a.bank === 'outro' ? { ...a, bank: known, label: undefined } : a)) : accounts;
+}

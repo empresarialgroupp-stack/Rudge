@@ -6660,3 +6660,69 @@ kbd,
   text-underline-offset: 2px;
   cursor: pointer;
 }
+
+/* carteira: olho de privacidade e barra de sincronização enxuta */
+.wallet-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.wallet-top > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+.wallet-eye {
+  flex: none;
+}
+button.wsync {
+  font: inherit;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+}
+.wsync-body span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wallet-page .wk-v,
+.wallet-page .wb-meta,
+.wallet-page .wb-foot,
+.wallet-page .wsave-body,
+.wallet-page .money,
+.wallet-page .wtips li,
+.wallet-page .wsc-num,
+.wallet-page .wsc-holder,
+.wallet-page .ws-balance,
+.wallet-page .ws-tx-body,
+.wallet-page .ws-tx-amt {
+  transition: filter 0.2s ease;
+}
+.wallet-page.is-private .wk-v,
+.wallet-page.is-private .wb-meta,
+.wallet-page.is-private .wb-foot,
+.wallet-page.is-private .wsave-body,
+.wallet-page.is-private .money,
+.wallet-page.is-private .wtips li,
+.wallet-page.is-private .wsc-num,
+.wallet-page.is-private .wsc-holder,
+.wallet-page.is-private .ws-balance,
+.wallet-page.is-private .ws-tx-body,
+.wallet-page.is-private .ws-tx-amt {
+  filter: blur(7px);
+  user-select: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wallet-page .wk-v,
+  .wallet-page .money {
+    transition: none;
+  }
+}
+.sensitive-actions {
+  gap: 8px;
+  padding: 0 0 12px;
+}
+.sensitive-actions svg.spin {
+  animation: wspin 0.9s linear infinite;
+}

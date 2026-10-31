@@ -12,6 +12,7 @@ import { cx, Field, Switch } from '../components/ui';
 import { setTheme } from '../components/ThemeToggle';
 import { enableNotifications } from './Dashboard';
 import { IntegrationsCard } from '../components/Integrations';
+import { SensitiveDataCard } from '../components/SensitiveData';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
 
@@ -98,6 +99,8 @@ export function SettingsPage() {
         <IntegrationsCard />
 
         <PlacesCard />
+
+        <SensitiveDataCard />
 
         <section className="card glass">
           <div className="card-head">
