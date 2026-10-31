@@ -4,6 +4,7 @@ import { getState, useStore } from './lib/store';
 import { openModal, useModals, useRoute } from './lib/ui';
 import { present, startScheduler } from './lib/scheduler';
 import { startPush } from './lib/push';
+import { startCloud } from './lib/cloud';
 import { startFocusWatcher } from './lib/focus';
 import { startGeo } from './lib/geo';
 import { applyTheme } from './components/ThemeToggle';
@@ -95,6 +96,7 @@ function Page() {
 function Authed() {
   const modals = useModals();
   useEffect(() => {
+    startCloud();
     void startScheduler().then(() => startPush());
     startFocusWatcher();
     startGeo((r, place) =>

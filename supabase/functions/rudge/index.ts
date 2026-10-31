@@ -10,6 +10,7 @@
 //   /status       resumo (assinaturas e avisos programados)
 //   /device       troca o login da conta Rudge (JWT) por um token deste aparelho
 //   /signout      invalida o token deste aparelho
+//   /state        dados do app na conta (get/put com rev; cópias de segurança: snapshots/snapshot)
 //   /dispatch     chamado pelo pg_cron a cada minuto: envia o que venceu
 //
 // Autenticação: header x-rudge-token (token do aparelho emitido em /device; o token antigo
@@ -388,6 +389,80 @@ async function dispatch() {
   return json({ ok: true, claimed: claimed.length, sent, skipped, failed });
 }
 
+/* ---------- Dados do app na conta ---------- */
+
+const STATE_MAX_BYTES = 5_000_000;
+/** nova cópia de segurança do mesmo aparelho no máximo a cada 30 min (ou quando algo some) */
+const SNAPSHOT_EVERY_MS = 30 * 60_000;
+const SNAPSHOT_KEEP_DAYS = 90;
+
+type Json = Record<string, unknown>;
+const listLen = (d: Json, k: string) => (Array.isArray(d[k]) ? (d[k] as unknown[]).length : 0);
+const itemCount = (d: Json) => ['tasks', 'goals', 'habits', 'reminders'].reduce((n, k) => n + listLen(d, k), 0);
+
+async function state(owner: string, body: Json) {
+  const op = str(body.op, 20);
+  if (op === 'get') {
+    const [r] = await sql<{ rev: string; data: Json }[]>`select rev, data from rudge.user_state where owner_id = ${owner}`;
+    if (!r) return json({ rev: 0 });
+    if (Number(body.since) === Number(r.rev)) return json({ rev: Number(r.rev), same: true });
+    return json({ rev: Number(r.rev), data: r.data });
+  }
+
+  if (op === 'put') {
+    const deviceId = str(body.deviceId, 100);
+    const data = body.data as Json | undefined;
+    if (!deviceId || !data || typeof data !== 'object' || !Array.isArray(data.tasks)) return json({ error: 'payload inválido' }, 400);
+    const text = JSON.stringify(data);
+    if (text.length > STATE_MAX_BYTES) return json({ error: 'dados grandes demais' }, 413);
+    const baseRev = Number(body.baseRev) || 0;
+    const editedAt = Number(data.editedAt) || 0;
+
+    return await sql.begin(async (tx) => {
+      const [cur] = await tx<{ rev: string; data: Json }[]>`select rev, data from rudge.user_state where owner_id = ${owner} for update`;
+      const curRev = cur ? Number(cur.rev) : 0;
+      // outro aparelho gravou antes: o app junta com esta versão e tenta de novo
+      if (curRev !== baseRev) return json({ conflict: true, rev: curRev, data: cur?.data ?? null });
+      const rev = curRev + 1;
+      await tx`insert into rudge.user_state (owner_id, rev, data, edited_at, device_id)
+        values (${owner}, ${rev}, ${tx.json(data)}, ${editedAt}, ${deviceId})
+        on conflict (owner_id) do update set rev = excluded.rev, data = excluded.data, edited_at = excluded.edited_at,
+          device_id = excluded.device_id, updated_at = now()`;
+
+      // cópia de segurança: a primeira deste aparelho, a cada 30 min, e sempre que itens somem
+      const [last] = await tx<{ created_at: Date }[]>`select created_at from rudge.user_state_snapshots
+        where owner_id = ${owner} and device_id = ${deviceId} order by created_at desc limit 1`;
+      const shrank = cur ? itemCount(data) < itemCount(cur.data) : false;
+      if (!last || shrank || Date.now() - last.created_at.getTime() > SNAPSHOT_EVERY_MS) {
+        // quando algo some, guarda também como estava antes
+        if (shrank && cur) await tx`insert into rudge.user_state_snapshots (owner_id, device_id, rev, data) values (${owner}, ${'antes'}, ${curRev}, ${tx.json(cur.data)})`;
+        await tx`insert into rudge.user_state_snapshots (owner_id, device_id, rev, data) values (${owner}, ${deviceId}, ${rev}, ${tx.json(data)})`;
+      }
+      // limpeza: só cópias antigas, nunca a última de cada aparelho nem as 50 mais recentes
+      await tx`delete from rudge.user_state_snapshots s
+        where s.owner_id = ${owner} and s.created_at < now() - make_interval(days => ${SNAPSHOT_KEEP_DAYS})
+          and s.id not in (select id from rudge.user_state_snapshots where owner_id = ${owner} order by created_at desc limit 50)
+          and s.id not in (select distinct on (device_id) id from rudge.user_state_snapshots where owner_id = ${owner} order by device_id, created_at desc)`;
+      return json({ ok: true, rev });
+    });
+  }
+
+  if (op === 'snapshots') {
+    const items = await sql`select id, created_at as at, device_id as "deviceId",
+        coalesce(jsonb_array_length(data->'tasks'), 0) as tasks, coalesce(jsonb_array_length(data->'goals'), 0) as goals,
+        coalesce(jsonb_array_length(data->'habits'), 0) as habits, coalesce(jsonb_array_length(data->'reminders'), 0) as reminders
+      from rudge.user_state_snapshots where owner_id = ${owner} order by created_at desc limit 60`;
+    return json({ items: items.map((r) => ({ ...r, id: Number(r.id) })) });
+  }
+
+  if (op === 'snapshot') {
+    const [r] = await sql<{ data: Json }[]>`select data from rudge.user_state_snapshots where owner_id = ${owner} and id = ${Number(body.id) || 0}`;
+    return r ? json({ data: r.data }) : json({ error: 'não encontrada' }, 404);
+  }
+
+  return json({ error: 'operação desconhecida' }, 400);
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (req.method !== 'POST') return json({ error: 'use POST' }, 405);
@@ -422,6 +497,8 @@ Deno.serve(async (req) => {
         return await status(owner, body);
       case 'signout':
         return await signout(owner, body);
+      case 'state':
+        return await state(owner, body);
       default:
         return json({ error: 'rota desconhecida' }, 404);
     }

@@ -18,6 +18,12 @@ convite). `src/lib/auth.ts`
   pelo service worker com o app fechado. Só o hash fica no banco (`rudge.device_tokens`).
 - No primeiro login de quem usava a senha antiga, os avisos do dono antigo (`owner`) passam para a
   conta e a senha antiga deixa de valer (`rudge.legacy_claim`).
+- **Dados na conta** (`src/lib/cloud.ts`, rota `/state`): metas, tarefas, hábitos, lembretes, diário, central
+  de avisos e configurações ficam em `rudge.user_state` e iguais em todos os aparelhos da conta. Cada aparelho
+  junta a versão da conta com a sua (`src/lib/merge.ts`: por item, vale a alteração mais recente; apagar vale
+  em todos; aparelho novo nunca sobrepõe a conta). O servidor guarda cópias em `rudge.user_state_snapshots`
+  (Configurações → Dados na conta → Cópias de segurança); a última cópia de cada aparelho nunca é apagada.
+  Só as permissões de notificação continuam por aparelho.
 - **Plano**: o app consulta `public.my_access()` e só bloqueia quando o plano não inclui o Rudge app
   (sem resposta do servidor, segue liberado). `src/lib/access.ts`
 - **Integrações** (Configurações → Conta e integrações): conectar o Rudge Music (`public.integrations`)
