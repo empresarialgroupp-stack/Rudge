@@ -12,6 +12,21 @@ export * from './types';
 export * from './insights';
 export { BANKS, type BankId, type ImportedAccount };
 export { linkPluggy, openPluggyConnect, pluggyConfig, syncPluggy, unlinkPluggy, usePluggy } from './pluggy';
+export { amountsInAlerts, setPrivacy, usePrivacy } from './privacy';
+
+/** "há 10 min", "há 3 h" ou a data, para mostrar quando os bancos atualizaram. */
+export function ago(at: number, now = Date.now()) {
+  const min = Math.round((now - at) / 60_000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60);
+  return h < 24 ? `há ${h} h` : new Date(at).toLocaleDateString('pt-BR');
+}
+
+/** Bancos sincronizados, sem repetir (um banco pode ter conta e cartão). */
+export function syncedBanks(list: ImportedAccount[]) {
+  return [...new Set(list.map((a) => a.label || BANKS[a.bank].label))];
+}
 
 /* ------- Contas importadas: ficam só neste aparelho ------- */
 
@@ -70,6 +85,10 @@ export function importStatement(input: ImportInput) {
 
 export function removeAccount(id: string) {
   saveAccounts(accounts.filter((a) => a.id !== id));
+}
+
+export function removeAllAccounts() {
+  saveAccounts([]);
 }
 
 const importedProvider: FinanceProvider = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detectBank, mapAccount } from '../../../supabase/functions/finance/map';
+import { detectBank, inheritBank, mapAccount } from '../../../supabase/functions/finance/map';
 import { accountToCard } from './importer';
 import { CATEGORY_LABEL } from './sample';
 import { summarize } from './insights';
@@ -43,5 +43,22 @@ describe('Pluggy → Carteira', () => {
     expect(a.txs).toHaveLength(1);
     const s = summarize([accountToCard({ ...a, synced: true }, CATEGORY_LABEL, NOW)], NOW);
     expect(s.toSave).toBe(300);
+  });
+});
+
+describe('inheritBank', () => {
+  const item = { id: 'i1', connector: { name: 'MeuPluggy' } };
+  it('o cartão "Gold" herda o banco da conta do mesmo item', () => {
+    const conta = mapAccount({ id: 'a', type: 'BANK', name: 'Nubank' }, item, []);
+    const cartao = mapAccount({ id: 'b', type: 'CREDIT', name: 'gold' }, item, []);
+    expect(cartao.bank).toBe('outro');
+    const [, c] = inheritBank([conta, cartao]);
+    expect(c.bank).toBe('nubank');
+    expect(c.label).toBeUndefined();
+  });
+  it('sem banco conhecido no item, mantém o nome do produto', () => {
+    const [c] = inheritBank([mapAccount({ id: 'b', type: 'CREDIT', name: 'gold' }, item, [])]);
+    expect(c.bank).toBe('outro');
+    expect(c.label).toBe('gold');
   });
 });

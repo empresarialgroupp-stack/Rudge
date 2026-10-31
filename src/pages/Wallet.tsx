@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Check, FileUp, Landmark, Link2, RefreshCw, Trash2, Unlink, Lightbulb, PiggyBank, Receipt, Scale } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Check, Eye, EyeOff, FileUp, Landmark, Link2, Trash2, Lightbulb, PiggyBank, Receipt, Scale } from 'lucide-react';
 import { WalletStack } from '../components/WalletStack';
 import { WalletImport } from '../components/WalletImport';
 import { WalletConnect } from '../components/WalletConnect';
 import { cx, ProgressBar } from '../components/ui';
-import { toast } from '../lib/ui';
-import { BANKS, brl, removeAccount, summarize, syncPluggy, takeNewInflows, tips, unlinkPluggy, useAccounts, useFinance, useSaved, type FinanceCard } from '../lib/finance';
+import { navigate, toast } from '../lib/ui';
+import { ago, amountsInAlerts, BANKS, brl, removeAccount, setPrivacy, summarize, syncedBanks, takeNewInflows, tips, useAccounts, useFinance, usePrivacy, useSaved, type FinanceCard } from '../lib/finance';
 import type { PluggyState } from '../lib/finance/pluggy';
 
 function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
@@ -89,7 +89,7 @@ function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
                       </small>
                     </span>
                     <button className={cx('btn btn-sm btn-pill', done ? 'btn-primary' : 'btn-glass')} onClick={() => toggle(i.id, i.save)} aria-pressed={done}>
-                      {done && <Check />} {done ? 'Guardado' : `Guardar ${brl(i.save)}`}
+                      {done && <Check />} {done ? 'Guardado' : <>Guardar <span className="money">{brl(i.save)}</span></>}
                     </button>
                   </li>
                 );
@@ -159,48 +159,26 @@ function Accounts({ onImport }: { onImport: () => void }) {
   );
 }
 
-function ago(at: number) {
-  const min = Math.round((Date.now() - at) / 60_000);
-  if (min < 1) return 'agora';
-  if (min < 60) return `há ${min} min`;
-  const h = Math.round(min / 60);
-  return h < 24 ? `há ${h} h` : new Date(at).toLocaleDateString('pt-BR');
-}
-
-/** Estado da sincronização automática, com aviso quando um banco precisa de nova autorização. */
+/** Só o essencial: está sincronizado e quando. Atualizar e desconectar ficam em Configurações → Dados sensíveis. */
 function SyncStatus({ pluggy }: { pluggy: PluggyState }) {
-  const banks = [...new Set(pluggy.accounts.map((a) => a.label || BANKS[a.bank].label))].join(', ');
   const soon = pluggy.accounts.map((a) => (a.consentExpiresAt ? Date.parse(a.consentExpiresAt) : Infinity)).some((t) => t - Date.now() < 30 * 86_400_000);
   const warn = !!pluggy.error || !!pluggy.errors?.length || soon;
   const note = pluggy.error
-    ? `Sem conexão agora (${pluggy.error}). Mostrando o último retrato.`
+    ? 'Sem conexão agora, mostrando o último retrato.'
     : pluggy.errors?.length
-      ? 'Um banco não respondeu. Se continuar, autorize de novo no Meu Pluggy.'
+      ? 'Um banco não respondeu. Veja em Dados sensíveis.'
       : soon
-        ? 'A autorização de um banco vence em menos de 30 dias. Renove no Meu Pluggy.'
-        : `Atualizado ${ago(pluggy.at)} · os bancos atualizam a cada 24 h`;
+        ? 'Uma autorização vence em breve. Veja em Dados sensíveis.'
+        : null;
+  const n = syncedBanks(pluggy.accounts).length;
   return (
-    <div className="wsync glass" role="status">
+    <button type="button" className="wsync glass" onClick={() => navigate('configuracoes?sensiveis=1')} title="Gerenciar em Dados sensíveis">
       <span className={cx('wsync-dot', warn && 'warn')} aria-hidden="true" />
       <span className="wsync-body">
-        <b>Sincronizado: {banks}</b>
-        <span>{note}</span>
+        <b>{pluggy.syncing ? 'Atualizando…' : `${n} ${n === 1 ? 'banco sincronizado' : 'bancos sincronizados'}`}</b>
+        <span>{note ?? `Atualizado ${ago(pluggy.at)}`}</span>
       </span>
-      <button className="icon-btn btn-glass" onClick={() => void syncPluggy(true)} disabled={pluggy.syncing} aria-label="Atualizar agora" title="Atualizar agora">
-        <RefreshCw className={cx(pluggy.syncing && 'spin')} />
-      </button>
-      <button
-        className="icon-btn btn-glass"
-        onClick={() =>
-          confirm('Desconectar os bancos? A Carteira volta aos extratos ou aos dados de exemplo.') &&
-          void unlinkPluggy().catch((e: Error) => toast({ title: 'Não deu para desconectar', body: e.message, icon: 'error' }))
-        }
-        aria-label="Desconectar bancos"
-        title="Desconectar bancos"
-      >
-        <Unlink />
-      </button>
-    </div>
+    </button>
   );
 }
 
@@ -210,6 +188,7 @@ export function WalletPage() {
   const [selected, setSelected] = useState<FinanceCard | null>(null);
   const [importing, setImporting] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const privacy = usePrivacy();
 
   // Toda entrada nova vira um aviso para guardar 10%.
   useEffect(() => {
@@ -220,7 +199,7 @@ export function WalletPage() {
     if (!first) return;
     const more = fresh.length - 1;
     toast({
-      title: `Entrou ${brl(first.amount)} · guarde ${brl(first.save)}`,
+      title: amountsInAlerts() ? `Entrou ${brl(first.amount)} · guarde ${brl(first.save)}` : 'Entrou dinheiro · guarde 10%',
       body: `${first.merchant}: separe 10% para a reserva antes de gastar.${more > 0 ? ` Mais ${more} ${more === 1 ? 'entrada nova' : 'entradas novas'} abaixo.` : ''}`,
       icon: 'spark',
       duration: 9000,
@@ -240,18 +219,30 @@ export function WalletPage() {
   const scopeCards = selected ? cards.filter((c) => c.id === selected.id) : cards;
 
   return (
-    <div className="wallet-page">
-      {provider.id === 'pluggy' ? (
-        <SyncStatus pluggy={pluggy} />
-      ) : (
-        <div className="wallet-note glass">
-          <Landmark />
-          <span>{provider.live ? <b>Extratos importados.</b> : <b>Dados de exemplo.</b>} Conecte seus bancos para a Carteira se atualizar sozinha.</span>
-          <button className="btn btn-sm btn-primary btn-pill" onClick={() => setConnecting(true)}>
-            <Link2 /> Conectar
-          </button>
-        </div>
-      )}
+    <div className={cx('wallet-page', privacy.hidden && 'is-private')}>
+      <div className="wallet-top">
+        {provider.id === 'pluggy' ? (
+          <SyncStatus pluggy={pluggy} />
+        ) : (
+          <div className="wallet-note glass">
+            <Landmark />
+            <span>{provider.live ? <b>Extratos importados.</b> : <b>Dados de exemplo.</b>} Conecte seus bancos para a Carteira se atualizar sozinha.</span>
+            <button className="btn btn-sm btn-primary btn-pill" onClick={() => setConnecting(true)}>
+              <Link2 /> Conectar
+            </button>
+          </div>
+        )}
+        <button
+          type="button"
+          className="icon-btn btn-glass wallet-eye"
+          onClick={() => setPrivacy({ hidden: !privacy.hidden })}
+          aria-pressed={privacy.hidden}
+          aria-label={privacy.hidden ? 'Mostrar valores' : 'Ocultar valores'}
+          title={privacy.hidden ? 'Mostrar valores' : 'Ocultar valores'}
+        >
+          {privacy.hidden ? <EyeOff /> : <Eye />}
+        </button>
+      </div>
       <WalletStack cards={cards} label="Meus cartões" currency="BRL" locale="pt-BR" onSelectedChange={(c) => setSelected(c ? (cards.find((x) => x.id === c.id) ?? null) : null)} />
       <Dashboard key={selected?.id ?? 'all'} cards={scopeCards} scope={selected ? `${selected.issuer} · ${selected.product}` : 'Todos os cartões'} />
       {imported.length > 0 && provider.id !== 'pluggy' && <Accounts onImport={() => setImporting(true)} />}

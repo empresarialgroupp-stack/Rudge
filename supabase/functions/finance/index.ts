@@ -13,7 +13,7 @@
 // process.env): com eles, o app só abre o widget, e as credenciais nunca passam pelo navegador.
 
 import postgres from 'npm:postgres@3.4.5';
-import { mapAccount, type PluggyAccount, type PluggyItem, type PluggyTransaction } from './map.ts';
+import { inheritBank, mapAccount, type PluggyAccount, type PluggyItem, type PluggyTransaction } from './map.ts';
 
 const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false, max: 2, idle_timeout: 20 });
 type Json = Parameters<typeof sql.json>[0];
@@ -114,9 +114,11 @@ async function fetchAll(link: Link, given?: { clientId: string; clientSecret: st
   for (const itemId of link.item_ids) {
     try {
       const item = await get<PluggyItem>(key, `/items/${itemId}`);
+      const mine = [];
       for (const a of list(await get<PluggyAccount[] | { results: PluggyAccount[] }>(key, `/accounts?itemId=${itemId}`))) {
-        accounts.push(mapAccount(a, item, await transactions(key, a.id, from)));
+        mine.push(mapAccount(a, item, await transactions(key, a.id, from)));
       }
+      accounts.push(...inheritBank(mine));
     } catch (e) {
       errors.push(`${itemId.slice(0, 8)}…: ${e instanceof Error ? e.message : String(e)}`);
     }
