@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { AppState, Settings } from './types';
 import { todayKey } from './date';
+import { mergeStates, stampChanges } from './merge';
 
 const KEY = 'rudge:data:v1';
 export const STATE_VERSION = 1;
@@ -47,7 +48,14 @@ function seed(): AppState {
     journal: {},
     places: [],
     history: [],
+    // 0 = ainda sem nada do usuário (não sobrepõe os dados da conta)
+    editedAt: 0,
   };
+}
+
+/** Estado inicial (primeira vez neste aparelho). */
+export function freshState(): AppState {
+  return seed();
 }
 
 /** Para dados antigos sem editedAt: o registro mais recente que existir nos itens. */
@@ -116,6 +124,8 @@ function load(): AppState {
 
 let state: AppState = load();
 const listeners = new Set<() => void>();
+/** só alterações feitas neste aparelho (a sincronização da conta escuta isto) */
+const localListeners = new Set<() => void>();
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 
 function persist() {
@@ -134,10 +144,36 @@ export function getState(): AppState {
 export function setState(updater: (s: AppState) => AppState) {
   let next = updater(state);
   if (next === state) return;
+  next = stampChanges(state, next);
   if (isEdit(state, next)) next = { ...next, editedAt: Date.now() };
   state = next;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(persist, 80);
+  listeners.forEach((l) => l());
+  localListeners.forEach((l) => l());
+}
+
+/** Avisa a cada alteração feita neste aparelho (não as que chegam da conta). */
+export function onLocalChange(fn: () => void): () => void {
+  localListeners.add(fn);
+  return () => localListeners.delete(fn);
+}
+
+const PREV_KEY = 'rudge:data:prev';
+
+/**
+ * Aplica os dados que vieram da conta (já juntados com os deste aparelho).
+ * Antes guarda a cópia anterior deste aparelho, para nada se perder se algo der errado.
+ */
+export function applyRemote(next: AppState) {
+  try {
+    localStorage.setItem(PREV_KEY, JSON.stringify({ at: Date.now(), data: state }));
+  } catch {
+    /* sem espaço */
+  }
+  state = migrate(next);
+  clearTimeout(saveTimer);
+  persist();
   listeners.forEach((l) => l());
 }
 
@@ -150,16 +186,16 @@ export function useStore(): AppState {
   return useSyncExternalStore(subscribe, getState, getState);
 }
 
+/** Importar backup: junta com o que já existe (nada do que está no app é perdido). */
 export function replaceState(raw: unknown) {
-  state = { ...migrate(raw as Partial<AppState>), editedAt: Date.now() };
-  persist();
-  listeners.forEach((l) => l());
+  const imported = migrate(raw as Partial<AppState>);
+  setState((s) => ({ ...mergeStates(s, imported), editedAt: Date.now() }));
 }
 
+/** Apagar tudo: vale para todos os aparelhos da conta (a conta guarda cópias de segurança). */
 export function resetState() {
-  state = seed();
-  persist();
-  listeners.forEach((l) => l());
+  const fresh = seed();
+  setState((s) => ({ ...fresh, settings: { ...s.settings, onboarded: false }, deleted: s.deleted }));
 }
 
 export function exportState(): string {

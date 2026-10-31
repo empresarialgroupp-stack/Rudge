@@ -23,6 +23,8 @@ export interface Subtask {
 
 export interface Task {
   id: ID;
+  /** última alteração (ms), usada para juntar os dados de vários aparelhos */
+  updatedAt?: number;
   title: string;
   notes?: string;
   done: boolean;
@@ -65,6 +67,8 @@ export type CheckinFreq = 'none' | 'daily' | 'weekly';
 
 export interface Goal {
   id: ID;
+  /** última alteração (ms), usada para juntar os dados de vários aparelhos */
+  updatedAt?: number;
   title: string;
   why?: string;
   area: AreaKey;
@@ -91,6 +95,8 @@ export interface Goal {
 
 export interface Habit {
   id: ID;
+  /** última alteração (ms), usada para juntar os dados de vários aparelhos */
+  updatedAt?: number;
   title: string;
   area?: AreaKey;
   /** dias da semana em que o hábito vale (0 = domingo) */
@@ -107,6 +113,8 @@ export interface Habit {
 
 export interface Reminder {
   id: ID;
+  /** última alteração (ms), usada para juntar os dados de vários aparelhos */
+  updatedAt?: number;
   title: string;
   notes?: string;
   /** ISO — primeira ocorrência (âncora da recorrência) */
@@ -126,6 +134,8 @@ export interface Reminder {
 /** Lugar salvo para lembretes por localização. */
 export interface Place {
   id: ID;
+  /** última alteração (ms), usada para juntar os dados de vários aparelhos */
+  updatedAt?: number;
   name: string;
   lat: number;
   lng: number;
@@ -158,6 +168,8 @@ export interface ActiveFocus {
 
 export interface FocusSession {
   id: ID;
+  /** última alteração (ms), usada para juntar os dados de vários aparelhos */
+  updatedAt?: number;
   title: string;
   taskId?: ID;
   goalId?: ID;
@@ -266,4 +278,8 @@ export interface AppState {
   history: ActionLog[];
   /** último mês (YYYY-MM) cuja retrospectiva foi vista */
   seenRetro?: string;
+  /** itens apagados (id → ms), para o apagar valer em todos os aparelhos da conta */
+  deleted?: Record<ID, number>;
+  /** última alteração das configurações (ms) */
+  settingsAt?: number;
 }

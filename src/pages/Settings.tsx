@@ -13,6 +13,7 @@ import { setTheme } from '../components/ThemeToggle';
 import { enableNotifications } from './Dashboard';
 import { IntegrationsCard } from '../components/Integrations';
 import { SensitiveDataCard } from '../components/SensitiveData';
+import { AccountDataCard } from '../components/AccountData';
 import { FocusClockPicker } from '../components/FocusClock';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
@@ -115,6 +116,8 @@ export function SettingsPage() {
 
         <SensitiveDataCard />
 
+        <AccountDataCard />
+
         <section className="card glass">
           <div className="card-head">
             <h2 className="card-title">
@@ -122,7 +125,7 @@ export function SettingsPage() {
             </h2>
           </div>
           <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
-            Seus dados ficam salvos neste dispositivo. Exporte um backup para levar ao celular ou guardar com segurança.
+            Seus dados já ficam na conta. Se quiser, exporte também um arquivo de backup; importar junta o arquivo com o que você já tem.
           </p>
           <div className="row wrap">
             <button className="btn btn-glass" onClick={download}>
@@ -150,7 +153,7 @@ export function SettingsPage() {
               </button>
             ) : (
               <>
-                <span style={{ fontSize: 13 }}>Tem certeza? Isso não pode ser desfeito.</span>
+                <span style={{ fontSize: 13 }}>Apaga em todos os aparelhos da conta. Dá para voltar em Dados na conta → Cópias de segurança.</span>
                 <button
                   className="btn btn-danger btn-sm"
                   onClick={() => {
