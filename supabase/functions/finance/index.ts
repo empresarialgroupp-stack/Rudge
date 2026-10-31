@@ -53,17 +53,32 @@ interface Link {
 }
 
 async function credentials(link: Link) {
-  const envId = Deno.env.get('PLUGGY_CLIENT_ID');
-  const envSecret = Deno.env.get('PLUGGY_CLIENT_SECRET');
+  const envId = env('PLUGGY_CLIENT_ID');
+  const envSecret = env('PLUGGY_CLIENT_SECRET');
   if (envId && envSecret) return { clientId: envId, clientSecret: envSecret };
   if (!link.client_id || !link.secret_id) return null;
   const [s] = await sql<{ decrypted_secret: string }[]>`select decrypted_secret from vault.decrypted_secrets where id = ${link.secret_id}`;
   return s ? { clientId: link.client_id, clientSecret: s.decrypted_secret } : null;
 }
 
+/** Secret da função sem espaços, quebras de linha ou aspas coladas por engano no painel. */
+function env(name: string) {
+  return Deno.env.get(name)?.trim().replace(/^["']|["']$/g, '').trim() || undefined;
+}
+
+/** Mensagem de erro da Pluggy (nunca inclui as credenciais enviadas). */
+async function pluggyError(res: Response) {
+  const body = (await res.json().catch(() => ({}))) as { message?: string; code?: number };
+  console.error('pluggy', res.url.replace(API, ''), res.status, body.message ?? '');
+  return body.message ? `: ${body.message}` : '';
+}
+
 async function apiKey(clientId: string, clientSecret: string) {
   const res = await fetch(`${API}/auth`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ clientId, clientSecret }) });
-  if (!res.ok) throw new Error(res.status === 401 || res.status === 403 ? 'Client ID ou Client Secret inválido.' : `Pluggy respondeu ${res.status}.`);
+  if (!res.ok) {
+    const detail = await pluggyError(res);
+    throw new Error(res.status < 500 ? `A Pluggy recusou o Client ID ou o Client Secret${detail}` : `Pluggy respondeu ${res.status}${detail}`);
+  }
   return ((await res.json()) as { apiKey: string }).apiKey;
 }
 
@@ -152,13 +167,13 @@ async function connectToken(owner: string) {
     headers: { 'content-type': 'application/json', 'X-API-KEY': key },
     body: JSON.stringify({ clientUserId: owner }),
   });
-  if (!res.ok) return json({ error: `Pluggy respondeu ${res.status}.` }, 502);
+  if (!res.ok) return json({ error: `Pluggy respondeu ${res.status}${await pluggyError(res)}` }, 502);
   return json({ accessToken: ((await res.json()) as { accessToken: string }).accessToken });
 }
 
 async function config(owner: string) {
   const [l] = await sql<{ n: number }[]>`select cardinality(item_ids) as n from rudge.finance_links where owner_id = ${owner}`;
-  return json({ serverCredentials: !!(Deno.env.get('PLUGGY_CLIENT_ID') && Deno.env.get('PLUGGY_CLIENT_SECRET')), items: l?.n ?? 0 });
+  return json({ serverCredentials: !!(env('PLUGGY_CLIENT_ID') && env('PLUGGY_CLIENT_SECRET')), items: l?.n ?? 0 });
 }
 
 async function cards(owner: string, body: Record<string, unknown>) {
