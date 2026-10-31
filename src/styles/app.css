@@ -4913,34 +4913,134 @@ kbd,
   animation: rise-in 0.5s var(--ease) both;
 }
 
-.focus-setup h2 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 620;
-  letter-spacing: -0.04em;
+.focus-screen {
+  grid-template-columns: minmax(0, 1fr);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.focus-setup .select,
-.focus-setup .input {
+.focus-setup {
+  gap: 18px;
+}
+
+.focus-setup,
+.focus-run {
+  margin: auto;
+}
+
+.focus-setup .focus-dial {
+  width: min(232px, 58vw, 34svh);
+  margin-bottom: 6px;
+}
+
+.focus-setup .focus-time {
+  font-size: clamp(40px, 11vw, 54px);
+}
+
+.focus-dial.idle .fr-tick.on {
+  stroke: var(--fg-3);
+}
+
+.focus-form {
   width: 100%;
-}
-
-.focus-badge {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 99px;
-  background: var(--chip);
-  border: 1px solid var(--line);
-  font-size: 12.5px;
-  color: var(--fg-2);
 }
 
-.focus-badge svg {
-  width: 14px;
-  height: 14px;
+.focus-label {
+  width: 100%;
+  height: 48px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.25s var(--ease);
+}
+
+.focus-label::placeholder {
+  color: var(--fg-4);
+}
+
+.focus-label:focus {
+  border-bottom-color: var(--fg-3);
+}
+
+.focus-hint {
+  font-size: 12px;
+  color: var(--fg-4);
+}
+
+.focus-tasks {
+  width: calc(100% + 40px);
+  margin: 0 -20px;
+  padding: 2px 20px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+}
+
+.focus-tasks::-webkit-scrollbar {
+  display: none;
+}
+
+.focus-tasks:has(> :only-child),
+.focus-tasks:not(:has(> :nth-child(3))) {
+  justify-content: center;
+}
+
+.focus-task {
+  flex: none;
+  max-width: 220px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg-3);
+  font: inherit;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ease),
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+
+.focus-task:hover {
+  color: var(--fg);
+}
+
+.focus-task.on {
+  color: var(--fg);
+  background: var(--chip);
+  border-color: var(--line-2);
+}
+
+.focus-go {
+  min-width: 180px;
+}
+
+.focus-run > .focus-title {
+  margin-top: -4px;
+  font-size: 17px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  color: var(--fg-2);
 }
 
 .focus-durs .ltb {
@@ -4978,7 +5078,7 @@ kbd,
   stroke: var(--fg);
 }
 
-.focus-screen.paused .fr-tick.on {
+.focus-dial.paused .fr-tick.on {
   stroke: var(--fg-3);
 }
 
