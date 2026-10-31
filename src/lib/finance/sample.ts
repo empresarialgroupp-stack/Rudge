@@ -20,6 +20,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
   compras: 'Compras',
   casa: 'Casa',
   saude: 'Saúde',
+  fatura: 'Pagamento de fatura',
   outros: 'Outros',
 };
 

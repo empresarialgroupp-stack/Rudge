@@ -83,6 +83,7 @@ function Balance({ value, currency, locale, reduce }: { value: number; currency:
 
 export function WalletStack({ cards, label = 'Wallet', currency = 'USD', locale = 'en-US', onSelectedChange, className }: Props) {
   const reduce = !!useReducedMotion();
+  const [canHover] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.('(hover: hover)').matches);
   const n = cards.length;
   const [front, setFront] = useState(0);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -98,8 +99,9 @@ export function WalletStack({ cards, label = 'Wallet', currency = 'USD', locale 
 
   const open = openId ? (cards.find((c) => c.id === openId) ?? null) : null;
   const h = w * RATIO;
-  const peekMax = h * 0.2;
-  const peek = fan && !open ? peekMax : h * 0.09;
+  // no celular não há hover: a pilha não abre em leque, então não reserva espaço para ele
+  const peekMax = canHover ? h * 0.2 : h * 0.12;
+  const peek = fan && !open ? peekMax : canHover ? h * 0.09 : peekMax;
   const visible = Math.min(VISIBLE, n);
   const base = (visible - 1) * peekMax;
   const stageH = open ? h : h + base;

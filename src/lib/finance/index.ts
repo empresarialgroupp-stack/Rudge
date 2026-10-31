@@ -1,19 +1,89 @@
-// Ponto único de acesso aos dados financeiros. Hoje: exemplo. Para Open Finance, basta
-// registrar outro FinanceProvider aqui (ver docs/open-finance.md).
-import { useEffect, useState } from 'react';
-import { sampleProvider } from './sample';
+// Ponto único de acesso aos dados financeiros: extratos importados (OFX/CSV) quando houver,
+// senão dados de exemplo. Para Open Finance, basta registrar outro FinanceProvider aqui
+// (ver docs/open-finance.md).
+import { useEffect, useState, useSyncExternalStore } from 'react';
+import { CATEGORY_LABEL, sampleProvider } from './sample';
 import { monthKey } from './insights';
+import { accountToCard, mergeAccount, parseStatement, BANKS, type BankId, type ImportedAccount } from './importer';
 import type { FinanceCard, FinanceProvider } from './types';
 
 export * from './types';
 export * from './insights';
+export { BANKS, type BankId, type ImportedAccount };
 
-export function getProvider(): FinanceProvider {
-  return sampleProvider;
+/* ------- Contas importadas: ficam só neste aparelho ------- */
+
+const ACCOUNTS_KEY = 'rudge.wallet.accounts.v1';
+const listeners = new Set<() => void>();
+let accounts: ImportedAccount[] = readAccounts();
+
+function readAccounts(): ImportedAccount[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(ACCOUNTS_KEY) ?? '[]') as ImportedAccount[];
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+function saveAccounts(next: ImportedAccount[]) {
+  try {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(next));
+  } catch {
+    throw new Error('Sem espaço para guardar o extrato neste aparelho.');
+  }
+  accounts = next;
+  listeners.forEach((l) => l());
+}
+
+export function useAccounts() {
+  return useSyncExternalStore(
+    (fn) => {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    },
+    () => accounts,
+  );
+}
+
+export interface ImportInput {
+  bank: BankId;
+  kind: 'debit' | 'credit';
+  lastFour: string;
+  holder: string;
+  limit?: number;
+  text: string;
+}
+
+/** Lê o arquivo e junta à conta do mesmo banco/tipo/final. Devolve quantas transações vieram. */
+export function importStatement(input: ImportInput) {
+  const parsed = parseStatement(input.text);
+  if (!parsed.txs.length) throw new Error('Nenhuma transação encontrada no arquivo.');
+  const lastFour = input.lastFour.replace(/\D/g, '').slice(-4);
+  const id = `${input.bank}-${input.kind}-${lastFour || 'x'}`;
+  const prev = accounts.find((a) => a.id === id);
+  const next = mergeAccount(prev, { id, bank: input.bank, kind: input.kind, lastFour, holder: input.holder, limit: input.limit }, parsed);
+  saveAccounts([...accounts.filter((a) => a.id !== id), next]);
+  return { count: parsed.txs.length, added: next.txs.length - (prev?.txs.length ?? 0), format: parsed.format };
+}
+
+export function removeAccount(id: string) {
+  saveAccounts(accounts.filter((a) => a.id !== id));
+}
+
+const importedProvider: FinanceProvider = {
+  id: 'import',
+  label: 'Extratos importados',
+  live: true,
+  listCards: async () => accounts.map((a) => accountToCard(a, CATEGORY_LABEL)),
+};
+
+export function getProvider(list = accounts): FinanceProvider {
+  return list.length ? importedProvider : sampleProvider;
 }
 
 export function useFinance() {
-  const provider = getProvider();
+  const list = useAccounts();
+  const provider = getProvider(list);
   const [cards, setCards] = useState<FinanceCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -25,7 +95,7 @@ export function useFinance() {
     return () => {
       alive = false;
     };
-  }, [provider]);
+  }, [provider, list]);
   return { provider, cards, error };
 }
 

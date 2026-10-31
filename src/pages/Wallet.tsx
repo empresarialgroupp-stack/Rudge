@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Check, Landmark, Lightbulb, PiggyBank, Receipt, Scale } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Check, FileUp, Landmark, Trash2, Lightbulb, PiggyBank, Receipt, Scale } from 'lucide-react';
 import { WalletStack } from '../components/WalletStack';
+import { WalletImport } from '../components/WalletImport';
 import { cx, ProgressBar } from '../components/ui';
 import { toast } from '../lib/ui';
-import { brl, summarize, takeNewInflows, tips, useFinance, useSaved, type FinanceCard } from '../lib/finance';
+import { BANKS, brl, removeAccount, summarize, takeNewInflows, tips, useAccounts, useFinance, useSaved, type FinanceCard } from '../lib/finance';
 
 function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
   const { saved, total: savedTotal, toggle } = useSaved();
@@ -118,9 +119,48 @@ function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
   );
 }
 
+function Accounts({ onImport }: { onImport: () => void }) {
+  const accounts = useAccounts();
+  return (
+    <section className="wdash-block glass waccounts">
+      <div className="wb-head">
+        <Landmark />
+        <b>Extratos importados</b>
+        <button className="btn btn-sm btn-glass btn-pill wb-meta-btn" onClick={onImport}>
+          <FileUp /> Importar
+        </button>
+      </div>
+      <ul className="wsave">
+        {accounts.map((a) => (
+          <li key={a.id}>
+            <span className="wsave-body">
+              <b>
+                {BANKS[a.bank].label} · {a.kind === 'credit' ? 'Cartão' : 'Conta'}
+                {a.lastFour && ` •••• ${a.lastFour}`}
+              </b>
+              <small>
+                {a.txs.length} transações · atualizado em {new Date(a.importedAt).toLocaleDateString('pt-BR')}
+              </small>
+            </span>
+            <button
+              className="btn btn-sm btn-glass btn-pill"
+              onClick={() => confirm(`Remover ${BANKS[a.bank].label} deste aparelho?`) && removeAccount(a.id)}
+              aria-label={`Remover ${BANKS[a.bank].label}`}
+            >
+              <Trash2 />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="wb-foot">Atualize importando o extrato novo: o que já existe não duplica. Os dados ficam só neste aparelho.</p>
+    </section>
+  );
+}
+
 export function WalletPage() {
   const { provider, cards, error } = useFinance();
   const [selected, setSelected] = useState<FinanceCard | null>(null);
+  const [importing, setImporting] = useState(false);
 
   // Toda entrada nova vira um aviso para guardar 10%.
   useEffect(() => {
@@ -146,6 +186,7 @@ export function WalletPage() {
       </section>
     );
   if (!cards) return <section className="card glass muted">Carregando cartões…</section>;
+  if (selected && !cards.some((c) => c.id === selected.id)) setSelected(null);
 
   const scopeCards = selected ? cards.filter((c) => c.id === selected.id) : cards;
 
@@ -155,12 +196,17 @@ export function WalletPage() {
         <div className="wallet-note glass">
           <Landmark />
           <span>
-            <b>Dados de exemplo.</b> A conexão com seus bancos (Open Finance) entra assim que a integração for liberada.
+            <b>Dados de exemplo.</b> Importe seus extratos para ver os seus números.
           </span>
+          <button className="btn btn-sm btn-primary btn-pill" onClick={() => setImporting(true)}>
+            <FileUp /> Importar
+          </button>
         </div>
       )}
       <WalletStack cards={cards} label="Meus cartões" currency="BRL" locale="pt-BR" onSelectedChange={(c) => setSelected(c ? (cards.find((x) => x.id === c.id) ?? null) : null)} />
-      <Dashboard key={selected?.id ?? 'all'} cards={scopeCards} scope={selected ? `${selected.product} •••• ${selected.lastFour}` : 'Todos os cartões'} />
+      <Dashboard key={selected?.id ?? 'all'} cards={scopeCards} scope={selected ? `${selected.issuer} · ${selected.product}` : 'Todos os cartões'} />
+      {provider.live && <Accounts onImport={() => setImporting(true)} />}
+      {importing && <WalletImport onClose={() => setImporting(false)} />}
     </div>
   );
 }

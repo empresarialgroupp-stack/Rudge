@@ -1,7 +1,27 @@
 # Carteira: conexão com os bancos (Open Finance)
 
-Hoje a Carteira usa dados de exemplo (`src/lib/finance/sample.ts`). A troca para dados reais
-acontece em um único ponto: `getProvider()` em `src/lib/finance/index.ts`.
+A Carteira mostra dados de exemplo até o primeiro extrato importado. A fonte dos dados é
+escolhida em um único ponto: `getProvider()` em `src/lib/finance/index.ts`.
+
+## Hoje: importar extrato (grátis, sem senha de banco)
+
+Na Carteira → **Importar**. Lê OFX e CSV de Nubank (conta e
+fatura), Inter, Mercado Pago e outros bancos (`src/lib/finance/importer.ts`). O arquivo é lido
+no aparelho e as contas ficam no `localStorage` (`rudge.wallet.accounts.v1`). Reimportar não
+duplica. Pagamento de fatura não conta como gasto (as compras já contam no cartão) nem como
+entrada. Entradas abaixo de R$ 20 não entram na regra dos 10%.
+
+Limite conhecido: transferência entre as próprias contas aparece como entrada em uma e saída
+na outra.
+
+## Custo do Open Finance automático
+
+- Planos comerciais dos agregadores (Pluggy, Belvo) custam milhares de reais por mês: servem
+  para apps com muitos usuários, não para uso pessoal.
+- Caminho grátis para uso pessoal: **Meu Pluggy** (meu.pluggy.ai), app gratuito onde a pessoa
+  conecta os próprios bancos via Open Finance; o desenvolvedor lê esses dados pela API com o
+  conector MeuPluggy. O painel de desenvolvedor tem teste de 15 dias; relatos indicam que o
+  conector continua funcionando depois, mas a Pluggy pode mudar as regras.
 
 ## Agregador recomendado: Pluggy
 

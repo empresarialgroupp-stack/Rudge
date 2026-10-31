@@ -6495,3 +6495,90 @@ kbd,
     font-size: 14px;
   }
 }
+
+/* importação de extratos */
+.wallet-note .btn {
+  margin-left: auto;
+  flex: none;
+  align-self: center;
+}
+.wb-meta-btn {
+  margin-left: auto;
+}
+.wb-head {
+  flex-wrap: wrap;
+}
+.wb-meta {
+  white-space: nowrap;
+}
+.waccounts .wsave li .btn svg {
+  width: 15px;
+  height: 15px;
+}
+.wimport {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wimport .segmented.full button {
+  font-size: 12.5px;
+  padding-inline: 6px;
+}
+.wimport-how,
+.wimport-lock {
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: var(--fg-3);
+}
+.wimport-lock {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  margin: 0;
+}
+.wimport-lock svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  margin-top: 3px;
+}
+.wimport-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.wimport-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  border: 1.5px dashed var(--line-2);
+  border-radius: 14px;
+  background: var(--field);
+  color: var(--fg-2);
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+}
+.wimport-file svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: var(--fg-3);
+}
+.wimport-file span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 560px) {
+  .wallet-note {
+    align-items: center;
+    padding: 8px 8px 8px 12px;
+  }
+  .wallet-note > svg {
+    display: none;
+  }
+}

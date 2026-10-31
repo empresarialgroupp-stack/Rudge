@@ -31,7 +31,7 @@ export interface WalletStackCard {
   transactions: WalletTransaction[];
 }
 
-export type Category = 'salario' | 'pix' | 'mercado' | 'restaurante' | 'transporte' | 'assinatura' | 'compras' | 'casa' | 'saude' | 'outros';
+export type Category = 'salario' | 'pix' | 'mercado' | 'restaurante' | 'transporte' | 'assinatura' | 'compras' | 'casa' | 'saude' | 'fatura' | 'outros';
 
 /** Transação com data e categoria, como vem do agregador (Open Finance). */
 export interface FinanceTransaction extends WalletTransaction {
@@ -49,7 +49,7 @@ export interface FinanceCard extends WalletStackCard {
 
 /** Fonte dos dados: exemplo agora, Open Finance (Pluggy) depois. */
 export interface FinanceProvider {
-  id: 'sample' | 'pluggy';
+  id: 'sample' | 'import' | 'pluggy';
   label: string;
   /** true quando os dados são reais (vindos do banco) */
   live: boolean;

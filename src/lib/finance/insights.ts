@@ -19,9 +19,15 @@ export function monthTransactions(cards: FinanceCard[], now = Date.now()) {
 }
 
 /** Entradas que contam para os 10%: dinheiro novo (estornos não contam). */
+/** abaixo disso (rendimento de centavos, cashback) não vale pedir para guardar */
+const MIN_INCOME = 20;
+
 export function isIncome(t: FinanceTransaction) {
-  return t.amount > 0 && t.category !== 'compras';
+  return t.amount >= MIN_INCOME && t.category !== 'compras' && t.category !== 'fatura';
 }
+
+/** Pagar a fatura não é gasto novo: as compras já contam no cartão. */
+const isSpend = (t: FinanceTransaction) => t.amount < 0 && t.category !== 'fatura';
 
 export interface Inflow {
   id: string;
@@ -49,9 +55,9 @@ export function summarize(cards: FinanceCard[], now = Date.now()): MonthSummary 
     .sort((a, b) => b.date.localeCompare(a.date))
     .map((t) => ({ id: t.id, merchant: t.merchant, date: t.date, amount: t.amount, save: round2(t.amount * SAVE_RATE) }));
   const received = round2(inflows.reduce((n, t) => n + t.amount, 0));
-  const spent = round2(txs.filter((t) => t.amount < 0).reduce((n, t) => n - t.amount, 0));
+  const spent = round2(txs.filter(isSpend).reduce((n, t) => n - t.amount, 0));
   const cats = new Map<Category, number>();
-  for (const t of txs) if (t.amount < 0) cats.set(t.category, (cats.get(t.category) ?? 0) - t.amount);
+  for (const t of txs) if (isSpend(t)) cats.set(t.category, (cats.get(t.category) ?? 0) - t.amount);
   const byCategory = [...cats]
     .map(([category, total]) => ({ category, label: CATEGORY_LABEL[category], total: round2(total), share: spent ? total / spent : 0 }))
     .sort((a, b) => b.total - a.total);
