@@ -145,9 +145,11 @@ async function connectToken(owner: string) {
   const [l] = await sql<Link[]>`select * from rudge.finance_links where owner_id = ${owner}`;
   const cred = await credentials(l ?? ({ client_id: null, secret_id: null } as Link));
   if (!cred) return json({ error: 'Configure PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET nos secrets da função.' }, 412);
+  const key = await apiKey(cred.clientId, cred.clientSecret).catch((e: Error) => e);
+  if (key instanceof Error) return json({ error: key.message }, 400);
   const res = await fetch(`${API}/connect_token`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'X-API-KEY': await apiKey(cred.clientId, cred.clientSecret) },
+    headers: { 'content-type': 'application/json', 'X-API-KEY': key },
     body: JSON.stringify({ clientUserId: owner }),
   });
   if (!res.ok) return json({ error: `Pluggy respondeu ${res.status}.` }, 502);
