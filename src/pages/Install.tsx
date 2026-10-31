@@ -107,6 +107,7 @@ export function Install() {
 
       <div className="toolbar">
         <Segmented
+          full
           value={target}
           onChange={setTarget}
           options={[
@@ -202,9 +203,9 @@ export function Install() {
                 <Smartphone /> Abrir em outro dispositivo
               </h2>
             </div>
-            <div className="row" style={{ alignItems: 'flex-start', gap: 16 }}>
+            <div className="row wrap" style={{ alignItems: 'flex-start', gap: 16 }}>
               <QR text={url} />
-              <div className="stack sm" style={{ minWidth: 0 }}>
+              <div className="stack sm" style={{ minWidth: 0, flex: '1 1 140px' }}>
                 <p className="muted" style={{ margin: 0, fontSize: 13 }}>Escaneie com a câmera do celular para abrir o Rudge e instalar.</p>
                 <code style={{ fontSize: 12, wordBreak: 'break-all', color: 'var(--fg-2)' }}>{url}</code>
                 <button
