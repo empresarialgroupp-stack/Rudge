@@ -90,12 +90,14 @@ async function get<T>(key: string, path: string): Promise<T> {
 
 const list = <T>(r: T[] | { results?: T[] }) => (Array.isArray(r) ? r : (r.results ?? []));
 
+/** GET /v2/transactions com cursor (o /transactions antigo responde 410 nas chaves novas). */
 async function transactions(key: string, accountId: string, from: string) {
   const out: PluggyTransaction[] = [];
-  for (let page = 1; page <= 6; page++) {
-    const r = await get<{ results: PluggyTransaction[]; totalPages?: number }>(key, `/transactions?accountId=${accountId}&from=${from}&pageSize=500&page=${page}`);
+  let query: string | null = `?accountId=${accountId}&dateFrom=${from}`;
+  for (let page = 0; query && page < 10; page++) {
+    const r: { results: PluggyTransaction[]; next?: string | null } = await get(key, `/v2/transactions${query}`);
     out.push(...list(r));
-    if (!r.totalPages || page >= r.totalPages) break;
+    query = r.next || null;
   }
   return out;
 }
