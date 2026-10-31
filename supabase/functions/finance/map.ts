@@ -72,7 +72,9 @@ export function signedAmount(t: PluggyTransaction, kind: 'debit' | 'credit') {
 
 export function mapAccount(a: PluggyAccount, item: PluggyItem | undefined, txs: PluggyTransaction[], now = Date.now()): SyncedAccount {
   const kind = a.type === 'CREDIT' ? 'credit' : 'debit';
-  const bank = detectBank(item?.connector?.name, a.marketingName, a.name);
+  // itens do Meu Pluggy podem vir com o conector "MeuPluggy": aí o banco sai do nome da conta
+  const connector = /meu ?pluggy/i.test(item?.connector?.name ?? '') ? undefined : item?.connector?.name;
+  const bank = detectBank(connector, a.marketingName, a.name);
   return {
     id: `pluggy-${a.id}`,
     bank,
@@ -82,7 +84,7 @@ export function mapAccount(a: PluggyAccount, item: PluggyItem | undefined, txs: 
     limit: a.creditData?.creditLimit ?? undefined,
     balance: typeof a.balance === 'number' ? a.balance : undefined,
     importedAt: item?.lastUpdatedAt ? Date.parse(item.lastUpdatedAt) : now,
-    label: bank === 'outro' ? item?.connector?.name || a.marketingName || a.name || undefined : undefined,
+    label: bank === 'outro' ? connector || a.marketingName || a.name || undefined : undefined,
     consentExpiresAt: item?.consentExpiresAt ?? undefined,
     txs: txs
       .filter((t) => t.status !== 'PENDING' || kind === 'credit')

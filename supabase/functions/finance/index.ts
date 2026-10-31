@@ -83,8 +83,8 @@ async function transactions(key: string, accountId: string, from: string) {
 }
 
 /** Busca tudo na Pluggy: itens → contas → transações desde o início do mês passado. */
-async function fetchAll(link: Link) {
-  const cred = await credentials(link);
+async function fetchAll(link: Link, given?: { clientId: string; clientSecret: string }) {
+  const cred = given ?? (await credentials(link));
   if (!cred) throw new Error('Credenciais da Pluggy não configuradas.');
   const key = await apiKey(cred.clientId, cred.clientSecret);
   const d = new Date();
@@ -116,17 +116,19 @@ async function link(owner: string, body: Record<string, unknown>) {
   const clientSecret = typeof body.clientSecret === 'string' ? body.clientSecret.trim().slice(0, 200) : '';
 
   const [prev] = await sql<Link[]>`select * from rudge.finance_links where owner_id = ${owner}`;
-  let secretId = prev?.secret_id ?? null;
-  if (clientSecret) {
-    if (secretId) await sql`select vault.update_secret(${secretId}::uuid, ${clientSecret})`;
-    else [{ id: secretId }] = await sql<{ id: string }[]>`select vault.create_secret(${clientSecret}, ${`rudge_pluggy_${owner}`}) as id`;
-  }
-  const next: Link = { owner_id: owner, item_ids: itemIds, client_id: clientId || prev?.client_id || null, secret_id: secretId, snapshot: null, fetched_at: null };
+  const next: Link = { owner_id: owner, item_ids: itemIds, client_id: clientId || prev?.client_id || null, secret_id: prev?.secret_id ?? null, snapshot: null, fetched_at: null };
 
-  // valida antes de salvar: credenciais e itens precisam responder
-  const snap = await fetchAll(next).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));
+  // valida antes de gravar qualquer coisa: credenciais e itens precisam responder
+  const given = clientId && clientSecret ? { clientId, clientSecret } : undefined;
+  const snap = await fetchAll(next, given).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));
   if ('error' in snap) return json({ error: snap.error }, 400);
   if (!snap.accounts.length) return json({ error: `Nenhuma conta encontrada. ${snap.errors.join(' ')}`.trim() }, 400);
+
+  let secretId = next.secret_id;
+  if (clientSecret) {
+    if (secretId) await sql`select vault.update_secret(${secretId}::uuid, ${clientSecret})`;
+    else [{ id: secretId }] = await sql<{ id: string }[]>`select vault.create_secret(${clientSecret}, ${`rudge_pluggy_${owner}_${Date.now()}`}) as id`;
+  }
 
   await sql`insert into rudge.finance_links (owner_id, item_ids, client_id, secret_id, snapshot, fetched_at)
     values (${owner}, ${itemIds}, ${next.client_id}, ${secretId}, ${sql.json(snap as unknown as Json)}, now())
