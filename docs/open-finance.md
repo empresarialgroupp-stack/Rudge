@@ -18,38 +18,38 @@ na outra.
 
 - Planos comerciais dos agregadores (Pluggy, Belvo) custam milhares de reais por mês: servem
   para apps com muitos usuários, não para uso pessoal.
-- Caminho grátis para uso pessoal: **Meu Pluggy** (meu.pluggy.ai), app gratuito onde a pessoa
-  conecta os próprios bancos via Open Finance; o desenvolvedor lê esses dados pela API com o
-  conector MeuPluggy. O painel de desenvolvedor tem teste de 15 dias; relatos indicam que o
-  conector continua funcionando depois, mas a Pluggy pode mudar as regras.
+- Caminho grátis para uso pessoal: **Meu Pluggy** (abaixo).
 
-## Agregador recomendado: Pluggy
+## Sincronização automática: Meu Pluggy (grátis, uso pessoal)
 
-- Brasileiro, conecta via Open Finance os principais bancos (Itaú, Bradesco, Santander, BB,
-  Caixa, Nubank, Inter, C6 e outros) com consentimento do próprio usuário.
-- Tem widget pronto de conexão (Pluggy Connect) e ambiente de testes gratuito.
-- Alternativa: Belvo (mais focado em empresas e América Latina como um todo).
-
-## Como fica a arquitetura
+Meu Pluggy é gratuito para uso pessoal (até 5 conexões, sem prazo de teste) e atualiza os bancos a
+cada 24 h. A autorização de cada banco vale 1 ano (`consentExpiresAt`); a Carteira avisa 30 dias
+antes. Guia oficial: https://docs.pluggy.ai/en/docs/guides/meu-pluggy-personal-use.md
 
 ```
-app ──/finance/connect-token──▶ Edge Function (Supabase) ──▶ Pluggy API
- │  abre o Pluggy Connect com o token, o usuário autoriza no banco
- └─/finance/cards──▶ Edge Function ──▶ contas, cartões e transações ──▶ FinanceCard[]
+app ──x-rudge-token──▶ função "finance" (Supabase) ──▶ api.pluggy.ai
+                         rudge.finance_links: item_ids, client_id, secret (Vault), último retrato
 ```
 
-- `PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET` ficam como secrets do Supabase. Nunca no repositório
-  nem no front.
-- O app só guarda o `itemId` da conexão; as transações vêm do servidor.
-- Só os 4 últimos dígitos do cartão chegam ao app.
+- `supabase/functions/finance`: `/link` (valida e salva), `/cards` (cache de 20 min no servidor),
+  `/unlink`. Conversão Pluggy → Carteira em `map.ts` (testada no Vitest).
+- App (`src/lib/finance/pluggy.ts`): sincroniza ao abrir, ao voltar para o app e a cada 30 min, com
+  o último retrato em cache para abrir na hora.
+- Sem a função publicada, o app segue com extratos importados ou dados de exemplo.
 
-## Passos para ligar
+### Publicar
 
-1. Criar conta em pluggy.ai e gerar as credenciais de teste.
-2. Salvar as credenciais como secrets do Supabase.
-3. Adicionar as rotas `/finance/*` na função `rudge` e um `pluggyProvider` que implemente
-   `FinanceProvider.listCards()` mapeando contas/transações para `FinanceCard`.
-4. Testar no ambiente de testes da Pluggy, depois trocar para produção.
+```bash
+supabase db push                                   # tabela rudge.finance_links
+supabase functions deploy finance --no-verify-jwt  # projeto btpbarqvsglqzpcpezvz
+```
+
+### Conectar (uma vez)
+
+1. meu.pluggy.ai: criar conta e conectar Nubank, Inter e Mercado Pago.
+2. dashboard.pluggy.ai (mesma conta): criar aplicação, copiar Client ID e Client Secret.
+3. Aplicação → Demo → Connect Account → MeuPluggy. Copiar os Item IDs em Connected Items.
+4. Rudge → Carteira → Conectar: colar os três.
 
 ## Wallet stack da Arc Pro
 

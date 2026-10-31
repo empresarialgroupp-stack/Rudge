@@ -1,15 +1,17 @@
 // Ponto único de acesso aos dados financeiros: extratos importados (OFX/CSV) quando houver,
 // senão dados de exemplo. Para Open Finance, basta registrar outro FinanceProvider aqui
 // (ver docs/open-finance.md).
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { CATEGORY_LABEL, sampleProvider } from './sample';
 import { monthKey } from './insights';
 import { accountToCard, mergeAccount, parseStatement, BANKS, type BankId, type ImportedAccount } from './importer';
 import type { FinanceCard, FinanceProvider } from './types';
+import { startPluggySync, usePluggy, type PluggyState } from './pluggy';
 
 export * from './types';
 export * from './insights';
 export { BANKS, type BankId, type ImportedAccount };
+export { linkPluggy, syncPluggy, unlinkPluggy, usePluggy } from './pluggy';
 
 /* ------- Contas importadas: ficam só neste aparelho ------- */
 
@@ -77,15 +79,23 @@ const importedProvider: FinanceProvider = {
   listCards: async () => accounts.map((a) => accountToCard(a, CATEGORY_LABEL)),
 };
 
-export function getProvider(list = accounts): FinanceProvider {
+function pluggyProvider(p: PluggyState): FinanceProvider {
+  return { id: 'pluggy', label: 'Sincronizado (Meu Pluggy)', live: true, listCards: async () => p.accounts.map((a) => accountToCard(a, CATEGORY_LABEL)) };
+}
+
+/** Ordem: bancos sincronizados → extratos importados → dados de exemplo. */
+export function getProvider(list = accounts, p?: PluggyState): FinanceProvider {
+  if (p?.linked && p.accounts.length) return pluggyProvider(p);
   return list.length ? importedProvider : sampleProvider;
 }
 
 export function useFinance() {
   const list = useAccounts();
-  const provider = getProvider(list);
+  const pluggy = usePluggy();
+  const provider = useMemo(() => getProvider(list, pluggy), [list, pluggy]);
   const [cards, setCards] = useState<FinanceCard[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => startPluggySync(), []);
   useEffect(() => {
     let alive = true;
     provider
@@ -95,8 +105,8 @@ export function useFinance() {
     return () => {
       alive = false;
     };
-  }, [provider, list]);
-  return { provider, cards, error };
+  }, [provider]);
+  return { provider, cards, error, pluggy };
 }
 
 /* ------- Preferências deste aparelho: entradas já avisadas e quanto foi guardado ------- */

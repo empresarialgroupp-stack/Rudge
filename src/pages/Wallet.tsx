@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Check, FileUp, Landmark, Trash2, Lightbulb, PiggyBank, Receipt, Scale } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Check, FileUp, Landmark, Link2, RefreshCw, Trash2, Unlink, Lightbulb, PiggyBank, Receipt, Scale } from 'lucide-react';
 import { WalletStack } from '../components/WalletStack';
 import { WalletImport } from '../components/WalletImport';
+import { WalletConnect } from '../components/WalletConnect';
 import { cx, ProgressBar } from '../components/ui';
 import { toast } from '../lib/ui';
-import { BANKS, brl, removeAccount, summarize, takeNewInflows, tips, useAccounts, useFinance, useSaved, type FinanceCard } from '../lib/finance';
+import { BANKS, brl, removeAccount, summarize, syncPluggy, takeNewInflows, tips, unlinkPluggy, useAccounts, useFinance, useSaved, type FinanceCard } from '../lib/finance';
+import type { PluggyState } from '../lib/finance/pluggy';
 
 function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
   const { saved, total: savedTotal, toggle } = useSaved();
@@ -157,14 +159,61 @@ function Accounts({ onImport }: { onImport: () => void }) {
   );
 }
 
+function ago(at: number) {
+  const min = Math.round((Date.now() - at) / 60_000);
+  if (min < 1) return 'agora';
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60);
+  return h < 24 ? `há ${h} h` : new Date(at).toLocaleDateString('pt-BR');
+}
+
+/** Estado da sincronização automática, com aviso quando um banco precisa de nova autorização. */
+function SyncStatus({ pluggy }: { pluggy: PluggyState }) {
+  const banks = [...new Set(pluggy.accounts.map((a) => a.label || BANKS[a.bank].label))].join(', ');
+  const soon = pluggy.accounts.map((a) => (a.consentExpiresAt ? Date.parse(a.consentExpiresAt) : Infinity)).some((t) => t - Date.now() < 30 * 86_400_000);
+  const warn = !!pluggy.error || !!pluggy.errors?.length || soon;
+  const note = pluggy.error
+    ? `Sem conexão agora (${pluggy.error}). Mostrando o último retrato.`
+    : pluggy.errors?.length
+      ? 'Um banco não respondeu. Se continuar, autorize de novo no Meu Pluggy.'
+      : soon
+        ? 'A autorização de um banco vence em menos de 30 dias. Renove no Meu Pluggy.'
+        : `Atualizado ${ago(pluggy.at)} · os bancos atualizam a cada 24 h`;
+  return (
+    <div className="wsync glass" role="status">
+      <span className={cx('wsync-dot', warn && 'warn')} aria-hidden="true" />
+      <span className="wsync-body">
+        <b>Sincronizado: {banks}</b>
+        <span>{note}</span>
+      </span>
+      <button className="icon-btn btn-glass" onClick={() => void syncPluggy(true)} disabled={pluggy.syncing} aria-label="Atualizar agora" title="Atualizar agora">
+        <RefreshCw className={cx(pluggy.syncing && 'spin')} />
+      </button>
+      <button
+        className="icon-btn btn-glass"
+        onClick={() =>
+          confirm('Desconectar os bancos? A Carteira volta aos extratos ou aos dados de exemplo.') &&
+          void unlinkPluggy().catch((e: Error) => toast({ title: 'Não deu para desconectar', body: e.message, icon: 'error' }))
+        }
+        aria-label="Desconectar bancos"
+        title="Desconectar bancos"
+      >
+        <Unlink />
+      </button>
+    </div>
+  );
+}
+
 export function WalletPage() {
-  const { provider, cards, error } = useFinance();
+  const { provider, cards, error, pluggy } = useFinance();
+  const imported = useAccounts();
   const [selected, setSelected] = useState<FinanceCard | null>(null);
   const [importing, setImporting] = useState(false);
+  const [connecting, setConnecting] = useState(false);
 
   // Toda entrada nova vira um aviso para guardar 10%.
   useEffect(() => {
-    if (!cards) return;
+    if (!cards || !provider.live) return;
     const inflows = summarize(cards).inflows;
     const fresh = takeNewInflows(inflows.map((i) => i.id));
     const first = inflows.find((i) => fresh.includes(i.id));
@@ -176,7 +225,7 @@ export function WalletPage() {
       icon: 'spark',
       duration: 9000,
     });
-  }, [cards]);
+  }, [cards, provider.live]);
 
   if (error)
     return (
@@ -192,21 +241,22 @@ export function WalletPage() {
 
   return (
     <div className="wallet-page">
-      {!provider.live && (
+      {provider.id === 'pluggy' ? (
+        <SyncStatus pluggy={pluggy} />
+      ) : (
         <div className="wallet-note glass">
           <Landmark />
-          <span>
-            <b>Dados de exemplo.</b> Importe seus extratos para ver os seus números.
-          </span>
-          <button className="btn btn-sm btn-primary btn-pill" onClick={() => setImporting(true)}>
-            <FileUp /> Importar
+          <span>{provider.live ? <b>Extratos importados.</b> : <b>Dados de exemplo.</b>} Conecte seus bancos para a Carteira se atualizar sozinha.</span>
+          <button className="btn btn-sm btn-primary btn-pill" onClick={() => setConnecting(true)}>
+            <Link2 /> Conectar
           </button>
         </div>
       )}
       <WalletStack cards={cards} label="Meus cartões" currency="BRL" locale="pt-BR" onSelectedChange={(c) => setSelected(c ? (cards.find((x) => x.id === c.id) ?? null) : null)} />
       <Dashboard key={selected?.id ?? 'all'} cards={scopeCards} scope={selected ? `${selected.issuer} · ${selected.product}` : 'Todos os cartões'} />
-      {provider.live && <Accounts onImport={() => setImporting(true)} />}
+      {imported.length > 0 && provider.id !== 'pluggy' && <Accounts onImport={() => setImporting(true)} />}
       {importing && <WalletImport onClose={() => setImporting(false)} />}
+      {connecting && <WalletConnect onClose={() => setConnecting(false)} onImport={() => setImporting(true)} />}
     </div>
   );
 }

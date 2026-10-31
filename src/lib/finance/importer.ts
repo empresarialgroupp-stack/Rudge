@@ -251,6 +251,11 @@ export interface ImportedAccount {
   balance?: number;
   importedAt: number;
   txs: ParsedTx[];
+  /** nome do banco quando não é um dos conhecidos (contas sincronizadas) */
+  label?: string;
+  /** contas da Pluggy: o saldo do cartão é a fatura aberta */
+  synced?: boolean;
+  consentExpiresAt?: string;
 }
 
 /** Junta um extrato novo a uma conta existente, sem duplicar e mantendo 12 meses. */
@@ -282,15 +287,15 @@ export function accountToCard(a: ImportedAccount, labels: Record<Category, strin
   return {
     id: a.id,
     kind: a.kind,
-    issuer: bank.label,
+    issuer: a.label || bank.label,
     product: credit ? 'Cartão de crédito' : 'Conta',
     lastFour: a.lastFour || '••••',
     holder: a.holder,
     variant: bank.variant,
     tint: bank.tint,
     limit: a.limit,
-    balance: Math.round((credit ? monthSpent : (a.balance ?? a.txs.reduce((n, t) => n + t.amount, 0))) * 100) / 100,
-    balanceLabel: credit ? 'Gasto no mês' : a.balance !== undefined ? 'Saldo' : 'Saldo do período',
+    balance: Math.round((credit ? (a.synced && a.balance !== undefined ? a.balance : monthSpent) : (a.balance ?? a.txs.reduce((n, t) => n + t.amount, 0))) * 100) / 100,
+    balanceLabel: credit ? (a.synced && a.balance !== undefined ? 'Fatura atual' : 'Gasto no mês') : a.balance !== undefined ? 'Saldo' : 'Saldo do período',
     transactions,
   };
 }

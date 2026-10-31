@@ -4,3 +4,7 @@ project_id = "btpbarqvsglqzpcpezvz"
 [functions.rudge]
 # a função faz a própria autenticação (token derivado da senha / segredo do cron)
 verify_jwt = false
+
+[functions.finance]
+# autenticação própria (token do aparelho), como a função "rudge"
+verify_jwt = false
