@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, CloudCheck, Database, Download, LocateFixed, LogOut, MapPin, Palette, Trash2, Upload, User } from 'lucide-react';
+import { Bell, CloudCheck, Database, Download, LocateFixed, LogOut, MapPin, Palette, Timer, Trash2, Upload, User } from 'lucide-react';
 import { exportState, replaceState, resetState, useStore } from '../lib/store';
 import { addPlace, deletePlace, updateSettings } from '../lib/actions';
 import { currentPosition, geoSupported } from '../lib/geo';
@@ -13,6 +13,7 @@ import { setTheme } from '../components/ThemeToggle';
 import { enableNotifications } from './Dashboard';
 import { IntegrationsCard } from '../components/Integrations';
 import { SensitiveDataCard } from '../components/SensitiveData';
+import { FocusClockPicker } from '../components/FocusClock';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
 
@@ -97,6 +98,18 @@ export function SettingsPage() {
         </section>
 
         <IntegrationsCard />
+
+        <section className="card glass">
+          <div className="card-head">
+            <h2 className="card-title">
+              <Timer /> Modo foco
+            </h2>
+          </div>
+          <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+            Relógio que aparece quando você foca.
+          </p>
+          <FocusClockPicker value={st.focusClock} onChange={(v) => updateSettings({ focusClock: v })} />
+        </section>
 
         <PlacesCard />
 

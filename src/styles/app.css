@@ -4913,34 +4913,134 @@ kbd,
   animation: rise-in 0.5s var(--ease) both;
 }
 
-.focus-setup h2 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 620;
-  letter-spacing: -0.04em;
+.focus-screen {
+  grid-template-columns: minmax(0, 1fr);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.focus-setup .select,
-.focus-setup .input {
+.focus-setup {
+  gap: 18px;
+}
+
+.focus-setup,
+.focus-run {
+  margin: auto;
+}
+
+.focus-setup .focus-dial {
+  width: min(232px, 58vw, 34svh);
+  margin-bottom: 6px;
+}
+
+.focus-setup .focus-time {
+  font-size: clamp(40px, 11vw, 54px);
+}
+
+.focus-dial.idle .fr-tick.on {
+  stroke: var(--fg-3);
+}
+
+.focus-form {
   width: 100%;
-}
-
-.focus-badge {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 99px;
-  background: var(--chip);
-  border: 1px solid var(--line);
-  font-size: 12.5px;
-  color: var(--fg-2);
 }
 
-.focus-badge svg {
-  width: 14px;
-  height: 14px;
+.focus-label {
+  width: 100%;
+  height: 48px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line-2);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 560;
+  letter-spacing: -0.03em;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.25s var(--ease);
+}
+
+.focus-label::placeholder {
+  color: var(--fg-4);
+}
+
+.focus-label:focus {
+  border-bottom-color: var(--fg-3);
+}
+
+.focus-hint {
+  font-size: 12px;
+  color: var(--fg-4);
+}
+
+.focus-tasks {
+  width: calc(100% + 40px);
+  margin: 0 -20px;
+  padding: 2px 20px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  mask-image: linear-gradient(90deg, transparent, #000 20px, #000 calc(100% - 20px), transparent);
+}
+
+.focus-tasks::-webkit-scrollbar {
+  display: none;
+}
+
+.focus-tasks:has(> :only-child),
+.focus-tasks:not(:has(> :nth-child(3))) {
+  justify-content: center;
+}
+
+.focus-task {
+  flex: none;
+  max-width: 220px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg-3);
+  font: inherit;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.2s var(--ease),
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease);
+}
+
+.focus-task:hover {
+  color: var(--fg);
+}
+
+.focus-task.on {
+  color: var(--fg);
+  background: var(--chip);
+  border-color: var(--line-2);
+}
+
+.focus-go {
+  min-width: 180px;
+}
+
+.focus-run > .focus-title {
+  margin-top: -4px;
+  font-size: 17px;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+  color: var(--fg-2);
 }
 
 .focus-durs .ltb {
@@ -4978,7 +5078,7 @@ kbd,
   stroke: var(--fg);
 }
 
-.focus-screen.paused .fr-tick.on {
+.focus-dial.paused .fr-tick.on {
   stroke: var(--fg-3);
 }
 
@@ -5020,6 +5120,286 @@ kbd,
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
+}
+
+/* Relógios do Modo foco */
+.focus-switch {
+  position: absolute;
+  top: calc(16px + var(--safe-t));
+  left: 16px;
+  border-radius: 50%;
+}
+
+.focus-choose h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 620;
+  letter-spacing: -0.04em;
+}
+
+.focus-choose > p {
+  max-width: 320px;
+  margin: -8px 0 4px;
+  font-size: 13.5px;
+}
+
+.fc-bar {
+  display: block;
+  width: 120px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--fg-5);
+  overflow: hidden;
+}
+
+.fc-bar i {
+  display: block;
+  height: 100%;
+  background: var(--fg);
+  transform-origin: left;
+  transition:
+    transform 0.5s var(--ease),
+    background 0.5s var(--ease);
+}
+
+.focus-clock.idle .fc-bar i,
+.focus-clock.paused .fc-bar i {
+  background: var(--fg-3);
+}
+
+.fc-lens,
+.fc-digital,
+.fc-count {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fc-lens {
+  gap: 22px;
+}
+
+.fc-count {
+  gap: 10px;
+}
+
+.fc-lens-card.lens-clock {
+  width: min(260px, 64vw, 38svh);
+}
+
+.fc-lens .focus-time {
+  font-size: clamp(40px, 11vw, 56px);
+}
+
+.fc-digital {
+  gap: 16px;
+}
+
+.fc-digital .focus-time {
+  font-size: clamp(88px, 27vw, 168px);
+  letter-spacing: -0.07em;
+}
+
+.fc-digital .fc-bar {
+  width: min(220px, 56vw);
+}
+
+.focus-setup .fc-lens-card.lens-clock {
+  width: min(190px, 48vw, 26svh);
+}
+
+.focus-setup .fc-lens {
+  gap: 16px;
+}
+
+.focus-setup .fc-lens .focus-time {
+  font-size: clamp(34px, 9vw, 44px);
+}
+
+.focus-setup .fc-digital .focus-time {
+  font-size: clamp(72px, 23vw, 120px);
+}
+
+.focus-clock.paused .focus-time {
+  color: var(--fg-3);
+}
+
+.lens-clock {
+  --lc-accent: #ff9f0a;
+  --lc-lume: #6fd136;
+  --lc-card-from: #262628;
+  --lc-card-to: #141415;
+  --lc-edge: rgba(255, 255, 255, 0.07);
+  --lc-tick: #76767b;
+  --lc-label: #808086;
+  --lc-spoke: #a2a2a8;
+  --lc-hand: #46464a;
+  --lc-hand-edge: rgba(255, 255, 255, 0.06);
+  --lc-pivot-from: #4a4a4d;
+  --lc-pivot-to: #2a2a2c;
+  --lc-sleeve: #38383b;
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1;
+  width: 288px;
+  flex: none;
+  overflow: hidden;
+  border-radius: 22%;
+  background: linear-gradient(160deg, var(--lc-card-from), var(--lc-card-to));
+  box-shadow:
+    inset 0 1px 0 var(--lc-edge),
+    inset 0 0 0 1px var(--lc-edge);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+:root[data-theme='light'] .lens-clock:not(.lc-dark),
+.lens-clock.lc-light {
+  --lc-accent: #ff8a00;
+  --lc-lume: #62c42a;
+  --lc-card-from: #f6f6f8;
+  --lc-card-to: #e2e1e6;
+  --lc-edge: rgba(255, 255, 255, 0.9);
+  --lc-tick: #a3a2a8;
+  --lc-label: #8e8d93;
+  --lc-spoke: #6f6e76;
+  --lc-hand: #fbfbfc;
+  --lc-hand-edge: rgba(0, 0, 0, 0.06);
+  --lc-pivot-from: #ffffff;
+  --lc-pivot-to: #e6e5ea;
+  --lc-sleeve: #ffffff;
+}
+
+.lens-clock svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lc-num {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.clock-picker {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.clock-opt {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: var(--field);
+  color: var(--fg);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+
+.clock-opt:hover {
+  background: var(--hover);
+}
+
+.clock-opt.on {
+  border-color: var(--fg-3);
+  background: var(--chip);
+}
+
+.clock-preview {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  container-type: inline-size;
+  pointer-events: none;
+}
+
+.clock-preview .focus-clock .focus-state {
+  display: none;
+}
+
+.clock-preview .focus-clock.focus-dial {
+  width: 100%;
+  margin: 0;
+}
+
+.clock-preview .focus-dial .focus-time {
+  font-size: 19cqw;
+}
+
+.clock-preview .fc-lens {
+  gap: 6cqw;
+}
+
+.clock-preview .fc-lens .fc-lens-card.lens-clock {
+  width: 74cqw;
+}
+
+.clock-preview .fc-lens .fc-count {
+  gap: 4cqw;
+}
+
+.clock-preview .fc-lens .focus-time {
+  font-size: 13cqw;
+}
+
+.clock-preview .fc-lens .fc-bar {
+  width: 40cqw;
+}
+
+.clock-preview .fc-digital .focus-time {
+  font-size: 34cqw;
+}
+
+.clock-preview .fc-digital .fc-bar {
+  width: 70cqw;
+}
+
+.clock-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clock-name b {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.clock-name small {
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--fg-3);
+}
+
+.clock-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.clock-check svg {
+  width: 12px;
+  height: 12px;
 }
 
 .focus-pill {

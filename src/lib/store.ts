@@ -64,7 +64,7 @@ export function inferEditedAt(s: Partial<AppState>): number {
   return max;
 }
 
-const QUIET_SETTINGS = new Set(['theme', 'push', 'notifications']);
+const QUIET_SETTINGS = new Set(['theme', 'push', 'notifications', 'focusClock']);
 
 /** Mudou algo que altera os avisos? (tema, permissões e caixa de entrada não contam) */
 export function isEdit(a: AppState, b: AppState): boolean {

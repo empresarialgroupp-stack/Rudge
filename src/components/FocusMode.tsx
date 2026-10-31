@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BellOff, Minimize2, Pause, Play, Plus, Square, Timer } from 'lucide-react';
+import { BellOff, Clock3, Minimize2, Pause, Play, Plus, Square } from 'lucide-react';
 import { useStore } from '../lib/store';
-import { extendFocus, pauseFocus, resumeFocus, startFocus } from '../lib/actions';
+import { extendFocus, pauseFocus, resumeFocus, startFocus, updateSettings } from '../lib/actions';
 import { closeModal, openModal, useModals } from '../lib/ui';
 import { todayKey } from '../lib/date';
 import { completeFocus, focusLeft } from '../lib/focus';
@@ -9,6 +9,8 @@ import { sortTasks } from './TaskRow';
 import { LiquidTabBar } from './LiquidTabBar';
 import { cx } from './ui';
 import { FocusMusicButton } from './Integrations';
+import { FocusClock, FocusClockPicker, mmss } from './FocusClock';
+import type { FocusClockStyle } from '../lib/types';
 
 const DURATIONS = ['15', '25', '45', '60'];
 
@@ -22,38 +24,6 @@ function useNow(active: boolean) {
   return now;
 }
 
-const mmss = (ms: number) => {
-  const t = Math.ceil(ms / 1000);
-  const h = Math.floor(t / 3600);
-  const m = Math.floor((t % 3600) / 60);
-  const s = t % 60;
-  return h ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-};
-
-/** Anel de tracinhos: os acesos são o tempo que falta. */
-function Ring({ value, ticks = 96 }: { value: number; ticks?: number }) {
-  const on = Math.round(Math.max(0, Math.min(1, value)) * ticks);
-  return (
-    <svg className="focus-ring" viewBox="0 0 300 300" aria-hidden="true">
-      {Array.from({ length: ticks }, (_, i) => {
-        const a = (i / ticks) * Math.PI * 2 - Math.PI / 2;
-        const long = i % 8 === 0;
-        const r1 = long ? 118 : 124;
-        return (
-          <line
-            key={i}
-            x1={150 + r1 * Math.cos(a)}
-            y1={150 + r1 * Math.sin(a)}
-            x2={150 + 140 * Math.cos(a)}
-            y2={150 + 140 * Math.sin(a)}
-            className={cx('fr-tick', i < on && 'on')}
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
 export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string }) {
   const s = useStore();
   const f = s.focus;
@@ -64,9 +34,13 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
     () => s.tasks.filter((t) => !t.done && (!t.due || t.due <= today)).sort(sortTasks).slice(0, 12),
     [s.tasks, today],
   );
-  const [pick, setPick] = useState(taskId ?? options[0]?.id ?? '');
-  const [free, setFree] = useState('');
+  const initial = taskId ? s.tasks.find((t) => t.id === taskId) : undefined;
+  const [pick, setPick] = useState(initial?.id ?? '');
+  const [label, setLabel] = useState(initial?.title ?? '');
   const [dur, setDur] = useState('25');
+  const clock = s.settings.focusClock;
+  const [choosing, setChoosing] = useState(!clock);
+  const [choice, setChoice] = useState<FocusClockStyle | undefined>(clock);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -76,28 +50,85 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
 
   const held = f ? s.inbox.filter((i) => i.at >= f.start && i.kind !== 'focus').length : 0;
 
+  if (!f && (choosing || !clock)) {
+    return (
+      <div className="focus-screen" role="dialog" aria-label="Escolher relógio do Modo foco">
+        <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
+          <Minimize2 />
+        </button>
+        <div className="focus-setup focus-choose">
+          <h2>Escolha seu relógio</h2>
+          <p className="muted">Ele aparece sempre que você entra no Modo foco. Dá para trocar depois nas Configurações.</p>
+          <FocusClockPicker value={choice} onChange={setChoice} />
+          <button
+            className="btn btn-primary btn-lg btn-pill focus-go"
+            disabled={!choice}
+            onClick={() => {
+              updateSettings({ focusClock: choice });
+              setChoosing(false);
+            }}
+          >
+            Continuar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!f) {
     const task = s.tasks.find((t) => t.id === pick);
-    const title = (pick === '__free' ? free.trim() : task?.title) || '';
+    const ms = Number(dur) * 60_000;
+    const choose = (id: string, title: string) => {
+      if (pick === id) {
+        setPick('');
+        setLabel('');
+      } else {
+        setPick(id);
+        setLabel(title);
+      }
+    };
+    const start = () =>
+      startFocus({ title: label.trim() || 'Foco livre', taskId: task?.id, goalId: goalId ?? task?.goalId, minutes: Number(dur) });
     return (
       <div className="focus-screen" role="dialog" aria-label="Modo foco">
         <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
           <Minimize2 />
         </button>
+        <button className="icon-btn btn-glass focus-switch" onClick={() => setChoosing(true)} aria-label="Trocar relógio" title="Trocar relógio">
+          <Clock3 />
+        </button>
         <div className="focus-setup">
-          <span className="focus-badge">
-            <Timer /> Modo foco
-          </span>
-          <h2>No que você vai focar?</h2>
-          <select className="select" value={pick} onChange={(e) => setPick(e.target.value)}>
-            {options.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
-            ))}
-            <option value="__free">Outra coisa…</option>
-          </select>
-          {pick === '__free' && <input className="input" autoFocus placeholder="Ex.: estudar inglês" value={free} onChange={(e) => setFree(e.target.value)} />}
+          <FocusClock style={clock} left={ms} total={ms} idle />
+          <form
+            className="focus-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              start();
+            }}
+          >
+            <input
+              className="focus-label"
+              placeholder="No que você vai focar?"
+              aria-label="No que você vai focar (opcional)"
+              enterKeyHint="go"
+              maxLength={80}
+              value={label}
+              onChange={(e) => {
+                setLabel(e.target.value);
+                if (task && e.target.value !== task.title) setPick('');
+              }}
+            />
+            <span className="focus-hint">Opcional. Ex.: ler um livro</span>
+          </form>
+          {options.length > 0 && (
+            <div className="focus-tasks" role="group" aria-label="Tarefas de hoje">
+              {options.map((t) => (
+                <button key={t.id} type="button" className={cx('focus-task', pick === t.id && 'on')} aria-pressed={pick === t.id} onClick={() => choose(t.id, t.title)}>
+                  {t.title}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="focus-durs">
             <LiquidTabBar
               id="focus-dur"
@@ -108,16 +139,12 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
               onValueChange={setDur}
             />
           </div>
-          <p className="muted focus-note">
-            <BellOff width={14} /> Os avisos ficam em silêncio até o fim e esperam na central de notificações.
-          </p>
-          <button
-            className="btn btn-primary btn-lg btn-pill"
-            disabled={!title}
-            onClick={() => startFocus({ title, taskId: pick !== '__free' ? pick : undefined, goalId: goalId ?? task?.goalId, minutes: Number(dur) })}
-          >
-            <Play /> Começar {dur} min
+          <button className="btn btn-primary btn-lg btn-pill focus-go" onClick={start}>
+            <Play /> Começar
           </button>
+          <p className="muted focus-note">
+            <BellOff width={14} /> Avisos em silêncio até o fim
+          </p>
         </div>
       </div>
     );
@@ -132,16 +159,14 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
         <Minimize2 />
       </button>
       <div className="focus-run">
-        <div className="focus-dial">
-          <Ring value={left / total} />
-          <div className="focus-center">
-            <span className="focus-time" aria-live="off">
-              {mmss(left)}
-            </span>
-            <span className="focus-title">{f.title}</span>
-            <span className="focus-state">{paused ? 'Pausado' : `termina às ${new Date(f.until).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}</span>
-          </div>
-        </div>
+        <FocusClock
+          style={clock}
+          left={left}
+          total={total}
+          paused={paused}
+          caption={paused ? 'Pausado' : `termina às ${new Date(f.until).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
+        />
+        <span className="focus-title">{f.title}</span>
         <div className="focus-controls">
           <button className="btn btn-glass btn-pill" onClick={() => extendFocus(5)}>
             <Plus /> 5 min
