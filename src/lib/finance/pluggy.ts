@@ -95,8 +95,37 @@ export function syncPluggy(force = false) {
   return inflight;
 }
 
-export async function linkPluggy(input: { clientId: string; clientSecret: string; itemIds: string }) {
+export async function linkPluggy(input: { clientId?: string; clientSecret?: string; itemIds: string; append?: boolean }) {
   apply(await call('link', input));
+}
+
+/** true quando as credenciais da Pluggy estão nos secrets da função (o app só abre o widget). */
+export async function pluggyConfig(): Promise<{ serverCredentials: boolean; items: number }> {
+  return (await call('config')) as unknown as { serverCredentials: boolean; items: number };
+}
+
+/**
+ * Abre o Pluggy Connect com um token criado no servidor (/connect-token). Ao conectar, o item
+ * novo se soma aos já salvos. O SDK só é baixado quando o widget é aberto.
+ */
+export async function openPluggyConnect(onDone: (err?: string) => void) {
+  const { accessToken } = (await call('connect-token')) as unknown as { accessToken: string };
+  const { PluggyConnect } = await import('pluggy-connect-sdk');
+  const widget = new PluggyConnect({
+    connectToken: accessToken,
+    language: 'pt',
+    theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
+    onSuccess: async ({ item }) => {
+      try {
+        await linkPluggy({ itemIds: item.id, append: true });
+        onDone();
+      } catch (e) {
+        onDone(e instanceof Error ? e.message : String(e));
+      }
+    },
+    onError: ({ message }) => onDone(message),
+  });
+  await widget.init();
 }
 
 export async function unlinkPluggy() {

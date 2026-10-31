@@ -4,10 +4,13 @@
 //   /link    salva as credenciais da Pluggy (Client ID/Secret) e os Item IDs do Meu Pluggy
 //   /cards   contas e transações dos últimos ~2 meses (cache de 20 min no servidor)
 //   /unlink  apaga a conexão desta conta
+//   /config  diz se as credenciais da Pluggy estão nos secrets da função
+//   /connect-token  token de 30 min para o app abrir o widget Pluggy Connect
 //
 // Autenticação: header x-rudge-token (token do aparelho emitido pela função "rudge" em /device).
 // O Client Secret fica no Vault do Supabase; a tabela fica no schema "rudge", fora da API REST.
-// Também aceita PLUGGY_CLIENT_ID/PLUGGY_CLIENT_SECRET como secrets da função.
+// Também aceita PLUGGY_CLIENT_ID/PLUGGY_CLIENT_SECRET como secrets da função (equivalente ao
+// process.env): com eles, o app só abre o widget, e as credenciais nunca passam pelo navegador.
 
 import postgres from 'npm:postgres@3.4.5';
 import { mapAccount, type PluggyAccount, type PluggyItem, type PluggyTransaction } from './map.ts';
@@ -107,15 +110,15 @@ async function fetchAll(link: Link, given?: { clientId: string; clientSecret: st
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function link(owner: string, body: Record<string, unknown>) {
-  const itemIds = (Array.isArray(body.itemIds) ? body.itemIds : String(body.itemIds ?? '').split(/[\s,;]+/))
-    .map((x) => String(x).trim())
-    .filter((x) => UUID.test(x))
-    .slice(0, 5);
+  const itemIds = (Array.isArray(body.itemIds) ? body.itemIds : String(body.itemIds ?? '').split(/[\s,;]+/)).map((x) => String(x).trim()).filter((x) => UUID.test(x));
   if (!itemIds.length) return json({ error: 'Informe ao menos um Item ID válido.' }, 400);
   const clientId = typeof body.clientId === 'string' ? body.clientId.trim().slice(0, 100) : '';
   const clientSecret = typeof body.clientSecret === 'string' ? body.clientSecret.trim().slice(0, 200) : '';
 
   const [prev] = await sql<Link[]>`select * from rudge.finance_links where owner_id = ${owner}`;
+  // widget: cada conexão traz um item novo, que se soma aos já salvos
+  if (body.append && prev) itemIds.push(...prev.item_ids.filter((x) => !itemIds.includes(x)));
+  itemIds.splice(5);
   const next: Link = { owner_id: owner, item_ids: itemIds, client_id: clientId || prev?.client_id || null, secret_id: prev?.secret_id ?? null, snapshot: null, fetched_at: null };
 
   // valida antes de gravar qualquer coisa: credenciais e itens precisam responder
@@ -135,6 +138,25 @@ async function link(owner: string, body: Record<string, unknown>) {
     on conflict (owner_id) do update set item_ids = excluded.item_ids, client_id = excluded.client_id, secret_id = excluded.secret_id,
       snapshot = excluded.snapshot, fetched_at = excluded.fetched_at`;
   return json({ linked: true, ...snap });
+}
+
+/** Mesmo papel do app/api/connect-token do exemplo da Pluggy em Next.js. */
+async function connectToken(owner: string) {
+  const [l] = await sql<Link[]>`select * from rudge.finance_links where owner_id = ${owner}`;
+  const cred = await credentials(l ?? ({ client_id: null, secret_id: null } as Link));
+  if (!cred) return json({ error: 'Configure PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET nos secrets da função.' }, 412);
+  const res = await fetch(`${API}/connect_token`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'X-API-KEY': await apiKey(cred.clientId, cred.clientSecret) },
+    body: JSON.stringify({ clientUserId: owner }),
+  });
+  if (!res.ok) return json({ error: `Pluggy respondeu ${res.status}.` }, 502);
+  return json({ accessToken: ((await res.json()) as { accessToken: string }).accessToken });
+}
+
+async function config(owner: string) {
+  const [l] = await sql<{ n: number }[]>`select cardinality(item_ids) as n from rudge.finance_links where owner_id = ${owner}`;
+  return json({ serverCredentials: !!(Deno.env.get('PLUGGY_CLIENT_ID') && Deno.env.get('PLUGGY_CLIENT_SECRET')), items: l?.n ?? 0 });
 }
 
 async function cards(owner: string, body: Record<string, unknown>) {
@@ -169,6 +191,8 @@ Deno.serve(async (req) => {
     if (route === 'link') return await link(owner, body);
     if (route === 'cards') return await cards(owner, body);
     if (route === 'unlink') return await unlink(owner);
+    if (route === 'connect-token') return await connectToken(owner);
+    if (route === 'config') return await config(owner);
     return json({ error: 'rota desconhecida' }, 404);
   } catch (e) {
     console.error(e);

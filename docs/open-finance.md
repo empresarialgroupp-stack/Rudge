@@ -44,12 +44,21 @@ supabase db push                                   # tabela rudge.finance_links
 supabase functions deploy finance --no-verify-jwt  # projeto btpbarqvsglqzpcpezvz
 ```
 
+### Credenciais no servidor (recomendado)
+
+Equivalente ao `process.env` do exemplo da Pluggy: em Supabase → Edge Functions → Secrets, crie
+`PLUGGY_CLIENT_ID` e `PLUGGY_CLIENT_SECRET`. A função passa a criar o Connect Token
+(`/connect-token`, como o `app/api/connect-token/route.ts` do exemplo em Next.js) e o app só abre
+o widget Pluggy Connect (`pluggy-connect-sdk`, carregado sob demanda); cada item conectado se soma
+aos já salvos. As credenciais nunca passam pelo navegador.
+
 ### Conectar (uma vez)
 
 1. meu.pluggy.ai: criar conta e conectar Nubank, Inter e Mercado Pago.
 2. dashboard.pluggy.ai (mesma conta): criar aplicação, copiar Client ID e Client Secret.
 3. Aplicação → Demo → Connect Account → MeuPluggy. Copiar os Item IDs em Connected Items.
-4. Rudge → Carteira → Conectar: colar os três.
+4. Rudge → Carteira → Conectar: com os secrets configurados, tocar em **Abrir Pluggy** e escolher
+   MeuPluggy; sem eles, colar Client ID, Client Secret e Item IDs.
 
 ## Wallet stack da Arc Pro
 

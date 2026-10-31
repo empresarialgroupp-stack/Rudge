@@ -11,7 +11,7 @@ import { startPluggySync, usePluggy, type PluggyState } from './pluggy';
 export * from './types';
 export * from './insights';
 export { BANKS, type BankId, type ImportedAccount };
-export { linkPluggy, syncPluggy, unlinkPluggy, usePluggy } from './pluggy';
+export { linkPluggy, openPluggyConnect, pluggyConfig, syncPluggy, unlinkPluggy, usePluggy } from './pluggy';
 
 /* ------- Contas importadas: ficam só neste aparelho ------- */
 
