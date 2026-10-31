@@ -239,7 +239,11 @@ export interface Settings {
   /** plano do dia: janela de trabalho usada para encaixar tarefas */
   plan: { enabled: boolean; start: string; end: string };
   onboarded: boolean;
+  /** relógio do Modo foco; vazio até o usuário escolher na primeira vez */
+  focusClock?: FocusClockStyle;
 }
+
+export type FocusClockStyle = 'ring' | 'lens' | 'digital';
 
 export interface AppState {
   version: number;

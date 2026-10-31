@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BellOff, Minimize2, Pause, Play, Plus, Square } from 'lucide-react';
+import { BellOff, Clock3, Minimize2, Pause, Play, Plus, Square } from 'lucide-react';
 import { useStore } from '../lib/store';
-import { extendFocus, pauseFocus, resumeFocus, startFocus } from '../lib/actions';
+import { extendFocus, pauseFocus, resumeFocus, startFocus, updateSettings } from '../lib/actions';
 import { closeModal, openModal, useModals } from '../lib/ui';
 import { todayKey } from '../lib/date';
 import { completeFocus, focusLeft } from '../lib/focus';
@@ -9,7 +9,8 @@ import { sortTasks } from './TaskRow';
 import { LiquidTabBar } from './LiquidTabBar';
 import { cx } from './ui';
 import { FocusMusicButton } from './Integrations';
-import { FocusClock, mmss } from './FocusClock';
+import { FocusClock, FocusClockPicker, mmss } from './FocusClock';
+import type { FocusClockStyle } from '../lib/types';
 
 const DURATIONS = ['15', '25', '45', '60'];
 
@@ -37,6 +38,9 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
   const [pick, setPick] = useState(initial?.id ?? '');
   const [label, setLabel] = useState(initial?.title ?? '');
   const [dur, setDur] = useState('25');
+  const clock = s.settings.focusClock;
+  const [choosing, setChoosing] = useState(!clock);
+  const [choice, setChoice] = useState<FocusClockStyle | undefined>(clock);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -45,6 +49,31 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
   }, []);
 
   const held = f ? s.inbox.filter((i) => i.at >= f.start && i.kind !== 'focus').length : 0;
+
+  if (!f && (choosing || !clock)) {
+    return (
+      <div className="focus-screen" role="dialog" aria-label="Escolher relógio do Modo foco">
+        <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
+          <Minimize2 />
+        </button>
+        <div className="focus-setup focus-choose">
+          <h2>Escolha seu relógio</h2>
+          <p className="muted">Ele aparece sempre que você entra no Modo foco. Dá para trocar depois nas Configurações.</p>
+          <FocusClockPicker value={choice} onChange={setChoice} />
+          <button
+            className="btn btn-primary btn-lg btn-pill focus-go"
+            disabled={!choice}
+            onClick={() => {
+              updateSettings({ focusClock: choice });
+              setChoosing(false);
+            }}
+          >
+            Continuar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!f) {
     const task = s.tasks.find((t) => t.id === pick);
@@ -65,8 +94,11 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
         <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
           <Minimize2 />
         </button>
+        <button className="icon-btn btn-glass focus-switch" onClick={() => setChoosing(true)} aria-label="Trocar relógio" title="Trocar relógio">
+          <Clock3 />
+        </button>
         <div className="focus-setup">
-          <FocusClock left={ms} total={ms} idle />
+          <FocusClock style={clock} left={ms} total={ms} idle />
           <form
             className="focus-form"
             onSubmit={(e) => {
@@ -128,6 +160,7 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
       </button>
       <div className="focus-run">
         <FocusClock
+          style={clock}
           left={left}
           total={total}
           paused={paused}
