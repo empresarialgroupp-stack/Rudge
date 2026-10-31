@@ -527,6 +527,7 @@ a {
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   font-size: 14px;
+  text-overflow: ellipsis;
 }
 
 .textarea {
@@ -2099,6 +2100,8 @@ kbd,
 }
 
 .stepper .input {
+  flex: 1 1 0;
+  min-width: 0;
   text-align: center;
   font-weight: 650;
   font-size: 16px;
@@ -2481,6 +2484,13 @@ kbd,
   font-weight: 560;
   white-space: nowrap;
   vertical-align: 1px;
+  max-width: 100%;
+}
+
+@media (max-width: 560px) {
+  .step .ui-hint {
+    white-space: normal;
+  }
 }
 
 .step .ui-hint svg {
@@ -2685,6 +2695,7 @@ kbd,
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
   padding: 14px 18px 18px 22px;
   border-top: 1px solid var(--line);
 }
@@ -5752,6 +5763,50 @@ kbd,
 
   .login-card {
     padding: 22px;
+  }
+
+  /* Rodapé com 3+ botões (detalhe da meta): ação principal ocupa a linha de cima e o resto
+     divide a de baixo, sem empurrar "Concluir" para fora da tela. */
+  .modal-foot:has(> .btn:nth-of-type(3)) {
+    gap: 6px;
+    padding: 12px 14px 14px;
+  }
+
+  .modal-foot:has(> .btn:nth-of-type(3)) > .spacer {
+    display: none;
+  }
+
+  .modal-foot:has(> .btn:nth-of-type(3)) > .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 8px;
+    gap: 6px;
+  }
+
+  .modal-foot:has(> .btn:nth-of-type(3)) > .btn-primary {
+    order: -1;
+    flex-basis: 100%;
+    height: 46px;
+    font-size: 15px;
+  }
+
+  /* Registrar progresso: − e + na primeira linha, campo e Salvar na segunda */
+  .stepper {
+    flex-wrap: wrap;
+  }
+
+  .stepper > .btn-glass {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  /* Abas de largura total na barra da página (Instalar: Computador / Android / iPhone): sem ícone cabem as três */
+  .toolbar .segmented.full button {
+    min-width: 0;
+    padding: 0 8px;
+  }
+
+  .toolbar .segmented.full button svg {
+    display: none;
   }
 }
 
