@@ -3,6 +3,7 @@ import { ArrowDownLeft, ArrowUpRight, Check, Eye, EyeOff, FileUp, Landmark, Link
 import { WalletStack } from '../components/WalletStack';
 import { WalletImport } from '../components/WalletImport';
 import { WalletConnect } from '../components/WalletConnect';
+import { WalletActivity, WalletFlow, WalletLimit, WalletSummary } from '../components/WalletOverview';
 import { cx, ProgressBar } from '../components/ui';
 import { navigate, toast } from '../lib/ui';
 import { ago, amountsInAlerts, BANKS, brl, removeAccount, setPrivacy, summarize, syncedBanks, takeNewInflows, tips, useAccounts, useFinance, usePrivacy, useSaved, type FinanceCard } from '../lib/finance';
@@ -217,9 +218,10 @@ export function WalletPage() {
   if (selected && !cards.some((c) => c.id === selected.id)) setSelected(null);
 
   const scopeCards = selected ? cards.filter((c) => c.id === selected.id) : cards;
+  const scope = selected ? `${selected.issuer} · ${selected.product}` : 'Todos os cartões';
 
   return (
-    <div className={cx('wallet-page', privacy.hidden && 'is-private')}>
+    <div className={cx('wallet-page wallet-v2', privacy.hidden && 'is-private')}>
       <div className="wallet-top">
         {provider.id === 'pluggy' ? (
           <SyncStatus pluggy={pluggy} />
@@ -243,9 +245,19 @@ export function WalletPage() {
           {privacy.hidden ? <EyeOff /> : <Eye />}
         </button>
       </div>
-      <WalletStack cards={cards} label="Meus cartões" currency="BRL" locale="pt-BR" onSelectedChange={(c) => setSelected(c ? (cards.find((x) => x.id === c.id) ?? null) : null)} />
-      <Dashboard key={selected?.id ?? 'all'} cards={scopeCards} scope={selected ? `${selected.issuer} · ${selected.product}` : 'Todos os cartões'} />
-      {imported.length > 0 && provider.id !== 'pluggy' && <Accounts onImport={() => setImporting(true)} />}
+      <WalletSummary cards={cards} />
+      <div className="wv-col wv-col-main">
+        <WalletFlow key={`flow-${selected?.id ?? 'all'}`} cards={scopeCards} scope={scope} />
+        <WalletActivity cards={scopeCards} scope={scope} />
+      </div>
+      <div className="wv-col wv-col-side">
+        <div className="wv-cards glass">
+          <WalletStack cards={cards} label="Meus cartões" currency="BRL" locale="pt-BR" onSelectedChange={(c) => setSelected(c ? (cards.find((x) => x.id === c.id) ?? null) : null)} />
+          <WalletLimit cards={selected ? scopeCards : cards} />
+        </div>
+        <Dashboard key={selected?.id ?? 'all'} cards={scopeCards} scope={scope} />
+        {imported.length > 0 && provider.id !== 'pluggy' && <Accounts onImport={() => setImporting(true)} />}
+      </div>
       {importing && <WalletImport onClose={() => setImporting(false)} />}
       {connecting && <WalletConnect onClose={() => setConnecting(false)} onImport={() => setImporting(true)} />}
     </div>
