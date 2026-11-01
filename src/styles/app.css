@@ -7987,3 +7987,116 @@ button.wsync {
     transition: none;
   }
 }
+
+/* ---------- Alert (arc) ---------- */
+.arc-alert {
+  --tone: #6aa8ff;
+  position: relative;
+  border-radius: var(--r);
+  border: 1px solid color-mix(in srgb, var(--tone) 32%, transparent);
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  color: var(--fg);
+  transition:
+    background-color 0.35s var(--ease),
+    border-color 0.35s var(--ease);
+}
+.arc-alert[data-tone='success'] {
+  --tone: #3ddc84;
+}
+.arc-alert[data-tone='warning'] {
+  --tone: #ffb547;
+}
+.arc-alert[data-tone='danger'] {
+  --tone: var(--danger);
+}
+:root[data-theme='light'] .arc-alert {
+  --tone: #2563eb;
+}
+:root[data-theme='light'] .arc-alert[data-tone='success'] {
+  --tone: #15964f;
+}
+:root[data-theme='light'] .arc-alert[data-tone='warning'] {
+  --tone: #b86e00;
+}
+:root[data-theme='light'] .arc-alert[data-tone='danger'] {
+  --tone: var(--danger);
+}
+.arc-alert-sizer {
+  overflow: hidden;
+}
+.arc-alert-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+}
+.arc-alert-icon {
+  position: relative;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--tone);
+  transition: color 0.35s var(--ease);
+}
+.arc-alert-icon-glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.arc-alert-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.arc-alert-copy {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.arc-alert-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.arc-alert-desc {
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+.arc-alert-dismiss {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px -4px 0;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: transparent;
+  color: var(--fg-3);
+  cursor: pointer;
+  transition:
+    background-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.arc-alert-dismiss svg {
+  width: 15px;
+  height: 15px;
+}
+.arc-alert-dismiss:focus-visible {
+  outline: 2px solid var(--tone);
+  outline-offset: 1px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .arc-alert-dismiss:hover {
+    background: var(--hover);
+    color: var(--fg);
+  }
+}
+.account-alert {
+  margin-bottom: 4px;
+}

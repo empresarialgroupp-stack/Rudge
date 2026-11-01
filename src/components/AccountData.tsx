@@ -3,6 +3,7 @@ import { CloudCheck, History, RefreshCw } from 'lucide-react';
 import { listSnapshots, restoreSnapshot, syncAccount, useCloudStatus, type Snapshot } from '../lib/cloud';
 import { formatWhen } from '../lib/date';
 import { toast } from '../lib/ui';
+import { SyncAlert } from './SyncAlert';
 
 const LABEL = { off: 'Ainda não sincronizado', syncing: 'Sincronizando…', ok: 'Tudo salvo na conta', offline: 'Sem internet: salva quando a conexão voltar', error: 'Não foi possível falar com o servidor' };
 
@@ -44,6 +45,7 @@ export function AccountDataCard() {
         Metas, tarefas, hábitos, lembretes, diário, avisos e configurações ficam salvos na sua conta e iguais no computador e no
         celular. Atualizações do app não apagam nada.
       </p>
+      <SyncAlert />
       <div className="setting">
         <div className="s-text">
           <b>{LABEL[cloud.state]}</b>
