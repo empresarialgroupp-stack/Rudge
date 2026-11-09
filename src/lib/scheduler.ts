@@ -55,7 +55,7 @@ export function inFocus(s = getState(), now = Date.now()) {
   return !!s.focus && (s.focus.pausedLeft !== undefined || s.focus.until > now);
 }
 
-const A_DONE = { action: 'done', title: 'Concluir' };
+const A_DONE = { action: 'done', title: 'Já concluí' };
 const A_SNOOZE = (label: string) => ({ action: 'snooze', title: label });
 const A_OPEN = (label: string) => ({ action: 'open', title: label });
 
@@ -492,8 +492,60 @@ export function handleAction(action: string, data: NotifData, baseAt = Date.now(
     toast({ title: `Adiado por ${min} min`, body: data.title, icon: 'bell' });
     return;
   }
+  if (action === 'ask') {
+    askAction(data);
+    return;
+  }
   navigate(data.url);
 }
+
+const ACTIONABLE: NotifKind[] = ['reminder', 'task', 'habit'];
+/** Itens que já perguntamos nesta sessão (evita perguntar duas vezes pelo mesmo toque). */
+const asked = new Set<string>();
+
+/** O item da notificação ainda está pendente? (pode ter sido concluído em outro aparelho) */
+function stillPending(data: NotifData): boolean {
+  const s = getState();
+  if (!data.refId) return false;
+  if (data.kind === 'reminder') {
+    const r = s.reminders.find((x) => x.id === data.refId);
+    return !!r && !r.done && !(data.occ && r.ackUntil && Date.parse(r.ackUntil) >= data.occ);
+  }
+  if (data.kind === 'task') {
+    const t = s.tasks.find((x) => x.id === data.refId);
+    return !!t && !t.done;
+  }
+  if (data.kind === 'habit') {
+    const h = s.habits.find((x) => x.id === data.refId);
+    return !!h && !h.log.includes(dateKey(new Date(data.occ ?? Date.now())));
+  }
+  return false;
+}
+
+/**
+ * Tocou na notificação (no iPhone as notificações não mostram botões): ao abrir o Rudge,
+ * pergunta na hora "Já concluí | Adiar 10 min" para o item daquele aviso.
+ */
+export function askAction(data: NotifData) {
+  if (!ACTIONABLE.includes(data.kind) || !stillPending(data)) return false;
+  if (asked.has(data.key)) return false;
+  asked.add(data.key);
+  const min = data.snoozeMin || 10;
+  toast({
+    title: data.title,
+    body: data.kind === 'task' ? 'Tarefa para agora' : data.kind === 'habit' ? 'Hábito de hoje' : 'Lembrete',
+    icon: 'bell',
+    duration: 0,
+    actions: [
+      { label: 'Já concluí', run: () => handleAction('done', data) },
+      { label: `Adiar ${min} min`, run: () => handleAction('snooze', { ...data, snoozeMin: min }) },
+    ],
+  });
+  return true;
+}
+
+/** Validade da pergunta guardada pelo service worker. */
+const ASK_TTL = 12 * HOUR;
 
 export async function tick() {
   await withLock(async () => {
@@ -560,6 +612,11 @@ export async function syncFromServiceWorker() {
     await idbSet('sw-inbox', []);
     pushInbox(swInbox.map((d) => ({ key: d.key, at: Date.now(), title: d.title, body: d.body, kind: d.kind, url: d.url })));
   }
+  const ask = await idbGet<(NotifData & { at?: number }) | null>('pending-ask');
+  if (ask) {
+    await idbSet('pending-ask', null);
+    if (Date.now() - (ask.at ?? 0) < ASK_TTL) askAction(ask);
+  }
 }
 
 export async function startScheduler() {
@@ -587,6 +644,8 @@ export async function startScheduler() {
   navigator.serviceWorker?.addEventListener('message', (e) => {
     const msg = e.data as { type?: string; action?: string; data?: NotifData };
     if (msg?.type === 'rudge-action' && msg.data) handleAction(msg.action ?? 'open', msg.data);
+    // tocou na notificação com o app já aberto: o service worker guardou a pergunta
+    if (msg?.type === 'rudge-ask') void syncFromServiceWorker();
     // push do servidor com o app em foco: o service worker repassa para virar aviso interno
     if (msg?.type === 'rudge-push' && (msg as { item?: PushedItem }).item) presentPushed((msg as { item: PushedItem }).item);
   });

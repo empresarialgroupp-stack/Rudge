@@ -189,7 +189,15 @@ self.addEventListener('notificationclick', (event) => {
         pending.push({ action, data, at: Date.now() });
         await idbSet('pending-actions', pending);
       }
+      // toque no corpo da notificação de lembrete/tarefa/hábito: o app abre já perguntando
+      // "Já concluí | Adiar" (no iPhone as notificações não mostram botões)
+      const actionable = ['reminder', 'task', 'habit'].includes(data.kind) && data.refId;
+      if (actionable) await idbSet('pending-ask', { ...data, at: Date.now() });
       await openApp(data.url);
+      if (actionable) {
+        const list = await windowClients();
+        list.filter((c) => c.url.startsWith(SCOPE)).forEach((c) => c.postMessage({ type: 'rudge-ask' }));
+      }
     })(),
   );
 });
@@ -283,8 +291,11 @@ self.addEventListener('push', (event) => {
       // modo foco: chega sem som (fica na central do app)
       const focusUntil = (await idbGet('focus-until')) || 0;
       const quiet = item.kind !== 'focus' && focusUntil > Date.now();
+      const actions = (item.actions || []).map((a) => (a.action === 'done' ? { ...a, title: 'Já concluí' } : a));
+      // iPhone não mostra botões: indica que tocar abre as opções
+      const hint = APPLE && actions.some((a) => a.action === 'snooze') ? '\nToque para concluir ou adiar' : '';
       await self.registration.showNotification(item.title || 'Rudge', {
-        body: item.body || '',
+        body: (item.body || '') + hint,
         tag: key,
         icon: ICON,
         badge: BADGE,
@@ -292,7 +303,7 @@ self.addEventListener('push', (event) => {
         renotify: !already && !quiet,
         requireInteraction: !!item.requireInteraction,
         timestamp: item.at || Date.now(),
-        actions: item.actions || [],
+        actions,
         ...(quiet ? {} : { vibrate: [120, 60, 120] }),
         data: {
           key,
