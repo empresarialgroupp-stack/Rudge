@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  ChevronDown,
   Flame,
   Minus,
   Pause,
@@ -37,7 +38,7 @@ import { closeModal, openModal, toast } from '../lib/ui';
 import { addDays, addDaysKey, dateKey, diffDays, formatWhen, parseKey, shortDate, todayKey, WEEKDAYS } from '../lib/date';
 import { AREA_LABEL, AREAS, fmtNum, goalPace, goalProgress, habitStreak, recalcGoal } from '../lib/goals';
 import { TEMPLATES, templateById, type GoalTemplate } from '../lib/templates';
-import { AreaIcon, cx, DayPicker, Field, Modal, ProgressBar, ProgressRing, Segmented, Switch } from './ui';
+import { AreaIcon, cx, DayPicker, Field, Modal, ProgressRing, Segmented, Switch } from './ui';
 
 /* ---------------- Assistente ---------------- */
 
@@ -495,6 +496,7 @@ export function GoalDetail({ id }: { id: string }) {
   const goal = s.goals.find((g) => g.id === id);
   const [val, setVal] = useState<string>('');
   const [newMs, setNewMs] = useState('');
+  const [more, setMore] = useState(false);
   const close = () => closeModal('goal-detail');
   const habits = useMemo(() => s.habits.filter((h) => h.goalId === id), [s.habits, id]);
   const tasks = useMemo(() => s.tasks.filter((t) => t.goalId === id && !t.done), [s.tasks, id]);
@@ -507,6 +509,16 @@ export function GoalDetail({ id }: { id: string }) {
   const unit = goal.unit ?? '';
   const step = goal.target !== undefined && Math.abs(goal.target - (goal.startValue ?? 0)) >= 50 ? 10 : 1;
 
+  const doneMs = goal.milestones.filter((m) => m.done).length;
+  const saveVal = () => {
+    if (val === '') return;
+    setGoalValue(goal.id, Number(val));
+    setVal('');
+    toast({ title: 'Progresso registrado', icon: 'check' });
+  };
+  const daysLeft = goal.deadline && pace.daysLeft !== undefined && pace.daysLeft >= 0 ? pace.daysLeft : undefined;
+  const showExpected = goal.deadline && pace.status !== 'done' && goal.status !== 'done';
+
   return (
     <Modal
       title={
@@ -517,22 +529,7 @@ export function GoalDetail({ id }: { id: string }) {
       onClose={close}
       size="wide"
       footer={
-        <>
-          <button
-            className="btn btn-danger"
-            onClick={() => {
-              deleteGoal(goal.id);
-              close();
-            }}
-          >
-            <Trash2 /> Excluir
-          </button>
-          <div className="spacer" />
-          {goal.status !== 'done' && (
-            <button className="btn btn-ghost" onClick={() => setGoalStatus(goal.id, goal.status === 'paused' ? 'active' : 'paused')}>
-              {goal.status === 'paused' ? <><Play /> Retomar</> : <><Pause /> Pausar</>}
-            </button>
-          )}
+        <div className="gd-foot">
           <button className="btn btn-glass" onClick={() => openModal({ type: 'goal-edit', id: goal.id })}>
             <Pencil /> Editar
           </button>
@@ -545,44 +542,31 @@ export function GoalDetail({ id }: { id: string }) {
               Reabrir
             </button>
           )}
-        </>
+        </div>
       }
     >
-      <div className="stack">
-        <div className="row" style={{ gap: 18, alignItems: 'center' }}>
-          <ProgressRing value={progress} size={92} stroke={7} />
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 650, letterSpacing: '-0.025em', lineHeight: 1.25 }}>{goal.title}</h3>
-            <div className="row wrap" style={{ marginTop: 8, gap: 6 }}>
-              <span className={cx('chip', pace.status === 'behind' || pace.status === 'overdue' ? 'warn' : pace.status === 'done' ? 'solid' : '')}>{goal.status === 'paused' ? 'Pausada' : pace.label}</span>
-              {goal.deadline && (
-                <span className="chip outline">
-                  Prazo {shortDate(goal.deadline)}
-                  {pace.daysLeft !== undefined && pace.daysLeft >= 0 && ` · ${pace.daysLeft} dias`}
-                </span>
-              )}
+      <div className="stack gd">
+        {/* Cabeçalho: anel + título + o essencial numa linha */}
+        <div className="gd-head">
+          <ProgressRing value={progress} size={68} stroke={6} fontSize={17} />
+          <div className="gd-head-txt">
+            <h3>{goal.title}</h3>
+            <div className="gd-meta">
+              <span className={cx('gd-pace', (pace.status === 'behind' || pace.status === 'overdue') && 'warn')}>
+                {goal.status === 'paused' ? 'Pausada' : pace.label}
+              </span>
+              {daysLeft !== undefined && <span>· {daysLeft === 0 ? 'vence hoje' : `${daysLeft} ${daysLeft === 1 ? 'dia' : 'dias'}`}</span>}
+              {goal.deadline && daysLeft === undefined && <span>· {shortDate(goal.deadline)}</span>}
             </div>
           </div>
         </div>
 
-        {goal.why && (
-          <div className="callout">
-            <Sparkles />
-            <span>
-              <b>Seu porquê:</b> {goal.why}
-            </span>
-          </div>
+        {goal.status !== 'done' && (
+          <p className="gd-advice">
+            {pace.advice}
+            {showExpected && <span className="gd-exp"> Esperado hoje: {Math.round(pace.expected * 100)}%.</span>}
+          </p>
         )}
-
-        <div>
-          <ProgressBar value={progress} marker={pace.expected} size="lg" />
-          <div className="row" style={{ justifyContent: 'space-between', marginTop: 8, fontSize: 12.5, color: 'var(--fg-3)' }}>
-            <span>{Math.round(progress * 100)}% concluído</span>
-            {goal.deadline && pace.status !== 'done' && <span>Esperado hoje: {Math.round(pace.expected * 100)}%</span>}
-          </div>
-        </div>
-
-        {goal.status !== 'done' && <div className="g-advice">{pace.advice}</div>}
 
         {recalc && (
           <div className="recalc glass flat">
@@ -614,76 +598,45 @@ export function GoalDetail({ id }: { id: string }) {
           </div>
         )}
 
-        {focusMin > 0 && (
-          <div className="callout">
-            <Timer />
-            <span>
-              <b>{focusMin >= 60 ? `${fmtNum(focusMin / 60)} h` : `${focusMin} min`}</b> de foco dedicados a esta meta.
-            </span>
-          </div>
-        )}
-
+        {/* Progresso numérico: um número grande e um controle só */}
         {goal.kind === 'numeric' && (
-          <div className="glass flat" style={{ padding: 16, borderRadius: 16 }}>
-            <div className="stat-row" style={{ marginBottom: 14 }}>
-              <div className="stat">
-                <span>Início</span>
-                <b>{fmtNum(goal.startValue ?? 0)}</b>
-              </div>
-              <div className="stat">
-                <span>Atual</span>
-                <b>
-                  {fmtNum(goal.current ?? 0)} <small className="muted" style={{ fontSize: 12 }}>{unit}</small>
-                </b>
-              </div>
-              <div className="stat">
-                <span>Meta</span>
-                <b>{fmtNum(goal.target ?? 0)}</b>
-              </div>
+          <div className="gd-num">
+            <div className="gd-num-val">
+              <b>{fmtNum(goal.current ?? 0)}</b>
+              <span>
+                de {fmtNum(goal.target ?? 0)} {unit}
+              </span>
             </div>
-            <div className="label" style={{ marginBottom: 8 }}>Registrar progresso</div>
-            <div className="stepper">
+            <div className="gd-step">
               <button className="btn btn-glass" onClick={() => bumpGoal(goal.id, -step)} aria-label="Diminuir">
                 <Minus />
-              </button>
-              <button className="btn btn-glass" onClick={() => bumpGoal(goal.id, step)} aria-label="Aumentar">
-                <Plus /> {step}
               </button>
               <input
                 className="input num"
                 type="number"
                 inputMode="decimal"
-                placeholder={`Novo valor (${unit || 'total'})`}
+                placeholder="Novo total"
+                aria-label={`Novo valor total${unit ? ` (${unit})` : ''}`}
                 value={val}
                 onChange={(e) => setVal(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && val !== '') {
-                    setGoalValue(goal.id, Number(val));
-                    setVal('');
-                  }
-                }}
+                onKeyDown={(e) => e.key === 'Enter' && saveVal()}
               />
-              <button
-                className="btn btn-primary"
-                disabled={val === ''}
-                onClick={() => {
-                  setGoalValue(goal.id, Number(val));
-                  setVal('');
-                  toast({ title: 'Progresso registrado', icon: 'check' });
-                }}
-              >
-                Salvar
-              </button>
-            </div>
-            <div style={{ marginTop: 14 }}>
-              <Sparkline goal={goal} />
+              {val !== '' ? (
+                <button className="btn btn-primary" onClick={saveVal}>
+                  Salvar
+                </button>
+              ) : (
+                <button className="btn btn-glass" onClick={() => bumpGoal(goal.id, step)} aria-label="Aumentar">
+                  <Plus /> {step}
+                </button>
+              )}
             </div>
           </div>
         )}
 
         <div>
           <div className="section-title">
-            {goal.kind === 'numeric' ? 'Marcos' : 'Etapas'} <span className="count">{goal.milestones.filter((m) => m.done).length}/{goal.milestones.length}</span>
+            {goal.kind === 'numeric' ? 'Marcos' : 'Etapas'} {goal.milestones.length > 0 && <span className="count">{doneMs}/{goal.milestones.length}</span>}
           </div>
           {goal.milestones.map((m) => (
             <div key={m.id} className={cx('milestone', m.done && 'done')}>
@@ -713,48 +666,120 @@ export function GoalDetail({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className="grid-2">
-          <div>
-            <div className="section-title">Hábitos de apoio</div>
-            {habits.length ? (
-              habits.map((h) => (
-                <div key={h.id} className="habit-pill" style={{ cursor: 'pointer' }} onClick={() => openModal({ type: 'habit', id: h.id })}>
-                  <span className="h-title">{h.title}</span>
-                  <span className="streak">
-                    <Flame /> {habitStreak(h)}
-                  </span>
-                </div>
-              ))
-            ) : (
-              <button className="btn btn-sm btn-glass" onClick={() => openModal({ type: 'habit', defaults: { goalId: goal.id } })}>
-                <Plus /> Vincular hábito
-              </button>
-            )}
-          </div>
-          <div>
-            <div className="section-title">Próximas ações</div>
-            {tasks.slice(0, 4).map((t) => (
-              <div key={t.id} className="habit-pill" style={{ cursor: 'pointer' }} onClick={() => openModal({ type: 'task', id: t.id })}>
-                <span className="h-title">{t.title}</span>
-              </div>
-            ))}
-            <button
-              className="btn btn-sm btn-glass"
-              onClick={() => {
-                addTask({ title: `Avançar na meta: ${goal.title}`, due: todayKey(), priority: 2, goalId: goal.id, area: goal.area });
-                toast({ title: 'Tarefa criada para hoje', icon: 'check' });
-              }}
-            >
-              <Plus /> Tarefa para hoje
-            </button>
-          </div>
-        </div>
+        {/* O resto fica guardado: abre só quando você quer ver */}
+        <button className={cx('gd-more-btn', more && 'open')} onClick={() => setMore((v) => !v)} aria-expanded={more}>
+          {more ? 'Menos detalhes' : 'Mais detalhes'}
+          <ChevronDown />
+        </button>
 
-        {goal.checkin.freq !== 'none' && (
-          <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
-            Check-in {goal.checkin.freq === 'daily' ? 'diário' : `toda ${WEEKDAYS[goal.checkin.weekday]}`} às {goal.checkin.time}.
-            {goal.log.length > 1 && ` Último registro: ${formatWhen(Date.parse(goal.log[goal.log.length - 1].date)).toLowerCase()}.`}
-          </p>
+        {more && (
+          <div className="stack gd-more">
+            {goal.why && (
+              <div className="callout">
+                <Sparkles />
+                <span>
+                  <b>Seu porquê:</b> {goal.why}
+                </span>
+              </div>
+            )}
+
+            {goal.kind === 'numeric' && (
+              <div className="glass flat" style={{ padding: 14, borderRadius: 16 }}>
+                <div className="stat-row">
+                  <div className="stat">
+                    <span>Início</span>
+                    <b>{fmtNum(goal.startValue ?? 0)}</b>
+                  </div>
+                  <div className="stat">
+                    <span>Atual</span>
+                    <b>{fmtNum(goal.current ?? 0)}</b>
+                  </div>
+                  <div className="stat">
+                    <span>Meta</span>
+                    <b>{fmtNum(goal.target ?? 0)}</b>
+                  </div>
+                </div>
+                {goal.log.filter((l) => l.note !== 'Etapa atualizada').length >= 2 && (
+                  <div style={{ marginTop: 12 }}>
+                    <Sparkline goal={goal} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {goal.deadline && (
+              <p className="gd-line">
+                <CalendarClock /> Prazo {shortDate(goal.deadline)}
+              </p>
+            )}
+
+            {focusMin > 0 && (
+              <p className="gd-line">
+                <Timer /> <b>{focusMin >= 60 ? `${fmtNum(focusMin / 60)} h` : `${focusMin} min`}</b>&nbsp;de foco dedicados a esta meta.
+              </p>
+            )}
+
+            <div className="grid-2">
+              <div>
+                <div className="section-title">Hábitos de apoio</div>
+                {habits.length ? (
+                  habits.map((h) => (
+                    <div key={h.id} className="habit-pill" style={{ cursor: 'pointer' }} onClick={() => openModal({ type: 'habit', id: h.id })}>
+                      <span className="h-title">{h.title}</span>
+                      <span className="streak">
+                        <Flame /> {habitStreak(h)}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <button className="btn btn-sm btn-glass" onClick={() => openModal({ type: 'habit', defaults: { goalId: goal.id } })}>
+                    <Plus /> Vincular hábito
+                  </button>
+                )}
+              </div>
+              <div>
+                <div className="section-title">Próximas ações</div>
+                {tasks.slice(0, 4).map((t) => (
+                  <div key={t.id} className="habit-pill" style={{ cursor: 'pointer' }} onClick={() => openModal({ type: 'task', id: t.id })}>
+                    <span className="h-title">{t.title}</span>
+                  </div>
+                ))}
+                <button
+                  className="btn btn-sm btn-glass"
+                  onClick={() => {
+                    addTask({ title: `Avançar na meta: ${goal.title}`, due: todayKey(), priority: 2, goalId: goal.id, area: goal.area });
+                    toast({ title: 'Tarefa criada para hoje', icon: 'check' });
+                  }}
+                >
+                  <Plus /> Tarefa para hoje
+                </button>
+              </div>
+            </div>
+
+            {goal.checkin.freq !== 'none' && (
+              <p className="muted" style={{ margin: 0, fontSize: 12.5 }}>
+                Check-in {goal.checkin.freq === 'daily' ? 'diário' : `toda ${WEEKDAYS[goal.checkin.weekday]}`} às {goal.checkin.time}.
+                {goal.log.length > 1 && ` Último registro: ${formatWhen(Date.parse(goal.log[goal.log.length - 1].date)).toLowerCase()}.`}
+              </p>
+            )}
+
+            <div className="gd-danger">
+              {goal.status !== 'done' && (
+                <button className="btn btn-sm btn-ghost" onClick={() => setGoalStatus(goal.id, goal.status === 'paused' ? 'active' : 'paused')}>
+                  {goal.status === 'paused' ? <><Play /> Retomar meta</> : <><Pause /> Pausar meta</>}
+                </button>
+              )}
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={() => {
+                  deleteGoal(goal.id);
+                  close();
+                }}
+              >
+                <Trash2 /> Excluir meta
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </Modal>

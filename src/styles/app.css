@@ -2112,6 +2112,199 @@ kbd,
   font-size: 14px;
 }
 
+/* Detalhe da meta: versão enxuta (o resto fica em "Mais detalhes") */
+.gd {
+  gap: 18px;
+}
+
+.gd-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.gd-head-txt {
+  min-width: 0;
+  flex: 1;
+}
+
+.gd-head h3 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.gd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--fg-3);
+}
+
+.gd-pace {
+  color: var(--fg-2);
+  font-weight: 550;
+}
+
+.gd-pace.warn {
+  color: var(--fg);
+  font-weight: 650;
+}
+
+.gd-advice {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-3);
+}
+
+.gd-exp {
+  color: var(--fg-4);
+}
+
+.gd-num {
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--field);
+  display: grid;
+  gap: 14px;
+}
+
+.gd-num-val {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.gd-num-val b {
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.gd-num-val span {
+  font-size: 14px;
+  color: var(--fg-3);
+}
+
+.gd-step {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.gd-step .btn {
+  height: 44px;
+  justify-content: center;
+}
+
+.gd-step > .btn:last-child {
+  min-width: 84px;
+}
+
+.gd-step .input {
+  height: 44px;
+  text-align: center;
+  font-weight: 650;
+  font-size: 16px;
+}
+
+.gd-step .input::placeholder {
+  font-weight: 450;
+  font-size: 14px;
+}
+
+.gd-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg-3);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.gd-more-btn svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.2s ease;
+}
+
+.gd-more-btn.open svg {
+  transform: rotate(180deg);
+}
+
+.gd-line {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--fg-2);
+}
+
+.gd-line svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--fg-4);
+}
+
+.gd-danger {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.gd-foot {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.gd-foot > .btn {
+  height: 46px;
+  justify-content: center;
+}
+
+.gd-foot > .btn-glass {
+  flex: 0 0 auto;
+  padding: 0 18px;
+}
+
+.gd-foot > .btn-primary {
+  flex: 1;
+  font-size: 15px;
+}
+
+@media (min-width: 900px) {
+  .gd-foot {
+    justify-content: flex-end;
+  }
+
+  .gd-foot > .btn-primary {
+    flex: 0 0 auto;
+    padding: 0 22px;
+  }
+}
+
 /* ---------------- Hábitos ---------------- */
 
 .habit-row {
