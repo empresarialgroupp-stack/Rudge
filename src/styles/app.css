@@ -8100,3 +8100,226 @@ button.wsync {
 .account-alert {
   margin-bottom: 4px;
 }
+
+/* Relógios do Modo foco: Disco, Placas e Maré */
+.fc-disc,
+.fc-flip,
+.fc-tide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fc-disc {
+  gap: 20px;
+}
+
+.fd-disc {
+  width: min(280px, 70vw, 40svh);
+  aspect-ratio: 1;
+  overflow: visible;
+}
+
+.fd-plate {
+  fill: var(--fg-5);
+}
+
+.fd-slice {
+  fill: var(--fg);
+  transition: fill 0.5s var(--ease);
+}
+
+.fd-tick {
+  stroke: var(--fg-4);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.fd-knob {
+  fill: var(--bg);
+  stroke: var(--fg-5);
+  stroke-width: 2;
+}
+
+.focus-clock.idle .fd-slice,
+.focus-clock.paused .fd-slice {
+  fill: var(--fg-3);
+}
+
+.fc-disc .focus-time {
+  font-size: clamp(40px, 11vw, 56px);
+}
+
+.focus-setup .fd-disc {
+  width: min(200px, 52vw, 28svh);
+}
+
+.focus-setup .fc-disc {
+  gap: 14px;
+}
+
+.focus-setup .fc-disc .focus-time {
+  font-size: clamp(34px, 9vw, 44px);
+}
+
+.fc-flip {
+  gap: 22px;
+  font-size: clamp(64px, 19vw, 120px);
+}
+
+.ff-row {
+  display: flex;
+  align-items: center;
+}
+
+.ff-group {
+  display: flex;
+  align-items: center;
+}
+
+.ff-colon {
+  padding: 0 0.08em;
+  font-weight: 600;
+  font-size: 0.7em;
+  color: var(--fg-3);
+  line-height: 1;
+}
+
+.ff-card {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 1.45em;
+  padding: 0.14em 0.12em;
+  border-radius: 0.16em;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--chip), var(--field));
+  box-shadow: 0 0.12em 0.3em rgba(0, 0, 0, 0.25);
+  perspective: 4em;
+  overflow: hidden;
+}
+
+.ff-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: max(1px, 0.012em);
+  background: var(--bg);
+  opacity: 0.7;
+}
+
+.ff-face {
+  display: block;
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  animation: ff-flip 0.45s var(--ease) both;
+}
+
+@keyframes ff-flip {
+  from {
+    transform: rotateX(-90deg);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.focus-clock.idle .ff-face,
+.focus-clock.paused .ff-face {
+  color: var(--fg-3);
+}
+
+.fc-flip .fc-bar {
+  width: min(220px, 56vw);
+}
+
+.focus-setup .fc-flip {
+  font-size: clamp(52px, 15vw, 84px);
+  gap: 16px;
+}
+
+.fc-tide {
+  gap: 16px;
+}
+
+.ft-tank {
+  display: block;
+  width: min(280px, 70vw, 40svh);
+  aspect-ratio: 1;
+  overflow: visible;
+}
+
+.ft-glass {
+  fill: var(--field);
+}
+
+.ft-edge {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 0.5;
+}
+
+.ft-water {
+  fill: var(--fg);
+  transition: fill 0.5s var(--ease);
+}
+
+.ft-time {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  font-variant-numeric: tabular-nums;
+  fill: var(--fg);
+}
+
+.ft-ink {
+  fill: var(--bg);
+}
+
+.focus-clock.idle .ft-water,
+.focus-clock.paused .ft-water {
+  fill: var(--fg-3);
+}
+
+.focus-setup .ft-tank {
+  width: min(200px, 52vw, 28svh);
+}
+
+.clock-preview .fc-disc {
+  gap: 5cqw;
+}
+
+.clock-preview .fd-disc {
+  width: 66cqw;
+}
+
+.clock-preview .fc-disc .focus-time {
+  font-size: 15cqw;
+}
+
+.clock-preview .fc-flip {
+  font-size: 26cqw;
+  gap: 10cqw;
+}
+
+.clock-preview .fc-flip .fc-bar {
+  width: 70cqw;
+}
+
+.clock-preview .ft-tank {
+  width: 84cqw;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ff-face {
+    animation: none;
+  }
+}
