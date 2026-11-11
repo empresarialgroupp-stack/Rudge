@@ -8323,3 +8323,259 @@ button.wsync {
     animation: none;
   }
 }
+
+/* ---------------- Cartão da semana ---------------- */
+
+.week-card-preview {
+  width: min(100%, 340px);
+  aspect-ratio: 4 / 5;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--field);
+}
+
+.week-card-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------------- Capa das metas ---------------- */
+
+.goal-card .g-visual.has-cover {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg) 35%, transparent), color-mix(in srgb, var(--bg) 78%, transparent)),
+    var(--cover) center / cover no-repeat;
+}
+
+.goal-cover {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  max-height: 240px;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.goal-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.goal-cover-actions {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.goal-cover-actions label {
+  cursor: pointer;
+}
+
+.goal-cover-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 56px;
+  border-radius: 16px;
+  border: 1px dashed var(--line-2);
+  color: var(--fg-3);
+  font-size: 13.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.goal-cover-add:hover {
+  background: var(--field);
+  color: var(--fg);
+}
+
+.goal-cover-add.busy {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.goal-cover-add svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------------- Fundos do Modo foco ---------------- */
+
+.focus-close,
+.focus-switch,
+.focus-bg-btn {
+  z-index: 2;
+}
+
+.focus-bg-btn {
+  position: absolute;
+  top: calc(16px + var(--safe-t));
+  left: 68px;
+  border-radius: 50%;
+}
+
+.focus-bg-btn.on {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.focus-setup,
+.focus-run {
+  position: relative;
+  z-index: 1;
+}
+
+.focus-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  animation: fade-in 0.8s var(--ease) both;
+}
+
+/* camada que mantém o relógio legível nos dois temas */
+.focus-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 38%, transparent);
+}
+
+.focus-scene::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: inherit;
+  animation: scene-drift 40s ease-in-out infinite alternate;
+}
+
+@keyframes scene-drift {
+  from {
+    transform: translate3d(-3%, -2%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(3%, 2%, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-scene::before {
+    animation: none;
+  }
+}
+
+.scene-none {
+  background: var(--field);
+}
+
+.scene-aurora {
+  background:
+    radial-gradient(60% 40% at 20% 20%, rgba(64, 224, 170, 0.55), transparent 70%),
+    radial-gradient(50% 45% at 80% 30%, rgba(120, 90, 255, 0.5), transparent 70%),
+    radial-gradient(70% 50% at 50% 100%, rgba(40, 140, 200, 0.45), transparent 70%),
+    #07121c;
+}
+
+.scene-poente {
+  background:
+    radial-gradient(70% 45% at 50% 85%, rgba(255, 170, 70, 0.75), transparent 70%),
+    radial-gradient(60% 50% at 20% 40%, rgba(240, 90, 120, 0.55), transparent 70%),
+    radial-gradient(60% 50% at 85% 20%, rgba(110, 60, 170, 0.6), transparent 70%),
+    #1c0f22;
+}
+
+.scene-oceano {
+  background:
+    radial-gradient(80% 50% at 50% 0%, rgba(120, 210, 255, 0.45), transparent 70%),
+    radial-gradient(60% 50% at 15% 80%, rgba(20, 110, 190, 0.6), transparent 70%),
+    radial-gradient(60% 50% at 90% 70%, rgba(0, 170, 180, 0.45), transparent 70%),
+    #031427;
+}
+
+.scene-floresta {
+  background:
+    radial-gradient(70% 50% at 30% 10%, rgba(170, 220, 120, 0.4), transparent 70%),
+    radial-gradient(60% 55% at 80% 60%, rgba(30, 120, 70, 0.6), transparent 70%),
+    radial-gradient(80% 50% at 20% 100%, rgba(10, 70, 45, 0.8), transparent 70%),
+    #06140d;
+}
+
+.scene-noite {
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent),
+    radial-gradient(1px 1px at 32% 62%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 58% 12%, #fff, transparent),
+    radial-gradient(1px 1px at 76% 44%, #fff, transparent),
+    radial-gradient(1.5px 1.5px at 88% 82%, #fff, transparent),
+    radial-gradient(1px 1px at 22% 88%, #fff, transparent),
+    radial-gradient(1px 1px at 46% 36%, #fff, transparent),
+    radial-gradient(1px 1px at 66% 74%, #fff, transparent),
+    radial-gradient(60% 40% at 70% 10%, rgba(90, 110, 220, 0.4), transparent 70%),
+    #04050d;
+  background-size: 260px 260px, 300px 300px, 340px 340px, 280px 280px, 320px 320px, 360px 360px, 220px 220px, 240px 240px, 100% 100%, 100% 100%;
+}
+
+.scene-dunas {
+  background:
+    radial-gradient(90% 40% at 30% 100%, rgba(200, 130, 70, 0.75), transparent 70%),
+    radial-gradient(80% 35% at 80% 80%, rgba(230, 170, 100, 0.6), transparent 70%),
+    radial-gradient(70% 50% at 50% 0%, rgba(255, 220, 170, 0.45), transparent 70%),
+    #2a1a10;
+}
+
+.focus-bg-picker {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  max-width: 100%;
+  padding: 4px 2px 6px;
+  scrollbar-width: none;
+}
+
+.focus-bg-picker::-webkit-scrollbar {
+  display: none;
+}
+
+.focus-bg-opt {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-3);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.focus-bg-swatch {
+  display: block;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  border: 1px solid var(--line-2);
+  box-shadow: 0 0 0 0 var(--fg);
+  transition: box-shadow 0.2s var(--ease);
+}
+
+.focus-bg-opt.on {
+  color: var(--fg);
+}
+
+.focus-bg-opt.on .focus-bg-swatch {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--fg);
+}

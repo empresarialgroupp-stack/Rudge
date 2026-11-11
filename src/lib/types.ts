@@ -91,6 +91,8 @@ export interface Goal {
   templateId?: string;
   /** cada check-in do hábito vinculado soma +1 ao progresso */
   habitCounts?: boolean;
+  /** foto de capa escolhida pela pessoa (JPEG pequeno em data URL) */
+  cover?: string;
 }
 
 export interface Habit {
@@ -253,7 +255,11 @@ export interface Settings {
   onboarded: boolean;
   /** relógio do Modo foco; vazio até o usuário escolher na primeira vez */
   focusClock?: FocusClockStyle;
+  /** fundo do Modo foco; vazio = liso */
+  focusBg?: FocusBg;
 }
+
+export type FocusBg = 'none' | 'aurora' | 'poente' | 'oceano' | 'floresta' | 'noite' | 'dunas';
 
 export type FocusClockStyle = 'ring' | 'lens' | 'digital' | 'disc' | 'flip' | 'tide';
 

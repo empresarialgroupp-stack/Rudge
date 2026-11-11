@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BellOff, Clock3, Minimize2, Pause, Play, Plus, Square } from 'lucide-react';
+import { BellOff, Clock3, Minimize2, Palette, Pause, Play, Plus, Square } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { extendFocus, pauseFocus, resumeFocus, startFocus, updateSettings } from '../lib/actions';
 import { closeModal, openModal, useModals } from '../lib/ui';
@@ -10,6 +10,7 @@ import { LiquidTabBar } from './LiquidTabBar';
 import { cx } from './ui';
 import { FocusMusicButton } from './Integrations';
 import { FocusClock, FocusClockPicker, mmss } from './FocusClock';
+import { FocusBgPicker, FocusScene } from './FocusScene';
 import type { FocusClockStyle } from '../lib/types';
 
 const DURATIONS = ['15', '25', '45', '60'];
@@ -41,6 +42,8 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
   const clock = s.settings.focusClock;
   const [choosing, setChoosing] = useState(!clock);
   const [choice, setChoice] = useState<FocusClockStyle | undefined>(clock);
+  const bg = s.settings.focusBg;
+  const [bgOpen, setBgOpen] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
@@ -94,11 +97,22 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
         <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
           <Minimize2 />
         </button>
+        <FocusScene bg={bg} />
         <button className="icon-btn btn-glass focus-switch" onClick={() => setChoosing(true)} aria-label="Trocar relógio" title="Trocar relógio">
           <Clock3 />
         </button>
+        <button
+          className={cx('icon-btn btn-glass focus-bg-btn', bgOpen && 'on')}
+          onClick={() => setBgOpen((o) => !o)}
+          aria-label="Trocar fundo"
+          aria-expanded={bgOpen}
+          title="Trocar fundo"
+        >
+          <Palette />
+        </button>
         <div className="focus-setup">
           <FocusClock style={clock} left={ms} total={ms} idle />
+          {bgOpen && <FocusBgPicker value={bg} onChange={(v) => updateSettings({ focusBg: v })} />}
           <form
             className="focus-form"
             onSubmit={(e) => {
@@ -155,6 +169,7 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
   const paused = f.pausedLeft !== undefined;
   return (
     <div className={cx('focus-screen running', paused && 'paused')} role="dialog" aria-label="Modo foco">
+      <FocusScene bg={bg} />
       <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Minimizar" title="Minimizar">
         <Minimize2 />
       </button>

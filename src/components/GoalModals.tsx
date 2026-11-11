@@ -17,6 +17,7 @@ import {
   CalendarClock,
   ListOrdered,
   Timer,
+  ImagePlus,
 } from 'lucide-react';
 import type { AreaKey, CheckinFreq, Goal, Milestone } from '../lib/types';
 import { useStore, uid } from '../lib/store';
@@ -37,6 +38,7 @@ import { closeModal, openModal, toast } from '../lib/ui';
 import { addDays, addDaysKey, dateKey, diffDays, formatWhen, parseKey, shortDate, todayKey, WEEKDAYS } from '../lib/date';
 import { AREA_LABEL, AREAS, fmtNum, goalPace, goalProgress, habitStreak, recalcGoal } from '../lib/goals';
 import { TEMPLATES, templateById, type GoalTemplate } from '../lib/templates';
+import { fileToCover } from '../lib/cover';
 import { AreaIcon, cx, DayPicker, Field, Modal, ProgressBar, ProgressRing, Segmented, Switch } from './ui';
 
 /* ---------------- Assistente ---------------- */
@@ -490,6 +492,54 @@ function Sparkline({ goal }: { goal: Goal }) {
   );
 }
 
+/** Foto de capa da meta: escolhida na galeria, guardada na conta. */
+function GoalCover({ goal }: { goal: Goal }) {
+  const [busy, setBusy] = useState(false);
+  const pick = async (file?: File) => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      updateGoal(goal.id, { cover: await fileToCover(file) });
+    } catch (e) {
+      toast({ title: 'Não deu para usar essa foto', body: e instanceof Error ? e.message : undefined, icon: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const input = (
+    <input
+      type="file"
+      accept="image/*"
+      hidden
+      onChange={(e) => {
+        void pick(e.target.files?.[0]);
+        e.target.value = '';
+      }}
+    />
+  );
+  if (!goal.cover)
+    return (
+      <label className={cx('goal-cover-add', busy && 'busy')}>
+        <ImagePlus /> {busy ? 'Preparando a foto…' : 'Adicionar foto de capa'}
+        {input}
+      </label>
+    );
+  return (
+    <div className="goal-cover">
+      <img src={goal.cover} alt="" />
+      <div className="goal-cover-actions">
+        <label className="btn btn-sm btn-glass btn-pill">
+          <ImagePlus /> {busy ? 'Preparando…' : 'Trocar'}
+          {input}
+        </label>
+        <button className="btn btn-sm btn-glass btn-pill" onClick={() => updateGoal(goal.id, { cover: undefined })} aria-label="Remover foto de capa">
+          <X /> Remover
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function GoalDetail({ id }: { id: string }) {
   const s = useStore();
   const goal = s.goals.find((g) => g.id === id);
@@ -549,6 +599,7 @@ export function GoalDetail({ id }: { id: string }) {
       }
     >
       <div className="stack">
+        <GoalCover goal={goal} />
         <div className="row" style={{ gap: 18, alignItems: 'center' }}>
           <ProgressRing value={progress} size={92} stroke={7} />
           <div style={{ minWidth: 0, flex: 1 }}>
