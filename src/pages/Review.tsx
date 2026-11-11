@@ -8,6 +8,7 @@ import { fmtNum, goalPace, isHabitDueOn } from '../lib/goals';
 import { AreaIcon, cx, Empty, ProgressBar, Segmented, StatCard, StatRow } from '../components/ui';
 import { LineChart } from '../components/charts';
 import { dailyBreakdown } from '../lib/stats';
+import { WeekCard } from '../components/WeekCard';
 
 export function Review() {
   const s = useStore();
@@ -104,6 +105,7 @@ export function Review() {
               ]}
             />
           </section>
+          <WeekCard />
           <button className="banner glass" onClick={() => openModal({ type: 'retro' })}>
             <Sparkles />
             <span className="b-text">

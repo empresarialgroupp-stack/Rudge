@@ -15,6 +15,7 @@ import { IntegrationsCard } from '../components/Integrations';
 import { SensitiveDataCard } from '../components/SensitiveData';
 import { AccountDataCard } from '../components/AccountData';
 import { FocusClockPicker } from '../components/FocusClock';
+import { FocusBgPicker } from '../components/FocusScene';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
 
@@ -110,6 +111,10 @@ export function SettingsPage() {
             Relógio que aparece quando você foca.
           </p>
           <FocusClockPicker value={st.focusClock} onChange={(v) => updateSettings({ focusClock: v })} />
+          <p className="muted" style={{ margin: '16px 0 12px', fontSize: 13 }}>
+            Fundo atrás do relógio.
+          </p>
+          <FocusBgPicker value={st.focusBg} onChange={(v) => updateSettings({ focusBg: v })} />
         </section>
 
         <PlacesCard />

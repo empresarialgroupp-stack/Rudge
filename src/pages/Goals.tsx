@@ -106,7 +106,7 @@ export function Goals() {
             const next = g.milestones.find((m) => !m.done);
             return (
               <article key={g.id} className="goal-card glass" onClick={() => openModal({ type: 'goal-detail', id: g.id })}>
-                <div className="g-visual">
+                <div className={cx('g-visual', g.cover && 'has-cover')} style={g.cover ? { ['--cover' as string]: `url("${g.cover}")` } : undefined}>
                   <span className={cx('g-badge', (pace.status === 'behind' || pace.status === 'overdue') && 'warn', pace.status === 'done' && 'solid')}>
                     <i /> {g.status === 'paused' ? 'Pausada' : pace.label}
                   </span>

@@ -57,6 +57,12 @@ convite). `src/lib/auth.ts`
 - **Lembrete por lugar**: lugares salvos em Configurações; "quando sair do trabalho". Funciona com
   o app aberto ou ao abrir (navegadores não acompanham a localização com o app fechado). `src/lib/geo.ts`
 - **Retrospectiva do mês**: telas animadas no dia 1, imagem para compartilhar. `src/lib/retro.ts`
+- **Cartão da semana** (Revisão semanal): imagem 4:5 com as conquistas dos últimos 7 dias, feita no
+  próprio aparelho para salvar ou compartilhar. `src/lib/week.ts`, `src/components/WeekCard.tsx`
+- **Capa das metas**: foto da galeria recortada e reduzida no aparelho (640×360, até ~90 KB) e guardada
+  na meta (`goal.cover`), igual em todos os aparelhos da conta. `src/lib/cover.ts`
+- **Fundos do Modo foco**: cenas feitas só com CSS (Aurora, Pôr do sol, Oceano, Floresta, Noite,
+  Dunas), em `settings.focusBg`. `src/components/FocusScene.tsx`
 - **Carteira** (`#/carteira`): pilha de cartões animada (arraste, setas ou toque para abrir) e,
   abaixo do cartão aberto, quanto entrou, quanto saiu, dicas e o aviso de guardar 10% de cada
   entrada. Importa extratos OFX/CSV de Nubank, Inter e Mercado Pago no próprio aparelho (sem senha

@@ -26,7 +26,7 @@ export const prevMonth = (d = new Date()) => {
 };
 
 /** Progresso de uma meta numa data (pelo histórico de registros). */
-function progressAt(g: Goal, iso: string): number {
+export function progressAt(g: Goal, iso: string): number {
   if (g.kind !== 'numeric') {
     const done = g.milestones.filter((m) => m.done && m.doneAt && m.doneAt <= iso).length;
     return g.milestones.length ? done / g.milestones.length : 0;
