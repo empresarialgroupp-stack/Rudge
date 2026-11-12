@@ -8323,3 +8323,182 @@ button.wsync {
     animation: none;
   }
 }
+
+/* Relógio Flip: placas escuras grandes que viram (estilo relógio de mesa) */
+.focus-run:has(.fc-flap) {
+  width: min(980px, 100%);
+}
+
+.fc-flap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  /* 2 placas lado a lado; a altura também limita para caber no celular deitado */
+  font-size: min(31vw, 34svh, 260px);
+}
+
+.fl-row {
+  display: flex;
+  gap: 0.07em;
+}
+
+.fl-row.fl-3 {
+  font-size: 0.68em;
+}
+
+.fl-card {
+  --fl-bg: #141416;
+  --fl-ink: #f2f2ef;
+  position: relative;
+  display: block;
+  width: 1.32em;
+  height: 1.08em;
+  border-radius: 0.07em;
+  background: var(--fl-bg);
+  box-shadow:
+    0 0.02em 0.04em rgba(0, 0, 0, 0.35),
+    0 0.1em 0.3em rgba(0, 0, 0, 0.28),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  perspective: 3.5em;
+  color: var(--fl-ink);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  user-select: none;
+}
+
+.fl-half {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: var(--fl-bg);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.fl-top {
+  top: 0;
+  border-radius: 0.07em 0.07em 0 0;
+  transform-origin: 50% 100%;
+  background: linear-gradient(180deg, #19191c, var(--fl-bg));
+}
+
+.fl-bot {
+  bottom: 0;
+  border-radius: 0 0 0.07em 0.07em;
+  transform-origin: 50% 0;
+  background: linear-gradient(180deg, #0f0f11, var(--fl-bg));
+}
+
+.fl-num {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 200%;
+  display: grid;
+  place-items: center;
+  padding-right: 0.04em;
+  font-size: 0.86em;
+}
+
+.fl-top .fl-num {
+  top: 0;
+}
+
+.fl-bot .fl-num {
+  bottom: 0;
+}
+
+/* fresta horizontal no meio da placa */
+.fl-card::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: calc(50% - max(1px, 0.006em));
+  height: max(2px, 0.012em);
+  background: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.fl-fold {
+  z-index: 2;
+  animation: fl-fold 0.3s cubic-bezier(0.55, 0, 0.9, 0.4) both;
+}
+
+.fl-drop {
+  z-index: 2;
+  transform: rotateX(90deg);
+  animation: fl-drop 0.32s cubic-bezier(0.2, 0.7, 0.3, 1.25) 0.28s both;
+}
+
+@keyframes fl-fold {
+  from {
+    transform: rotateX(0);
+    filter: brightness(1);
+  }
+  to {
+    transform: rotateX(-90deg);
+    filter: brightness(0.55);
+  }
+}
+
+@keyframes fl-drop {
+  from {
+    transform: rotateX(90deg);
+    filter: brightness(1.6);
+  }
+  to {
+    transform: rotateX(0);
+    filter: brightness(1);
+  }
+}
+
+/* indicador pequeno no canto, como o AM/PM do relógio de mesa */
+.fl-unit {
+  position: absolute;
+  z-index: 4;
+  left: 5.5%;
+  bottom: 6%;
+  font-size: max(8px, 0.075em);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(242, 242, 239, 0.62);
+}
+
+.focus-clock.idle .fl-card,
+.focus-clock.paused .fl-card {
+  --fl-ink: #8d8d92;
+}
+
+.fc-flap .focus-state {
+  font-size: 15px;
+}
+
+.focus-setup .fc-flap {
+  font-size: min(25vw, 22svh, 150px);
+  gap: 12px;
+}
+
+.focus-setup:has(.fc-flap) .fl-row {
+  max-width: 100%;
+}
+
+.clock-preview .fc-flap {
+  font-size: 36cqw;
+  gap: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fl-fold,
+  .fl-drop {
+    animation: none;
+    display: none;
+  }
+}
