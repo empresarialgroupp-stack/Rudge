@@ -5035,7 +5035,8 @@ kbd,
   min-width: 180px;
 }
 
-.focus-run > .focus-title {
+.focus-run > .focus-title,
+.focus-extras-in > .focus-title {
   margin-top: -4px;
   font-size: 17px;
   font-weight: 560;
@@ -8501,4 +8502,63 @@ button.wsync {
     animation: none;
     display: none;
   }
+}
+
+/* Modo foco calmo: parado alguns segundos, só o relógio fica na tela */
+.focus-extras {
+  display: grid;
+  grid-template-rows: 1fr;
+  width: 100%;
+  transition:
+    grid-template-rows 0.6s var(--ease),
+    opacity 0.4s var(--ease);
+}
+
+.focus-extras-in {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  /* espaço para a sombra dos botões não ser cortada */
+  padding: 4px 8px 10px;
+  margin: -4px -8px -10px;
+}
+
+.focus-screen.running .focus-close,
+.focus-screen.running .focus-state,
+.focus-screen.running .fc-bar {
+  transition: opacity 0.4s var(--ease);
+}
+
+.focus-screen.calm {
+  cursor: none;
+}
+
+.focus-screen.calm .focus-extras {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.focus-screen.calm .focus-close,
+.focus-screen.calm .focus-state,
+.focus-screen.calm .fc-bar {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.focus-screen.calm .focus-run {
+  gap: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-extras {
+    transition: opacity 0.2s linear;
+  }
+}
+
+.focus-screen.running .focus-run {
+  transition: gap 0.6s var(--ease);
 }
