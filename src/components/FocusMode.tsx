@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BellOff, Clock3, Minimize2, Pause, Play, Plus, Square } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { extendFocus, pauseFocus, resumeFocus, startFocus, updateSettings } from '../lib/actions';
@@ -22,6 +22,47 @@ function useNow(active: boolean) {
     return () => clearInterval(t);
   }, [active]);
   return now;
+}
+
+/** Tempo parado até a tela do foco ficar só com o relógio. */
+const CALM_AFTER = 4000;
+
+/**
+ * Tela calma: depois de alguns segundos sem mexer, some tudo menos o relógio.
+ * Mouse mexendo, tecla ou toque trazem os controles de volta; no celular, tocar
+ * numa área vazia com os controles à mostra esconde de novo.
+ */
+function useCalm(enabled: boolean) {
+  const [calm, setCalm] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wake = useCallback(() => {
+    setCalm(false);
+    clearTimeout(timer.current);
+    if (enabled) timer.current = setTimeout(() => setCalm(true), CALM_AFTER);
+  }, [enabled]);
+  useEffect(() => {
+    wake();
+    return () => clearTimeout(timer.current);
+  }, [wake]);
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse') wake();
+  };
+  const onPointerDown = (e: React.PointerEvent) => {
+    const onControl = (e.target as HTMLElement).closest('button, a, input, select, textarea');
+    if (enabled && e.pointerType !== 'mouse' && !calm && !onControl) {
+      clearTimeout(timer.current);
+      setCalm(true);
+    } else wake();
+  };
+  useEffect(() => {
+    window.addEventListener('keydown', wake);
+    window.addEventListener('wheel', wake, { passive: true });
+    return () => {
+      window.removeEventListener('keydown', wake);
+      window.removeEventListener('wheel', wake);
+    };
+  }, [wake]);
+  return { calm: enabled && calm, onPointerMove, onPointerDown };
 }
 
 export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string }) {
@@ -153,8 +194,36 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
   const left = f.pausedLeft ?? Math.max(0, f.until - now);
   const total = f.minutes * 60_000;
   const paused = f.pausedLeft !== undefined;
+  return <FocusRun f={f} left={left} total={total} paused={paused} clock={clock} held={held} close={close} />;
+}
+
+function FocusRun({
+  f,
+  left,
+  total,
+  paused,
+  clock,
+  held,
+  close,
+}: {
+  f: NonNullable<ReturnType<typeof useStore>['focus']>;
+  left: number;
+  total: number;
+  paused: boolean;
+  clock?: FocusClockStyle;
+  held: number;
+  close: () => void;
+}) {
+  // pausado, os controles ficam sempre à mostra
+  const { calm, onPointerMove, onPointerDown } = useCalm(!paused);
   return (
-    <div className={cx('focus-screen running', paused && 'paused')} role="dialog" aria-label="Modo foco">
+    <div
+      className={cx('focus-screen running', paused && 'paused', calm && 'calm')}
+      role="dialog"
+      aria-label="Modo foco"
+      onPointerMove={onPointerMove}
+      onPointerDown={onPointerDown}
+    >
       <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Minimizar" title="Minimizar">
         <Minimize2 />
       </button>
@@ -166,28 +235,32 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
           paused={paused}
           caption={paused ? 'Pausado' : `termina às ${new Date(f.until).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
         />
-        <span className="focus-title">{f.title}</span>
-        <div className="focus-controls">
-          <button className="btn btn-glass btn-pill" onClick={() => extendFocus(5)}>
-            <Plus /> 5 min
-          </button>
-          <button className="btn btn-primary btn-lg btn-pill" onClick={() => (paused ? resumeFocus() : pauseFocus())}>
-            {paused ? <Play /> : <Pause />} {paused ? 'Retomar' : 'Pausar'}
-          </button>
-          <button
-            className="btn btn-glass btn-pill"
-            onClick={() => {
-              completeFocus(true);
-              close();
-            }}
-          >
-            <Square /> Encerrar
-          </button>
-          <FocusMusicButton />
+        <div className="focus-extras" aria-hidden={calm || undefined}>
+          <div className="focus-extras-in">
+            <span className="focus-title">{f.title}</span>
+            <div className="focus-controls">
+              <button className="btn btn-glass btn-pill" onClick={() => extendFocus(5)}>
+                <Plus /> 5 min
+              </button>
+              <button className="btn btn-primary btn-lg btn-pill" onClick={() => (paused ? resumeFocus() : pauseFocus())}>
+                {paused ? <Play /> : <Pause />} {paused ? 'Retomar' : 'Pausar'}
+              </button>
+              <button
+                className="btn btn-glass btn-pill"
+                onClick={() => {
+                  completeFocus(true);
+                  close();
+                }}
+              >
+                <Square /> Encerrar
+              </button>
+              <FocusMusicButton />
+            </div>
+            <p className="muted focus-note">
+              <BellOff width={14} /> {held ? `${held} ${held === 1 ? 'aviso guardado' : 'avisos guardados'} para depois` : 'Avisos em silêncio'}
+            </p>
+          </div>
         </div>
-        <p className="muted focus-note">
-          <BellOff width={14} /> {held ? `${held} ${held === 1 ? 'aviso guardado' : 'avisos guardados'} para depois` : 'Avisos em silêncio'}
-        </p>
       </div>
     </div>
   );
