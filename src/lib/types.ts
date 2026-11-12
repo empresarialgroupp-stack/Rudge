@@ -255,7 +255,7 @@ export interface Settings {
   focusClock?: FocusClockStyle;
 }
 
-export type FocusClockStyle = 'ring' | 'lens' | 'digital' | 'disc' | 'flip' | 'tide';
+export type FocusClockStyle = 'ring' | 'lens' | 'digital' | 'disc' | 'flip' | 'tide' | 'flipclock';
 
 export interface AppState {
   version: number;

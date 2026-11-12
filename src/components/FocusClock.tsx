@@ -1,6 +1,6 @@
 // Relógios do Modo foco. Cada estilo recebe só o tempo que falta e o total;
 // o usuário escolhe o seu na primeira vez e pode trocar nas Configurações.
-import { useId } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Check } from 'lucide-react';
 import { useReducedMotion } from 'motion/react';
 import type { FocusClockStyle } from '../lib/types';
@@ -22,6 +22,7 @@ export const CLOCK_STYLES: { value: FocusClockStyle; label: string; hint: string
   { value: 'disc', label: 'Disco', hint: 'Fatia que encolhe até zerar' },
   { value: 'flip', label: 'Placas', hint: 'Números que viram como placas' },
   { value: 'tide', label: 'Maré', hint: 'Nível que baixa com o tempo' },
+  { value: 'flipclock', label: 'Flip', hint: 'Placas grandes que viram, estilo protetor de tela' },
 ];
 
 export interface FocusClockProps {
@@ -99,6 +100,50 @@ function Flip({ text }: { text: string }) {
             </span>
           </span>
         </span>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Flip: placa escura com dígitos grandes, uma fresta no meio e a metade de
+ * cima que dobra para baixo quando o número muda (como um relógio de mesa).
+ */
+function FlapCard({ value, unit }: { value: string; unit: string }) {
+  // [atual, anterior]: as duas folhas que se mexem mostram a troca
+  const reduce = useReducedMotion();
+  const [pair, setPair] = useState<[string, string]>([value, value]);
+  useEffect(() => {
+    setPair((p) => (p[0] === value ? p : [value, p[0]]));
+    // terminada a virada, as folhas saem e a placa fica parada no número novo
+    const t = setTimeout(() => setPair([value, value]), reduce ? 0 : 640);
+    return () => clearTimeout(t);
+  }, [value, reduce]);
+  const [cur, prev] = pair;
+  const moving = cur !== prev;
+  const half = (cls: string, v: string, k?: string) => (
+    <span key={k} className={cx('fl-half', cls)}>
+      <span className="fl-num">{v}</span>
+    </span>
+  );
+  return (
+    <span className="fl-card">
+      {half('fl-top', cur)}
+      {half('fl-bot', moving ? prev : cur)}
+      {moving && half('fl-top fl-fold', prev, 'f' + cur)}
+      {moving && half('fl-bot fl-drop', cur, 'd' + cur)}
+      <span className="fl-unit">{unit}</span>
+    </span>
+  );
+}
+
+function FlapClock({ text }: { text: string }) {
+  const groups = text.split(':');
+  const units = groups.length === 3 ? ['h', 'min', 'seg'] : ['min', 'seg'];
+  return (
+    <span className={cx('fl-row', groups.length === 3 && 'fl-3')} aria-hidden="true">
+      {groups.map((g, i) => (
+        <FlapCard key={units[i]} value={g} unit={units[i]} />
       ))}
     </span>
   );
@@ -193,6 +238,15 @@ export function FocusClock({ style = 'ring', left, total, paused, idle, caption 
         <span className="sr-only">{mmss(left)}</span>
         <Flip text={mmss(left)} />
         {bar}
+        {cap}
+      </div>
+    );
+
+  if (style === 'flipclock')
+    return (
+      <div className={cx('focus-clock fc-flap', state)}>
+        <span className="sr-only">{mmss(left)}</span>
+        <FlapClock text={mmss(left)} />
         {cap}
       </div>
     );
