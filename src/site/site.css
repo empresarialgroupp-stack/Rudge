@@ -944,34 +944,40 @@ ul {
   animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Círculo que nasce do botão. Só a borda é desfocada: o interior e o resto
+   da tela ficam nítidos. O raio (--vt-r) é animado; a borda tem 90px de degradê. */
+@property --vt-r {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
 ::view-transition-new(root) {
-  animation-name: s-theme-reveal;
+  --vt-edge: 90px;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--vt-x, 100%) var(--vt-y, 0%),
+    #000 calc(var(--vt-r) - var(--vt-edge)),
+    transparent var(--vt-r)
+  );
+  mask-image: radial-gradient(
+    circle at var(--vt-x, 100%) var(--vt-y, 0%),
+    #000 calc(var(--vt-r) - var(--vt-edge)),
+    transparent var(--vt-r)
+  );
+  animation: s-theme-reveal 0.9s cubic-bezier(0.45, 0, 0.2, 1) both;
 }
 
 ::view-transition-old(root) {
-  animation: s-theme-leave 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: none;
   z-index: -1;
 }
 
-/* círculo que nasce do botão, com um desfoque suave que some no fim */
 @keyframes s-theme-reveal {
   from {
-    clip-path: circle(0% at var(--vt-x, 100%) var(--vt-y, 0%));
-    filter: blur(10px);
-  }
-  50% {
-    filter: blur(4px);
+    --vt-r: 0px;
   }
   to {
-    clip-path: circle(150% at var(--vt-x, 100%) var(--vt-y, 0%));
-    filter: blur(0);
-  }
-}
-
-/* a tela antiga também desfoca de leve enquanto é coberta */
-@keyframes s-theme-leave {
-  to {
-    filter: blur(6px);
+    --vt-r: calc(150vmax + 90px);
   }
 }
 
