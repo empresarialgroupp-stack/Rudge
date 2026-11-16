@@ -509,6 +509,46 @@ export function Dashboard() {
               />
             )}
           </section>
+
+          <section className="card glass">
+            <div className="card-head">
+              <h2 className="card-title">
+                <AlarmClock /> Próximos lembretes
+              </h2>
+              <button className="link" onClick={() => navigate('lembretes')}>
+                Todos <ChevronRight />
+              </button>
+            </div>
+            {nextReminders.length ? (
+              <div className="list">
+                {nextReminders.map((r) => (
+                  <div key={`${r.id}-${r.at}`} className="item" onClick={() => openModal({ type: 'reminder', id: r.id })} style={{ cursor: 'pointer' }}>
+                    <div className="lead-icon">
+                      <Bell />
+                    </div>
+                    <div className="item-main">
+                      <div className="item-title">{r.title}</div>
+                      <div className="item-meta">
+                        <span className={cx('meta', r.at < now && 'strong')}>{r.at < now ? `Atrasado · ${formatWhen(r.at)}` : formatWhen(r.at)}</span>
+                      </div>
+                    </div>
+                    <span className="chip">{fromNow(r.at)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Empty
+                icon={AlarmClock}
+                title="Nenhum lembrete"
+                text="Peça: “me lembre de pagar o boleto amanhã às 10h”."
+                action={
+                  <button className="btn btn-glass btn-sm" onClick={() => openModal({ type: 'reminder' })}>
+                    Novo lembrete
+                  </button>
+                }
+              />
+            )}
+          </section>
         </div>
 
         <div className="dash-col stagger">
@@ -579,46 +619,6 @@ export function Dashboard() {
               })
             ) : (
               <Empty icon={Sparkles} title="Tudo em ordem" text="Sem pendências ou alertas. Continue assim." />
-            )}
-          </section>
-
-          <section className="card glass">
-            <div className="card-head">
-              <h2 className="card-title">
-                <AlarmClock /> Próximos lembretes
-              </h2>
-              <button className="link" onClick={() => navigate('lembretes')}>
-                Todos <ChevronRight />
-              </button>
-            </div>
-            {nextReminders.length ? (
-              <div className="list">
-                {nextReminders.map((r) => (
-                  <div key={`${r.id}-${r.at}`} className="item" onClick={() => openModal({ type: 'reminder', id: r.id })} style={{ cursor: 'pointer' }}>
-                    <div className="lead-icon">
-                      <Bell />
-                    </div>
-                    <div className="item-main">
-                      <div className="item-title">{r.title}</div>
-                      <div className="item-meta">
-                        <span className={cx('meta', r.at < now && 'strong')}>{r.at < now ? `Atrasado · ${formatWhen(r.at)}` : formatWhen(r.at)}</span>
-                      </div>
-                    </div>
-                    <span className="chip">{fromNow(r.at)}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Empty
-                icon={AlarmClock}
-                title="Nenhum lembrete"
-                text="Peça: “me lembre de pagar o boleto amanhã às 10h”."
-                action={
-                  <button className="btn btn-glass btn-sm" onClick={() => openModal({ type: 'reminder' })}>
-                    Novo lembrete
-                  </button>
-                }
-              />
             )}
           </section>
 

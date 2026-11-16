@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -113,6 +113,9 @@ function PillTabs({ route, onGo, id }: { route: RouteName; onGo: (r: RouteName) 
   return <LiquidTabBar key={group[0].name} id={id} label="Páginas desta seção" labels="always" tabs={tabs} value={route} onValueChange={(v) => onGo(v as RouteName)} />;
 }
 
+/** Nomes curtos para a aba "onde estou" da barra de baixo. */
+const DOCK_LABEL: Partial<Record<RouteName, string>> = { revisao: 'Revisão', instalar: 'Instalar', configuracoes: 'Ajustes' };
+
 const MORE: RouteName[] = ['habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'carteira', 'instalar', 'configuracoes'];
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -128,24 +131,54 @@ export function Shell({ children }: { children: ReactNode }) {
   const meta = PAGE_META[route.name];
   const userName = s.settings.name || displayName(s, email);
 
+  // Celular estreito: as abas do topo rolam para o lado; a aba da página atual fica sempre à vista.
+  const mTabs = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const show = () => {
+      const box = mTabs.current;
+      const on = box?.querySelector<HTMLElement>('.ltb-row:not(.ltb-ink) .ltb-slot.on');
+      if (!box || !on || box.scrollWidth <= box.clientWidth) return;
+      const b = box.getBoundingClientRect();
+      const r = on.getBoundingClientRect();
+      if (r.left < b.left + 8) box.scrollLeft += r.left - b.left - 8;
+      else if (r.right > b.right - 8) box.scrollLeft += r.right - b.right + 8;
+    };
+    show();
+    // as larguras das abas são medidas depois da primeira pintura
+    const t = setTimeout(show, 450);
+    return () => clearTimeout(t);
+  }, [route.name]);
+
   const go = (name: RouteName) => {
     navigate(name);
     setMoreOpen(false);
     setUserOpen(false);
   };
 
+  const railItems: NavDef[] = [...NAV, { name: 'instalar', label: 'Instalar app', icon: Download }, { name: 'configuracoes', label: 'Configurações', icon: Settings }];
+
   const moreBadge = (badges.lembretes ?? 0) + (badges.habitos ?? 0);
-  const dockTabs = useMemo(
-    () => [
+  // Fora das três abas fixas, a quarta aba mostra a página em que a pessoa está (e continua abrindo o menu).
+  const here = MORE.includes(route.name) ? route.name : null;
+  const dockTabs = useMemo(() => {
+    const cur = here ? railItems.find((n) => n.name === here) : undefined;
+    const HereIcon = cur?.icon ?? Menu;
+    const dockBadge = (here ? badges[here] : moreBadge) ?? 0;
+    return [
       { value: 'inicio', label: 'Início', icon: <House /> },
       { value: 'tarefas', label: 'Tarefas', icon: <ListTodo />, badge: badges.tarefas || undefined, badgeLabel: badges.tarefas ? `${badges.tarefas} para hoje` : undefined },
       { value: 'metas', label: 'Metas', icon: <Target /> },
-      { value: 'mais', label: 'Mais', icon: <Menu />, badge: moreBadge || undefined, badgeLabel: moreBadge ? `${moreBadge} pendentes` : undefined },
-    ],
-    [badges.tarefas, moreBadge],
-  );
-
-  const railItems: NavDef[] = [...NAV, { name: 'instalar', label: 'Instalar app', icon: Download }, { name: 'configuracoes', label: 'Configurações', icon: Settings }];
+      {
+        value: 'mais',
+        label: here ? DOCK_LABEL[here] ?? PAGE_META[here].title : 'Mais',
+        icon: <HereIcon />,
+        // na página atual o contador é o dela (igual ao do trilho do computador); em "Mais", a soma
+        badge: dockBadge || undefined,
+        badgeLabel: `${dockBadge} pendentes, abrir menu`,
+      },
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [badges, moreBadge, here]);
 
   return (
     <div className="app">
@@ -247,7 +280,7 @@ export function Shell({ children }: { children: ReactNode }) {
       </header>
 
       <main className="main">
-        <div className="mobile-tabs only-mobile">
+        <div className="mobile-tabs only-mobile" ref={mTabs}>
           <PillTabs id="m-tabs" route={route.name} onGo={go} />
         </div>
         {route.name !== 'inicio' && (
