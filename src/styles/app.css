@@ -8562,3 +8562,46 @@ button.wsync {
 .focus-screen.running .focus-run {
   transition: gap 0.6s var(--ease);
 }
+
+/* ---------------- Organização: tudo alinhado entre as telas ---------------- */
+
+/* Carteira: mesmas margens laterais das outras telas (antes ficava recuada dos dois lados) */
+@media (min-width: 1100px) {
+  .wallet-page.wallet-v2 {
+    max-width: none;
+    margin: 0;
+  }
+}
+
+/* Configurações: rodapé (sair + versão) ocupa a largura das duas colunas */
+.settings-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Barra de baixo: o contador não encosta no nome da aba ativa */
+.tabdock .ltb-badge {
+  top: 6px;
+  left: 24px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  font-size: 9.5px;
+  line-height: 15px;
+}
+.tabdock .ltb-roll {
+  height: 15px;
+}
+
+/* Abas do topo (celular estreito): a pílula inteira rola dentro da faixa, sem cortar a aba ativa */
+.mobile-tabs .ltb {
+  max-width: none;
+}
+
+/* Faixas clicáveis: texto sempre alinhado à esquerda, junto do ícone */
+.banner {
+  text-align: left;
+}

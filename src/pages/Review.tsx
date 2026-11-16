@@ -48,7 +48,7 @@ export function Review() {
   }
 
   return (
-    <div style={{ maxWidth: 980 }}>
+    <div className="review-page">
       <div className="steps">
         {steps.map((_, i) => (
           <i key={i} className={i <= step ? 'on' : ''} />
