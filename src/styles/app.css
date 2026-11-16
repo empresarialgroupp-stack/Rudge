@@ -8605,3 +8605,43 @@ button.wsync {
 .banner {
   text-align: left;
 }
+
+/* ---------------- Troca de tema: círculo com só a borda desfocada ---------------- */
+/* Mesma técnica da landing: máscara radial em vez de clip-path (que tem borda dura).
+   O raio (--vt-r) é animado em setTheme; os 90px finais do raio são o degradê. */
+@property --vt-r {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+html.vt-reveal::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+html.vt-reveal::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  z-index: -1;
+}
+
+html.vt-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--vt-x, 50%) var(--vt-y, 50%),
+    #000 calc(var(--vt-r) - 90px),
+    transparent var(--vt-r)
+  );
+  mask-image: radial-gradient(
+    circle at var(--vt-x, 50%) var(--vt-y, 50%),
+    #000 calc(var(--vt-r) - 90px),
+    transparent var(--vt-r)
+  );
+}
+
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
