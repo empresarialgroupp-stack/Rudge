@@ -803,16 +803,18 @@ export default function InkBackground({
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Follow light and dark mode without asking the app for a theme. Only
-    // checked while the background is on screen.
-    const colorTimer = window.setInterval(() => {
-      if (!visible) {
-        return;
-      }
-      if (readColors() && !raf) {
+    // Troca de tema: repinta na hora (antes da foto da transição de tela),
+    // para a tinta nunca aparecer com as cores do tema anterior.
+    const onTheme = () => {
+      if (readColors()) {
         fluid.draw();
       }
-    }, 500);
+    };
+    const themeObserver = new MutationObserver(onTheme);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
 
     const local = (event: PointerEvent) => {
       const rect = root.getBoundingClientRect();
@@ -896,7 +898,7 @@ export default function InkBackground({
       resizeObserver.disconnect();
       intersection.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
-      window.clearInterval(colorTimer);
+      themeObserver.disconnect();
       host.removeEventListener("pointermove", onMove);
       host.removeEventListener("pointerleave", onLeave);
       host.removeEventListener("pointerdown", onDown);

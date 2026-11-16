@@ -1,16 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   AnimatePresence,
   motion,
   useInView,
-  useMotionValue,
   useReducedMotion,
   useScroll,
-  useSpring,
   useTransform,
-  type MotionValue,
 } from 'motion/react';
-import { Bell, BookOpen, Check, CheckSquare, Plus, Repeat, Target, Timer, Wallet } from 'lucide-react';
+import { Bell, BookOpen, CheckSquare, Plus, Repeat, Target, Timer, Wallet } from 'lucide-react';
 import { LiquidButton } from './ui/LiquidButton';
 import { GooeyTextReveal } from './ui/GooeyTextReveal';
 import { ThemeToggle } from './ui/ThemeToggle';
@@ -65,110 +62,6 @@ function LaunchSeal() {
         </text>
       </svg>
       <Star className="s-seal-star" />
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Cena 3D do topo: três painéis de vidro em profundidade              */
-/* ------------------------------------------------------------------ */
-
-function Layer({
-  depth,
-  spread,
-  className,
-  children,
-}: {
-  depth: number;
-  spread: MotionValue<number>;
-  className: string;
-  children: ReactNode;
-}) {
-  const z = useTransform(spread, (s) => depth * s);
-  return (
-    <motion.div className={`s-layer ${className}`} style={{ z }}>
-      {children}
-    </motion.div>
-  );
-}
-
-const TODAY = [
-  { t: 'Revisar a semana', done: true },
-  { t: 'Treino de perna', done: true },
-  { t: 'Enviar proposta', done: false },
-  { t: 'Ler 20 páginas', done: false },
-];
-
-function HeroScene({ progress }: { progress: MotionValue<number> }) {
-  const reduce = useReducedMotion();
-  const px = useMotionValue(0);
-  const py = useMotionValue(0);
-  const sx = useSpring(px, { stiffness: 70, damping: 16 });
-  const sy = useSpring(py, { stiffness: 70, damping: 16 });
-  const sp = useSpring(progress, { stiffness: 90, damping: 22 });
-
-  // gira com a rolagem (celular) e inclina com o ponteiro (desktop)
-  const rotateY = useTransform([sp, sx], ([p, x]: number[]) => (reduce ? -20 : -20 + p * 40 + x * 10));
-  const rotateX = useTransform([sp, sy], ([p, y]: number[]) => (reduce ? 12 : 16 - p * 10 - y * 8));
-  const spread = useTransform(sp, (p) => (reduce ? 1 : 1 + p * 1.5));
-
-  useEffect(() => {
-    if (reduce) return;
-    const move = (e: PointerEvent) => {
-      if (e.pointerType === 'touch') return;
-      px.set((e.clientX / window.innerWidth) * 2 - 1);
-      py.set((e.clientY / window.innerHeight) * 2 - 1);
-    };
-    window.addEventListener('pointermove', move, { passive: true });
-    return () => window.removeEventListener('pointermove', move);
-  }, [px, py, reduce]);
-
-  return (
-    <div className="s-scene" aria-hidden="true">
-      <div className="s-float">
-        <motion.div className="s-stack" style={{ rotateX, rotateY }}>
-          <Layer depth={0} spread={spread} className="s-l-today">
-            <div className="s-l-head">
-              <span>Hoje</span>
-              <span className="s-l-dim">2 de 4</span>
-            </div>
-            <ul>
-              {TODAY.map((x) => (
-                <li key={x.t} className={x.done ? 'done' : ''}>
-                  <span className="s-box">{x.done && <Check size={11} strokeWidth={3} />}</span>
-                  {x.t}
-                </li>
-              ))}
-            </ul>
-          </Layer>
-
-          <Layer depth={70} spread={spread} className="s-l-goal">
-            <svg viewBox="0 0 64 64" className="s-ring">
-              <circle cx="32" cy="32" r="26" className="s-ring-track" />
-              <circle cx="32" cy="32" r="26" className="s-ring-fill" pathLength={100} strokeDasharray="58 100" />
-            </svg>
-            <div>
-              <strong>Ler 12 livros</strong>
-              <span className="s-l-dim">7 lidos este ano</span>
-            </div>
-          </Layer>
-
-          <Layer depth={130} spread={spread} className="s-l-habit">
-            <strong>Treinar</strong>
-            <div className="s-dots">
-              {[1, 1, 1, 1, 1, 0, 0].map((on, i) => (
-                <i key={i} className={on ? 'on' : ''} />
-              ))}
-            </div>
-            <span className="s-l-dim">5 dias seguidos</span>
-          </Layer>
-
-          <Layer depth={190} spread={spread} className="s-l-remind">
-            <span className="s-pulse" />
-            Pagar a fatura às 18:00
-          </Layer>
-        </motion.div>
-      </div>
     </div>
   );
 }
@@ -355,8 +248,8 @@ export function Site() {
   const { scrollYProgress } = useScroll({ target: hero, offset: ['start start', 'end start'] });
   const glowY = useTransform(scrollYProgress, [0, 1], [0, 120]);
   const reduce = useReducedMotion();
-  // no celular o nome de fundo fica atrás dos painéis; no desktop, no meio
-  const [inkCenter] = useState(() => (window.innerWidth < 980 ? 0.7 : 0.52));
+  // nome de fundo: abaixo do botão no celular, atrás do texto no desktop
+  const [inkCenter] = useState(() => (window.innerWidth < 980 ? 0.8 : 0.6));
 
   return (
     <div className="s-page">
@@ -404,7 +297,6 @@ export function Site() {
                 </LiquidButton>
               </div>
 
-              <HeroScene progress={scrollYProgress} />
               <LaunchSeal />
             </div>
           </section>

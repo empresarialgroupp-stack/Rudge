@@ -30,12 +30,19 @@ export function ThemeToggle() {
       root.style.setProperty('--vt-x', `${rect.left + rect.width / 2}px`);
       root.style.setProperty('--vt-y', `${rect.top + rect.height / 2}px`);
     }
+    // Durante a troca, nada pode ficar no meio de uma transição de cor:
+    // a foto da tela nova sairia com cores misturadas dos dois temas.
+    root.classList.add('s-theme-switching');
+    const done = () => requestAnimationFrame(() => root.classList.remove('s-theme-switching'));
+
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce || typeof document.startViewTransition !== 'function') {
       apply();
+      done();
       return;
     }
-    document.startViewTransition(apply);
+    const vt = document.startViewTransition(apply);
+    vt.finished.then(done, done);
   };
 
   return (

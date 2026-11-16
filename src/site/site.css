@@ -189,6 +189,7 @@ ul {
   max-width: var(--max);
   margin: 0 auto;
   padding: 28px var(--pad) 40px;
+  min-height: min(860px, 100svh);
 }
 
 .s-hero-copy {
@@ -304,170 +305,6 @@ ul {
   height: 34px;
   border: 1px solid var(--line-2);
   border-radius: 50%;
-}
-
-/* ---------- Cena 3D ---------- */
-.s-scene {
-  position: relative;
-  z-index: 1;
-  height: 400px;
-  margin-top: 26px;
-  perspective: 1100px;
-  perspective-origin: 50% 40%;
-  display: grid;
-  place-items: center;
-}
-
-.s-float {
-  transform-style: preserve-3d;
-  animation: s-float 7s ease-in-out infinite;
-}
-
-@keyframes s-float {
-  0%,
-  100% {
-    transform: translateY(-7px);
-  }
-  50% {
-    transform: translateY(7px);
-  }
-}
-
-.s-stack {
-  position: relative;
-  width: 300px;
-  height: 350px;
-  transform-style: preserve-3d;
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.s-layer {
-  position: absolute;
-  border-radius: 20px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel);
-  box-shadow: var(--panel-shadow);
-  color: var(--fg);
-}
-
-.s-l-dim {
-  color: var(--fg-3);
-  font-size: 12px;
-}
-
-.s-layer strong {
-  display: block;
-  font-weight: 620;
-  letter-spacing: -0.01em;
-}
-
-.s-l-today {
-  left: 0;
-  top: 44px;
-  width: 204px;
-  padding: 16px 16px 12px;
-}
-
-.s-l-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-weight: 650;
-  font-size: 15px;
-  margin-bottom: 10px;
-}
-
-.s-l-today li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-top: 1px solid var(--line);
-}
-
-.s-l-today li.done {
-  color: var(--fg-3);
-  text-decoration: line-through;
-}
-
-.s-box {
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  flex: none;
-  border-radius: 6px;
-  border: 1.5px solid var(--line-2);
-}
-
-.done .s-box {
-  background: var(--solid);
-  border-color: var(--solid);
-  color: var(--on-solid);
-}
-
-.s-l-goal {
-  right: 0;
-  top: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px 12px 12px;
-}
-
-.s-ring {
-  width: 46px;
-  height: 46px;
-  transform: rotate(-90deg);
-}
-
-.s-ring circle {
-  fill: none;
-  stroke-width: 7;
-}
-
-.s-ring-track {
-  stroke: var(--chip);
-}
-
-.s-ring-fill {
-  stroke: var(--fg);
-  stroke-linecap: round;
-}
-
-.s-l-habit {
-  right: 0;
-  top: 214px;
-  padding: 14px 16px;
-}
-
-.s-dots {
-  display: flex;
-  gap: 6px;
-  margin: 9px 0 8px;
-}
-
-.s-dots i {
-  width: 15px;
-  height: 15px;
-  border-radius: 5px;
-  background: var(--chip);
-}
-
-.s-dots i.on {
-  background: var(--fg);
-}
-
-.s-l-remind {
-  left: 64px;
-  bottom: -6px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 16px 11px 14px;
-  border-radius: 999px;
-  font-weight: 550;
 }
 
 /* ---------- Selo giratório ---------- */
@@ -883,23 +720,9 @@ ul {
 
 @media (min-width: 980px) {
   .s-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    align-items: center;
-    gap: 24px;
-    padding-top: 56px;
-    padding-bottom: 96px;
+    padding-top: 72px;
+    padding-bottom: 120px;
     min-height: 720px;
-  }
-
-  .s-scene {
-    height: 520px;
-    margin-top: 0;
-  }
-
-  .s-stack {
-    transform-origin: center;
-    scale: 1.3;
   }
 
   .s-glow {
@@ -908,9 +731,8 @@ ul {
   }
 
   .s-seal {
-    right: auto;
-    left: 46%;
-    bottom: 0;
+    right: 36px;
+    bottom: 64px;
   }
 
   .s-section {
@@ -938,7 +760,6 @@ ul {
     scroll-behavior: auto;
   }
 
-  .s-float,
   .s-seal-ring,
   .s-launch-star,
   .s-marquee-track,
@@ -1480,4 +1301,21 @@ ul {
   ::view-transition-new(root) {
     animation: none;
   }
+}
+
+/* troca de tema: sem transições de cor enquanto a tela é fotografada */
+.s-theme-switching *,
+.s-theme-switching *::before,
+.s-theme-switching *::after {
+  transition: none !important;
+}
+
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: normal;
+  display: block;
 }
