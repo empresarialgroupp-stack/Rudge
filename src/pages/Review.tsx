@@ -8,6 +8,7 @@ import { fmtNum, goalPace, isHabitDueOn } from '../lib/goals';
 import { AreaIcon, cx, Empty, ProgressBar, Segmented, StatCard, StatRow } from '../components/ui';
 import { LineChart } from '../components/charts';
 import { dailyBreakdown } from '../lib/stats';
+import { Button } from 'glisse';
 
 export function Review() {
   const s = useStore();
@@ -141,9 +142,9 @@ export function Review() {
                     <button className="chip" onClick={() => rescheduleTasks([t.id], nextMonday)}>
                       Próx. semana
                     </button>
-                    <button className="icon-btn sm" onClick={() => deleteTask(t.id)} aria-label="Excluir">
+                    <Button className="icon-btn sm" onClick={() => deleteTask(t.id)} aria-label="Excluir">
                       <Trash2 />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -174,18 +175,18 @@ export function Review() {
                         <span className="chip num">
                           {fmtNum(g.current ?? 0)} / {fmtNum(g.target ?? 0)} {g.unit}
                         </span>
-                        <button className="btn btn-sm btn-glass" onClick={() => bumpGoal(g.id, 1)}>
+                        <Button className="btn-sm" onClick={() => bumpGoal(g.id, 1)}>
                           +1
-                        </button>
+                        </Button>
                       </>
                     ) : (
                       <span className="chip">
                         {g.milestones.filter((m) => m.done).length}/{g.milestones.length} etapas
                       </span>
                     )}
-                    <button className="btn btn-sm btn-ghost" onClick={() => openModal({ type: 'goal-detail', id: g.id })}>
+                    <Button className="btn-sm btn-ghost" onClick={() => openModal({ type: 'goal-detail', id: g.id })}>
                       Atualizar
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -197,9 +198,9 @@ export function Review() {
                 title="Nenhuma meta ativa"
                 text="Uma boa revisão termina com pelo menos uma meta em andamento."
                 action={
-                  <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'goal-wizard' })}>
+                  <Button className="btn-sm" variant="filled" onClick={() => openModal({ type: 'goal-wizard' })}>
                     Criar meta
-                  </button>
+                  </Button>
                 }
               />
             </div>
@@ -228,19 +229,19 @@ export function Review() {
 
       <div className="row" style={{ marginTop: 18 }}>
         {step > 0 && (
-          <button className="btn btn-ghost" onClick={() => setStep(step - 1)}>
+          <Button className="btn-ghost" onClick={() => setStep(step - 1)}>
             <ArrowLeft /> Voltar
-          </button>
+          </Button>
         )}
         <div className="spacer" />
         {step < 3 ? (
-          <button className="btn btn-primary" onClick={() => setStep(step + 1)}>
+          <Button variant="filled" onClick={() => setStep(step + 1)}>
             Continuar <ArrowRight />
-          </button>
+          </Button>
         ) : (
-          <button className="btn btn-primary" onClick={finish}>
+          <Button variant="filled" onClick={finish}>
             <Check /> Concluir revisão
-          </button>
+          </Button>
         )}
       </div>
     </div>

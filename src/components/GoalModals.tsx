@@ -38,6 +38,7 @@ import { addDays, addDaysKey, dateKey, diffDays, formatWhen, parseKey, shortDate
 import { AREA_LABEL, AREAS, fmtNum, goalPace, goalProgress, habitStreak, recalcGoal } from '../lib/goals';
 import { TEMPLATES, templateById, type GoalTemplate } from '../lib/templates';
 import { AreaIcon, cx, DayPicker, Field, Modal, ProgressBar, ProgressRing, Segmented, Switch } from './ui';
+import { Button } from 'glisse';
 
 /* ---------------- Assistente ---------------- */
 
@@ -202,23 +203,23 @@ export function GoalWizard({ templateId }: { templateId?: string }) {
       footer={
         <>
           {step > 0 && (
-            <button className="btn btn-ghost" onClick={() => setStep(step - 1)}>
+            <Button className="btn-ghost" onClick={() => setStep(step - 1)}>
               <ArrowLeft /> Voltar
-            </button>
+            </Button>
           )}
           <div className="spacer" />
           {step < 3 ? (
-            <button
-              className="btn btn-primary"
+            <Button
+              variant="filled"
               disabled={!canNext}
               onClick={() => (step === 2 ? goToPlan() : setStep(step + 1))}
             >
               Continuar <ArrowRight />
-            </button>
+            </Button>
           ) : (
-            <button className="btn btn-primary" onClick={create}>
+            <Button variant="filled" onClick={create}>
               <Check /> Criar meta
-            </button>
+            </Button>
           )}
         </>
       }
@@ -374,9 +375,9 @@ export function GoalWizard({ templateId }: { templateId?: string }) {
                   <span className="chip outline num">{i + 1}</span>
                   <input value={m.title} onChange={(e) => set({ milestones: d.milestones.map((x) => (x.id === m.id ? { ...x, title: e.target.value } : x)) })} />
                   {m.due && <span className="muted" style={{ fontSize: 12 }}>{shortDate(m.due)}</span>}
-                  <button className="icon-btn sm" onClick={() => set({ milestones: d.milestones.filter((x) => x.id !== m.id) })} aria-label="Remover">
+                  <Button className="icon-btn sm" onClick={() => set({ milestones: d.milestones.filter((x) => x.id !== m.id) })} aria-label="Remover">
                     <X />
-                  </button>
+                  </Button>
                 </div>
               ))}
               <div className="milestone">
@@ -518,32 +519,32 @@ export function GoalDetail({ id }: { id: string }) {
       size="wide"
       footer={
         <>
-          <button
-            className="btn btn-danger"
+          <Button
+            destructive
             onClick={() => {
               deleteGoal(goal.id);
               close();
             }}
           >
             <Trash2 /> Excluir
-          </button>
+          </Button>
           <div className="spacer" />
           {goal.status !== 'done' && (
-            <button className="btn btn-ghost" onClick={() => setGoalStatus(goal.id, goal.status === 'paused' ? 'active' : 'paused')}>
+            <Button className="btn-ghost" onClick={() => setGoalStatus(goal.id, goal.status === 'paused' ? 'active' : 'paused')}>
               {goal.status === 'paused' ? <><Play /> Retomar</> : <><Pause /> Pausar</>}
-            </button>
+            </Button>
           )}
-          <button className="btn btn-glass" onClick={() => openModal({ type: 'goal-edit', id: goal.id })}>
+          <Button  onClick={() => openModal({ type: 'goal-edit', id: goal.id })}>
             <Pencil /> Editar
-          </button>
+          </Button>
           {goal.status !== 'done' ? (
-            <button className="btn btn-primary" onClick={() => setGoalStatus(goal.id, 'done')}>
+            <Button variant="filled" onClick={() => setGoalStatus(goal.id, 'done')}>
               <CheckCircle2 /> Concluir
-            </button>
+            </Button>
           ) : (
-            <button className="btn btn-primary" onClick={() => setGoalStatus(goal.id, 'active')}>
+            <Button variant="filled" onClick={() => setGoalStatus(goal.id, 'active')}>
               Reabrir
-            </button>
+            </Button>
           )}
         </>
       }
@@ -592,14 +593,14 @@ export function GoalDetail({ id }: { id: string }) {
             <p>{recalc.message}</p>
             <div className="row wrap" style={{ gap: 8 }}>
               {recalc.newDeadline && (
-                <button className="btn btn-sm btn-primary" onClick={() => changeGoalDeadline(goal.id, recalc.newDeadline!)}>
+                <Button className="btn-sm" variant="filled" onClick={() => changeGoalDeadline(goal.id, recalc.newDeadline!)}>
                   <CalendarClock /> Mudar prazo para {shortDate(recalc.newDeadline)}
-                </button>
+                </Button>
               )}
               {recalc.steps.length > 0 && (
-                <button className="btn btn-sm btn-glass" onClick={() => splitGoalIntoSteps(goal.id, recalc.steps)}>
+                <Button className="btn-sm" onClick={() => splitGoalIntoSteps(goal.id, recalc.steps)}>
                   <ListOrdered /> Quebrar em {recalc.steps.length} etapas
-                </button>
+                </Button>
               )}
             </div>
             {recalc.steps.length > 0 && (
@@ -643,12 +644,12 @@ export function GoalDetail({ id }: { id: string }) {
             </div>
             <div className="label" style={{ marginBottom: 8 }}>Registrar progresso</div>
             <div className="stepper">
-              <button className="btn btn-glass" onClick={() => bumpGoal(goal.id, -step)} aria-label="Diminuir">
+              <Button  onClick={() => bumpGoal(goal.id, -step)} aria-label="Diminuir">
                 <Minus />
-              </button>
-              <button className="btn btn-glass" onClick={() => bumpGoal(goal.id, step)} aria-label="Aumentar">
+              </Button>
+              <Button  onClick={() => bumpGoal(goal.id, step)} aria-label="Aumentar">
                 <Plus /> {step}
-              </button>
+              </Button>
               <input
                 className="input num"
                 type="number"
@@ -663,8 +664,8 @@ export function GoalDetail({ id }: { id: string }) {
                   }
                 }}
               />
-              <button
-                className="btn btn-primary"
+              <Button
+                variant="filled"
                 disabled={val === ''}
                 onClick={() => {
                   setGoalValue(goal.id, Number(val));
@@ -673,7 +674,7 @@ export function GoalDetail({ id }: { id: string }) {
                 }}
               >
                 Salvar
-              </button>
+              </Button>
             </div>
             <div style={{ marginTop: 14 }}>
               <Sparkline goal={goal} />
@@ -692,9 +693,9 @@ export function GoalDetail({ id }: { id: string }) {
               </button>
               <span style={{ flex: 1 }}>{m.title}</span>
               {m.due && <span className="muted" style={{ fontSize: 12 }}>{shortDate(m.due)}</span>}
-              <button className="icon-btn sm" onClick={() => setMilestones(goal.id, goal.milestones.filter((x) => x.id !== m.id))} aria-label="Remover">
+              <Button className="icon-btn sm" onClick={() => setMilestones(goal.id, goal.milestones.filter((x) => x.id !== m.id))} aria-label="Remover">
                 <X />
-              </button>
+              </Button>
             </div>
           ))}
           <div className="milestone">
@@ -726,9 +727,9 @@ export function GoalDetail({ id }: { id: string }) {
                 </div>
               ))
             ) : (
-              <button className="btn btn-sm btn-glass" onClick={() => openModal({ type: 'habit', defaults: { goalId: goal.id } })}>
+              <Button className="btn-sm" onClick={() => openModal({ type: 'habit', defaults: { goalId: goal.id } })}>
                 <Plus /> Vincular hábito
-              </button>
+              </Button>
             )}
           </div>
           <div>
@@ -738,15 +739,15 @@ export function GoalDetail({ id }: { id: string }) {
                 <span className="h-title">{t.title}</span>
               </div>
             ))}
-            <button
-              className="btn btn-sm btn-glass"
+            <Button
+              className="btn-sm"
               onClick={() => {
                 addTask({ title: `Avançar na meta: ${goal.title}`, due: todayKey(), priority: 2, goalId: goal.id, area: goal.area });
                 toast({ title: 'Tarefa criada para hoje', icon: 'check' });
               }}
             >
               <Plus /> Tarefa para hoje
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -800,12 +801,12 @@ export function GoalEdit({ id }: { id: string }) {
       footer={
         <>
           <div className="spacer" />
-          <button className="btn btn-ghost" onClick={close}>
+          <Button className="btn-ghost" onClick={close}>
             Cancelar
-          </button>
-          <button className="btn btn-primary" onClick={save} disabled={!title.trim()}>
+          </Button>
+          <Button variant="filled" onClick={save} disabled={!title.trim()}>
             Salvar
-          </button>
+          </Button>
         </>
       }
     >

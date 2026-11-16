@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@fontsource-variable/geist';
 import './styles/app.css';
+import './styles/glisse.css';
 import { App } from './App';
 import { initPwa } from './lib/pwa';
 

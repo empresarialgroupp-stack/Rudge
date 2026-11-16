@@ -16,13 +16,11 @@ import {
   Landmark,
   Receipt,
   Repeat,
-  Search,
   ShoppingBag,
   ShoppingCart,
   Undo2,
   Utensils,
   WalletCards,
-  X,
   type LucideIcon,
 } from 'lucide-react';
 import { cx, Segmented } from './ui';
@@ -30,6 +28,7 @@ import { CountUp } from './charts';
 import { brl, type Category, type FinanceCard } from '../lib/finance';
 import { CATEGORY_LABEL } from '../lib/finance/sample';
 import { activity, categoriesIn, compactBRL, compareMonths, daily, filterActivity, previousMonth, totals, type ActivityRow, type TxKind } from '../lib/finance/overview';
+import { Button, SearchField } from 'glisse';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -454,15 +453,7 @@ export function WalletActivity({ cards, scope }: { cards: FinanceCard[]; scope: 
           </span>
         </div>
         <div className="wv-tools">
-          <label className="wv-search">
-            <Search aria-hidden="true" />
-            <input type="search" placeholder="Buscar" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Buscar transação" />
-            {query && (
-              <button type="button" onClick={() => setQuery('')} aria-label="Limpar busca">
-                <X />
-              </button>
-            )}
-          </label>
+          <SearchField className="wv-find" placeholder="Buscar" value={query} onValueChange={setQuery} aria-label="Buscar transação" />
           <label className="wv-select">
             <select value={category} onChange={(e) => setCategory(e.target.value as Category | 'all')} aria-label="Categoria">
               <option value="all">Todas as categorias</option>
@@ -552,9 +543,9 @@ export function WalletActivity({ cards, scope }: { cards: FinanceCard[]; scope: 
         </div>
       )}
       {list.length > limit && (
-        <button type="button" className="btn btn-sm btn-glass btn-pill wv-more" onClick={() => setLimit((l) => l + PAGE * 2)}>
+        <Button type="button" className="btn-sm wv-more" onClick={() => setLimit((l) => l + PAGE * 2)}>
           Mostrar mais ({list.length - limit})
-        </button>
+        </Button>
       )}
     </section>
   );

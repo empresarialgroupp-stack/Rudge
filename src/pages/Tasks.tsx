@@ -10,6 +10,7 @@ import { AREAS } from '../lib/goals';
 import { ChipTabs, cx, Empty, StatCard, StatRow } from '../components/ui';
 import { TaskRow, sortTasks } from '../components/TaskRow';
 import { createFromText, ParseChips } from '../components/Quick';
+import { Button } from 'glisse';
 
 type Filter = 'pendentes' | 'hoje' | 'semana' | 'concluidas';
 
@@ -92,15 +93,15 @@ export function Tasks() {
           placeholder={narrow ? 'Nova tarefa… “relatório sexta 14h”' : 'Nova tarefa… ex.: “Enviar relatório sexta 14h !!! #carreira”'}
           aria-label="Nova tarefa"
         />
-        <button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
+        <Button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
           <Camera />
-        </button>
-        <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
+        </Button>
+        <Button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
           <Mic />
-        </button>
-        <button className="btn btn-primary" onClick={submit} disabled={!text.trim()} aria-label="Adicionar">
+        </Button>
+        <Button variant="filled" onClick={submit} disabled={!text.trim()} aria-label="Adicionar">
           <ArrowRight />
-        </button>
+        </Button>
       </div>
       {text && (
         <div className="parse-preview">
@@ -120,9 +121,9 @@ export function Tasks() {
           ]}
         />
         <div className="spacer" />
-        <button className="btn btn-glass" onClick={() => openModal({ type: 'task' })}>
+        <Button  onClick={() => openModal({ type: 'task' })}>
           <Plus /> Nova tarefa
-        </button>
+        </Button>
       </div>
       <div className="area-chips">
         <button className={cx('chip', !area && 'on')} onClick={() => setArea('')}>
@@ -146,9 +147,9 @@ export function Tasks() {
               {g.title} <span className="count">{g.items.length}</span>
               <div className="spacer" />
               {g.action && (
-                <button className="btn btn-sm btn-glass" onClick={g.action.run}>
+                <Button className="btn-sm" onClick={g.action.run}>
                   {g.action.label}
-                </button>
+                </Button>
               )}
             </div>
             <div className="list">
@@ -168,9 +169,9 @@ export function Tasks() {
               title="Nenhuma tarefa pendente"
               text="Use o campo acima e escreva naturalmente — o Rudge entende datas e horários."
               action={
-                <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'task' })}>
+                <Button className="btn-sm" variant="filled" onClick={() => openModal({ type: 'task' })}>
                   <Plus /> Nova tarefa
-                </button>
+                </Button>
               }
             />
           )}

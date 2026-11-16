@@ -12,6 +12,7 @@ import { cx, Empty, StatCard, StatRow } from '../components/ui';
 import { createFromText, ParseChips } from '../components/Quick';
 import { enableNotifications } from './Dashboard';
 import { describePlace } from '../lib/geo';
+import { Button } from 'glisse';
 
 function RemRow({ r, at, overdue }: { r: Reminder; at?: number | null; overdue?: boolean }) {
   const [menu, setMenu] = useState(false);
@@ -59,17 +60,17 @@ function RemRow({ r, at, overdue }: { r: Reminder; at?: number | null; overdue?:
       </div>
       <div className="item-actions" style={{ opacity: 1 }}>
         {r.done ? (
-          <button className="icon-btn sm" title="Reabrir" onClick={() => reopenReminder(r.id)} aria-label="Reabrir">
+          <Button className="icon-btn sm" title="Reabrir" onClick={() => reopenReminder(r.id)} aria-label="Reabrir">
             <RotateCcw />
-          </button>
+          </Button>
         ) : (
           <>
             {r.repeat === 'none' && !r.place && (
-              <button className="icon-btn sm" title="Adiar" onClick={() => setMenu((v) => !v)} aria-label="Adiar">
+              <Button className="icon-btn sm" title="Adiar" onClick={() => setMenu((v) => !v)} aria-label="Adiar">
                 <AlarmClock />
-              </button>
+              </Button>
             )}
-            <button
+            <Button
               className="icon-btn sm"
               title={r.repeat === 'none' ? 'Concluir' : 'Concluir esta ocorrência'}
               onClick={() => {
@@ -79,15 +80,15 @@ function RemRow({ r, at, overdue }: { r: Reminder; at?: number | null; overdue?:
               aria-label="Concluir"
             >
               <Check />
-            </button>
+            </Button>
           </>
         )}
-        <button className="icon-btn sm" onClick={() => openModal({ type: 'reminder', id: r.id })} aria-label="Editar">
+        <Button className="icon-btn sm" onClick={() => openModal({ type: 'reminder', id: r.id })} aria-label="Editar">
           <Pencil />
-        </button>
-        <button className="icon-btn sm" onClick={() => deleteReminder(r.id)} aria-label="Excluir">
+        </Button>
+        <Button className="icon-btn sm" onClick={() => deleteReminder(r.id)} aria-label="Excluir">
           <Trash2 />
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -152,9 +153,9 @@ export function Reminders() {
           <div className="b-text">
             <b>Notificações desativadas.</b> Ative para receber os lembretes mesmo com o Rudge minimizado.
           </div>
-          <button className="btn btn-sm btn-primary" onClick={() => void enableNotifications()}>
+          <Button className="btn-sm" variant="filled" onClick={() => void enableNotifications()}>
             Ativar
-          </button>
+          </Button>
         </div>
       ) : null}
 
@@ -167,15 +168,15 @@ export function Reminders() {
           placeholder={narrow ? 'Me lembre de… “remédio todo dia 8h”' : 'Me lembre de… ex.: “tomar remédio todo dia às 8h”'}
           aria-label="Novo lembrete"
         />
-        <button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
+        <Button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
           <Camera />
-        </button>
-        <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
+        </Button>
+        <Button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
           <Mic />
-        </button>
-        <button className="btn btn-primary" onClick={submit} disabled={!text.trim()} aria-label="Criar">
+        </Button>
+        <Button variant="filled" onClick={submit} disabled={!text.trim()} aria-label="Criar">
           <ArrowRight />
-        </button>
+        </Button>
       </div>
       {text && (
         <div className="parse-preview">
@@ -185,9 +186,9 @@ export function Reminders() {
 
       <div className="toolbar">
         <div className="spacer" />
-        <button className="btn btn-glass" onClick={() => openModal({ type: 'reminder' })}>
+        <Button  onClick={() => openModal({ type: 'reminder' })}>
           <Bell /> Novo lembrete
-        </button>
+        </Button>
       </div>
 
       {sections.map((sec) => (
@@ -236,9 +237,9 @@ export function Reminders() {
             title="Nenhum lembrete ativo"
             text="Escreva como falaria: “me lembre de pagar a fatura dia 10 às 9h” ou “beber água a cada dia às 15h”."
             action={
-              <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'reminder' })}>
+              <Button className="btn-sm" variant="filled" onClick={() => openModal({ type: 'reminder' })}>
                 <Bell /> Novo lembrete
-              </button>
+              </Button>
             }
           />
         </div>
@@ -246,9 +247,9 @@ export function Reminders() {
 
       {done.length > 0 && (
         <div style={{ marginTop: 14 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowDone((v) => !v)}>
+          <Button className="btn-ghost btn-sm" onClick={() => setShowDone((v) => !v)}>
             {showDone ? 'Ocultar' : 'Mostrar'} concluídos ({done.length})
-          </button>
+          </Button>
           {showDone && (
             <section className="group-card glass" style={{ marginTop: 8 }}>
               <div className="list">

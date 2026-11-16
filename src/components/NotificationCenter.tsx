@@ -22,6 +22,7 @@ import { buildQueue } from '../lib/scheduler';
 import { formatWhen, fromNow } from '../lib/date';
 import { navigate } from '../lib/ui';
 import { Empty, Segmented } from './ui';
+import { Button } from 'glisse';
 
 export const KIND_ICON: Record<NotifKind, LucideIcon> = {
   reminder: AlarmClock,
@@ -71,9 +72,9 @@ export function NotificationCenter({ onClose }: { onClose: () => void }) {
       <div className="popover-head">
         <b>Notificações</b>
         {tab === 'recent' && s.inbox.length > 0 && (
-          <button className="icon-btn sm" onClick={clearInbox} title="Limpar" aria-label="Limpar">
+          <Button className="icon-btn sm" onClick={clearInbox} title="Limpar" aria-label="Limpar">
             <Trash2 />
-          </button>
+          </Button>
         )}
       </div>
       <div style={{ padding: '0 14px 10px' }}>

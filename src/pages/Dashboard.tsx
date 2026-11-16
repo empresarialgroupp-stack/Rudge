@@ -42,6 +42,7 @@ import { prevMonth } from '../lib/retro';
 import { Checkbox, cx, Empty, Segmented } from '../components/ui';
 import { TaskRow, sortTasks } from '../components/TaskRow';
 import { createFromText, ParseChips, type CaptureMode } from '../components/Quick';
+import { Button } from 'glisse';
 
 const TONE_ICON: Record<Suggestion['tone'], LucideIcon> = {
   goal: Target,
@@ -220,15 +221,15 @@ export function Dashboard() {
             )}
           </p>
           <div className="welcome-actions">
-            <button className="btn btn-primary btn-pill" onClick={() => openModal({ type: 'task' })}>
+            <Button variant="filled" onClick={() => openModal({ type: 'task' })}>
               <Plus /> Nova tarefa
-            </button>
-            <button className="btn btn-glass btn-pill" onClick={() => openModal({ type: 'focus' })}>
+            </Button>
+            <Button  onClick={() => openModal({ type: 'focus' })}>
               <Timer /> Focar
-            </button>
-            <button className="btn btn-glass btn-pill" onClick={() => openModal({ type: 'voice' })}>
+            </Button>
+            <Button  onClick={() => openModal({ type: 'voice' })}>
               <Mic /> Falar
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -304,15 +305,15 @@ export function Dashboard() {
             { value: 'reminder', label: 'Lembrete' },
           ]}
         />
-        <button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
+        <Button className="icon-btn" onClick={() => openModal({ type: 'photo' })} aria-label="Capturar por foto" title="Capturar por foto">
           <Camera />
-        </button>
-        <button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
+        </Button>
+        <Button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar" title="Falar com o Rudge">
           <Mic />
-        </button>
-        <button className="btn btn-primary" onClick={submit} disabled={!text.trim()} aria-label="Adicionar">
+        </Button>
+        <Button variant="filled" onClick={submit} disabled={!text.trim()} aria-label="Adicionar">
           <ArrowRight />
-        </button>
+        </Button>
       </div>
       {text && (
         <div className="parse-preview">
@@ -424,9 +425,9 @@ export function Dashboard() {
               title="Nenhuma meta ativa"
               text="O assistente propõe metas concretas e monta o plano com etapas e lembretes."
               action={
-                <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'goal-wizard' })}>
+                <Button className="btn-sm" variant="filled" onClick={() => openModal({ type: 'goal-wizard' })}>
                   <Sparkles /> Criar meta
-                </button>
+                </Button>
               }
             />
           )}
@@ -453,9 +454,9 @@ export function Dashboard() {
                   <TaskRow key={t.id} task={t} showDate={false} />
                 ))}
                 {focus.length > 8 && (
-                  <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start', marginTop: 6 }} onClick={() => navigate('tarefas')}>
+                  <Button className="btn-ghost btn-sm" style={{ alignSelf: 'flex-start', marginTop: 6 }} onClick={() => navigate('tarefas')}>
                     + {focus.length - 8} tarefas
-                  </button>
+                  </Button>
                 )}
               </div>
             ) : (
@@ -464,9 +465,9 @@ export function Dashboard() {
                 title="Dia livre"
                 text="Nenhuma tarefa para hoje. Escolha até 3 prioridades para avançar."
                 action={
-                  <button className="btn btn-glass btn-sm" onClick={() => openModal({ type: 'task' })}>
+                  <Button className="btn-sm" onClick={() => openModal({ type: 'task' })}>
                     Adicionar tarefa
-                  </button>
+                  </Button>
                 }
               />
             )}
@@ -502,9 +503,9 @@ export function Dashboard() {
                 title="Sem hábitos para hoje"
                 text="Hábitos diários com lembrete são o motor das suas metas."
                 action={
-                  <button className="btn btn-glass btn-sm" onClick={() => openModal({ type: 'habit' })}>
+                  <Button className="btn-sm" onClick={() => openModal({ type: 'habit' })}>
                     Criar hábito
-                  </button>
+                  </Button>
                 }
               />
             )}
@@ -542,9 +543,9 @@ export function Dashboard() {
                 title="Nenhum lembrete"
                 text="Peça: “me lembre de pagar o boleto amanhã às 10h”."
                 action={
-                  <button className="btn btn-glass btn-sm" onClick={() => openModal({ type: 'reminder' })}>
+                  <Button className="btn-sm" onClick={() => openModal({ type: 'reminder' })}>
                     Novo lembrete
-                  </button>
+                  </Button>
                 }
               />
             )}
@@ -606,12 +607,12 @@ export function Dashboard() {
                       <b>{sg.title}</b>
                       <p>{sg.body}</p>
                       <div className="s-actions">
-                        <button className="btn btn-sm btn-primary" onClick={() => runSuggestion(sg)}>
+                        <Button className="btn-sm" variant="filled" onClick={() => runSuggestion(sg)}>
                           {sg.cta}
-                        </button>
-                        <button className="btn btn-sm btn-ghost" onClick={() => dismissSuggestion(sg.id)}>
+                        </Button>
+                        <Button className="btn-sm btn-ghost" onClick={() => dismissSuggestion(sg.id)}>
                           Agora não
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   </div>

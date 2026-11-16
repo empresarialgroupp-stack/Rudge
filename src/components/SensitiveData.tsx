@@ -5,6 +5,7 @@ import { WalletConnect } from './WalletConnect';
 import { WalletImport } from './WalletImport';
 import { toast, useRoute } from '../lib/ui';
 import { ago, removeAllAccounts, setPrivacy, syncedBanks, syncPluggy, unlinkPluggy, useAccounts, usePluggy, usePrivacy } from '../lib/finance';
+import { Button } from 'glisse';
 
 /** Configurações → Dados sensíveis: privacidade dos valores e as conexões com os bancos. */
 export function SensitiveDataCard() {
@@ -59,16 +60,16 @@ export function SensitiveDataCard() {
       </div>
       <div className="row wrap sensitive-actions">
         {linked && (
-          <button className="btn btn-glass btn-sm" onClick={() => void syncPluggy(true)} disabled={pluggy.syncing}>
+          <Button className="btn-sm" onClick={() => void syncPluggy(true)} disabled={pluggy.syncing}>
             <RefreshCw className={pluggy.syncing ? 'spin' : undefined} /> {pluggy.syncing ? 'Atualizando…' : 'Atualizar agora'}
-          </button>
+          </Button>
         )}
-        <button className="btn btn-glass btn-sm" onClick={() => setConnecting(true)}>
+        <Button className="btn-sm" onClick={() => setConnecting(true)}>
           <Link2 /> {linked ? 'Adicionar banco' : 'Conectar bancos'}
-        </button>
+        </Button>
         {linked && (
-          <button
-            className="btn btn-danger btn-sm"
+          <Button
+            className="btn-sm" destructive
             onClick={() =>
               confirm('Desconectar os bancos? A Carteira volta aos extratos ou aos dados de exemplo.') &&
               void unlinkPluggy()
@@ -77,7 +78,7 @@ export function SensitiveDataCard() {
             }
           >
             <Unlink /> Desconectar
-          </button>
+          </Button>
         )}
       </div>
 
@@ -88,16 +89,16 @@ export function SensitiveDataCard() {
         </div>
       </div>
       <div className="row wrap sensitive-actions">
-        <button className="btn btn-glass btn-sm" onClick={() => setImporting(true)}>
+        <Button className="btn-sm" onClick={() => setImporting(true)}>
           <FileUp /> Importar extrato
-        </button>
+        </Button>
         {imported.length > 0 && (
-          <button
-            className="btn btn-danger btn-sm"
+          <Button
+            className="btn-sm" destructive
             onClick={() => confirm('Apagar todos os extratos importados deste aparelho?') && (removeAllAccounts(), toast({ title: 'Extratos apagados', icon: 'info' }))}
           >
             <Trash2 /> Apagar extratos
-          </button>
+          </Button>
         )}
       </div>
 

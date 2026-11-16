@@ -7,6 +7,7 @@ import { currentPlan, estimateMinutes, planSummary } from '../lib/planner';
 import { parseKey, timeOf, todayKey } from '../lib/date';
 import { openModal, toast } from '../lib/ui';
 import { cx } from './ui';
+import { Button } from 'glisse';
 
 /** Recalcula os horários mantendo a ordem escolhida. */
 function reflow(plan: DayPlan, order: string[], durations: Map<string, number>): DayPlan {
@@ -77,31 +78,31 @@ export function PlanCard() {
               <span className="plan-actions">
                 {accepted ? (
                   <>
-                    <button className="icon-btn sm" title="Focar nesta tarefa" aria-label="Focar" onClick={() => openModal({ type: 'focus', taskId: t.id })}>
+                    <Button className="icon-btn sm" title="Focar nesta tarefa" aria-label="Focar" onClick={() => openModal({ type: 'focus', taskId: t.id })}>
                       <Play />
-                    </button>
-                    <button className="icon-btn sm" title="Concluir" aria-label="Concluir" onClick={() => toggleTask(t.id, !t.done)}>
+                    </Button>
+                    <Button className="icon-btn sm" title="Concluir" aria-label="Concluir" onClick={() => toggleTask(t.id, !t.done)}>
                       <Check />
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>
-                    <button className={cx('icon-btn sm', prio.has(r.taskId) && 'on')} title="Prioridade do dia" aria-label="Prioridade" onClick={() => togglePrio(r.taskId)}>
+                    <Button className={cx('icon-btn sm', prio.has(r.taskId) && 'on')} title="Prioridade do dia" aria-label="Prioridade" onClick={() => togglePrio(r.taskId)}>
                       <Star />
-                    </button>
+                    </Button>
                     {plan.slots.length > 1 && (
                       <>
-                        <button className="icon-btn sm mv" aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)}>
+                        <Button className="icon-btn sm mv" aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)}>
                           <ArrowUp />
-                        </button>
-                        <button className="icon-btn sm mv" aria-label="Descer" disabled={i === rows.length - 1} onClick={() => move(i, 1)}>
+                        </Button>
+                        <Button className="icon-btn sm mv" aria-label="Descer" disabled={i === rows.length - 1} onClick={() => move(i, 1)}>
                           <ArrowDown />
-                        </button>
+                        </Button>
                       </>
                     )}
-                    <button className="icon-btn sm" aria-label="Tirar do plano" onClick={() => remove(r.taskId)}>
+                    <Button className="icon-btn sm" aria-label="Tirar do plano" onClick={() => remove(r.taskId)}>
                       <X />
-                    </button>
+                    </Button>
                   </>
                 )}
               </span>
@@ -112,18 +113,18 @@ export function PlanCard() {
 
       {!accepted && (
         <div className="row" style={{ marginTop: 12, gap: 8 }}>
-          <button
-            className="btn btn-primary btn-pill"
+          <Button
+            variant="filled"
             onClick={() => {
               acceptDayPlan(plan);
               toast({ title: 'Plano aceito', body: 'Horários adicionados — o Rudge avisa antes de cada um.', icon: 'check' });
             }}
           >
             <Check /> Aceitar plano
-          </button>
-          <button className="btn btn-ghost btn-pill" onClick={() => dismissDayPlan(plan)}>
+          </Button>
+          <Button className="btn-ghost" onClick={() => dismissDayPlan(plan)}>
             Agora não
-          </button>
+          </Button>
         </div>
       )}
     </section>

@@ -14,6 +14,7 @@ import { PhotoCapture } from './PhotoCapture';
 import { Retro } from './Retro';
 import { BrandMark, Modal } from './ui';
 import { enableNotifications } from '../pages/Dashboard';
+import { Button } from 'glisse';
 
 const TOAST_ICON: Record<NonNullable<Toast['icon']>, typeof Bell> = {
   bell: Bell,
@@ -40,23 +41,24 @@ export function Toaster() {
               {!!t.actions?.length && (
                 <div className="t-actions">
                   {t.actions.map((a, i) => (
-                    <button
+                    <Button
                       key={a.label}
-                      className={i === 0 ? 'btn btn-sm btn-primary' : 'btn btn-sm btn-glass'}
+                      className="btn-sm"
+                      variant={i === 0 ? 'filled' : 'glass'}
                       onClick={() => {
                         a.run();
                         dismissToast(t.id);
                       }}
                     >
                       {a.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
             </div>
-            <button className="icon-btn sm" onClick={() => dismissToast(t.id)} aria-label="Fechar">
+            <Button className="icon-btn sm" onClick={() => dismissToast(t.id)} aria-label="Fechar">
               <X />
-            </button>
+            </Button>
           </div>
         );
       })}
@@ -112,9 +114,9 @@ function Onboarding() {
               <Check /> Notificações ativadas
             </span>
           ) : (
-            <button className="btn btn-primary btn-lg" onClick={() => void enableNotifications()}>
+            <Button className="btn-lg" variant="filled" onClick={() => void enableNotifications()}>
               <Bell /> Permitir notificações
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -130,19 +132,19 @@ function Onboarding() {
               <Check /> Já instalado
             </span>
           ) : install === 'available' ? (
-            <button className="btn btn-primary btn-lg" onClick={() => void promptInstall()}>
+            <Button className="btn-lg" variant="filled" onClick={() => void promptInstall()}>
               <Download /> Instalar agora
-            </button>
+            </Button>
           ) : (
-            <button
-              className="btn btn-glass btn-lg"
+            <Button
+              className="btn-lg"
               onClick={() => {
                 finish();
                 navigate('instalar');
               }}
             >
               Ver passo a passo
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -153,26 +155,26 @@ function Onboarding() {
           </div>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 650, letterSpacing: '-0.03em' }}>Sua primeira meta</h2>
           <p className="muted" style={{ margin: 0 }}>Escolha uma área da vida e o Rudge propõe uma meta concreta, com etapas, hábito de apoio e lembretes.</p>
-          <button
-            className="btn btn-primary btn-lg"
+          <Button
+            className="btn-lg" variant="filled"
             onClick={() => {
               finish();
               openModal({ type: 'goal-wizard' });
             }}
           >
             <Sparkles /> Criar minha meta
-          </button>
+          </Button>
         </div>
       )}
       <div className="row" style={{ marginTop: 22 }}>
-        <button className="btn btn-ghost" onClick={finish}>
+        <Button className="btn-ghost" onClick={finish}>
           Pular
-        </button>
+        </Button>
         <div className="spacer" />
         {step < 3 && (
-          <button className="btn btn-glass" onClick={() => setStep(step + 1)}>
+          <Button  onClick={() => setStep(step + 1)}>
             Continuar <ArrowRight />
-          </button>
+          </Button>
         )}
       </div>
     </Modal>

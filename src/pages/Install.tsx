@@ -24,6 +24,7 @@ import { toast } from '../lib/ui';
 import { useStore } from '../lib/store';
 import { BrandMark, Segmented } from '../components/ui';
 import { enableNotifications } from './Dashboard';
+import { Button } from 'glisse';
 
 type Target = 'desktop' | 'android' | 'ios';
 
@@ -80,15 +81,15 @@ export function Install() {
           </p>
           <div className="row wrap" style={{ marginTop: 16 }}>
             {install === 'available' && (
-              <button
-                className="btn btn-primary btn-lg"
+              <Button
+                className="btn-lg" variant="filled"
                 onClick={async () => {
                   const ok = await promptInstall();
                   if (ok) toast({ title: 'Rudge instalado', body: 'Abra pelo ícone no menu iniciar, dock ou tela inicial.', icon: 'check' });
                 }}
               >
                 <Download /> Instalar agora
-              </button>
+              </Button>
             )}
             {(standalone || install === 'installed') && (
               <span className="chip solid" style={{ height: 30, padding: '0 12px' }}>
@@ -96,9 +97,9 @@ export function Install() {
               </span>
             )}
             {!notifOk && (
-              <button className="btn btn-glass btn-lg" onClick={() => void enableNotifications()}>
+              <Button className="btn-lg" onClick={() => void enableNotifications()}>
                 <BellRing /> Ativar notificações
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -208,8 +209,8 @@ export function Install() {
               <div className="stack sm" style={{ minWidth: 0, flex: '1 1 140px' }}>
                 <p className="muted" style={{ margin: 0, fontSize: 13 }}>Escaneie com a câmera do celular para abrir o Rudge e instalar.</p>
                 <code style={{ fontSize: 12, wordBreak: 'break-all', color: 'var(--fg-2)' }}>{url}</code>
-                <button
-                  className="btn btn-sm btn-glass"
+                <Button
+                  className="btn-sm"
                   style={{ alignSelf: 'flex-start' }}
                   onClick={async () => {
                     try {
@@ -221,7 +222,7 @@ export function Install() {
                   }}
                 >
                   <Copy /> Copiar endereço
-                </button>
+                </Button>
               </div>
             </div>
           </section>
