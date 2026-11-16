@@ -47,25 +47,6 @@ function Star({ className }: { className?: string }) {
   );
 }
 
-/** Selo giratório com o aviso de lançamento. */
-function LaunchSeal() {
-  return (
-    <div className="s-seal" role="img" aria-label="Lançamento previsto para 2027">
-      <svg viewBox="0 0 120 120" className="s-seal-ring" aria-hidden="true">
-        <defs>
-          <path id="seal-path" d="M60 60m-44 0a44 44 0 1 1 88 0a44 44 0 1 1 -88 0" />
-        </defs>
-        <text>
-          <textPath href="#seal-path" textLength="272">
-            lançamento previsto para 2027 ✳ rudge ✳
-          </textPath>
-        </text>
-      </svg>
-      <Star className="s-seal-star" />
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /* Relógio de placas (flip) em 3D                                      */
 /* ------------------------------------------------------------------ */
@@ -297,7 +278,6 @@ export function Site() {
                 </LiquidButton>
               </div>
 
-              <LaunchSeal />
             </div>
           </section>
 

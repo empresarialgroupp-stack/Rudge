@@ -8,6 +8,7 @@
   --font: 'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --pad: 20px;
+  --nav-h: 68px;
   --max: 1180px;
   color-scheme: dark;
 
@@ -183,13 +184,28 @@ ul {
   touch-action: pan-y;
 }
 
+/* a luz da hero se dissolve no fundo, sem linha marcando o fim da seção */
+.s-hero-wrap::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 160px;
+  background: linear-gradient(to bottom, transparent, var(--bg));
+  pointer-events: none;
+}
+
 .s-hero {
   position: relative;
   z-index: 1;
   max-width: var(--max);
   margin: 0 auto;
   padding: 28px var(--pad) 40px;
-  min-height: min(860px, 100svh);
+  /* ocupa a tela inteira, descontando o menu do topo */
+  min-height: calc(100vh - var(--nav-h));
+  min-height: calc(100svh - var(--nav-h));
 }
 
 .s-hero-copy {
@@ -305,39 +321,6 @@ ul {
   height: 34px;
   border: 1px solid var(--line-2);
   border-radius: 50%;
-}
-
-/* ---------- Selo giratório ---------- */
-.s-seal {
-  position: absolute;
-  z-index: 3;
-  right: 10px;
-  bottom: 8px;
-  width: 104px;
-  height: 104px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--solid);
-  color: var(--on-solid);
-}
-
-.s-seal-ring {
-  position: absolute;
-  inset: 0;
-  animation: s-spin 22s linear infinite;
-}
-
-.s-seal-ring text {
-  fill: currentColor;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.s-seal-star {
-  width: 34px;
-  height: 34px;
 }
 
 @keyframes s-spin {
@@ -710,19 +693,19 @@ ul {
     border-bottom: 0;
   }
 
-  .s-seal {
-    width: 128px;
-    height: 128px;
-    right: 36px;
-  }
 
 }
 
 @media (min-width: 980px) {
   .s-hero {
-    padding-top: 72px;
-    padding-bottom: 120px;
-    min-height: 720px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 40px;
+    padding-bottom: 96px;
+    /* a primeira seção ocupa a tela inteira, descontando o menu do topo */
+    min-height: max(620px, calc(100vh - var(--nav-h)));
+    min-height: max(620px, calc(100svh - var(--nav-h)));
   }
 
   .s-glow {
@@ -730,10 +713,6 @@ ul {
     height: 300px;
   }
 
-  .s-seal {
-    right: 36px;
-    bottom: 64px;
-  }
 
   .s-section {
     padding-top: 110px;
@@ -760,7 +739,6 @@ ul {
     scroll-behavior: auto;
   }
 
-  .s-seal-ring,
   .s-launch-star,
   .s-marquee-track,
   .s-pulse::after {
