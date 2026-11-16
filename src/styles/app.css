@@ -8645,3 +8645,70 @@ html.theme-switching *::before,
 html.theme-switching *::after {
   transition: none !important;
 }
+
+/* ============================================================
+   Trilho lateral: destaque único que desliza e pode ser arrastado
+   ============================================================ */
+/* recorta o destaque no formato da barra (o balanço da mola nunca sai dela) */
+.rail-track {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rail-thumb {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  width: 54px;
+  height: 50px;
+  border-radius: 18px;
+  background: var(--primary-bg);
+  box-shadow: var(--primary-shadow);
+  pointer-events: none;
+  transition: transform 0.55s cubic-bezier(0.3, 1.3, 0.5, 1);
+  will-change: transform;
+}
+
+/* o fundo do item ativo passa a ser o destaque deslizante */
+.rail-nav.has-thumb .rail-item {
+  z-index: 1;
+  touch-action: none;
+}
+
+.rail-nav.has-thumb .rail-item.on,
+.rail-nav.has-thumb .rail-item.on:hover {
+  background: transparent;
+  box-shadow: none;
+}
+
+.rail-nav.has-thumb .rail-item.on {
+  cursor: grab;
+}
+
+.rail-nav.dragging,
+.rail-nav.dragging .rail-item {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.rail-nav.dragging .rail-thumb {
+  transition: transform 0.12s var(--ease);
+}
+
+.rail-nav.dragging .rail-item:hover {
+  background: transparent;
+}
+
+.rail-nav.dragging [data-tip]::after {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-thumb {
+    transition: none;
+  }
+}

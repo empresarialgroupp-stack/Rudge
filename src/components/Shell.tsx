@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -117,6 +117,118 @@ function PillTabs({ route, onGo, id }: { route: RouteName; onGo: (r: RouteName) 
 const DOCK_LABEL: Partial<Record<RouteName, string>> = { revisao: 'Revisão', instalar: 'Instalar', configuracoes: 'Ajustes' };
 
 const MORE: RouteName[] = ['habitos', 'lembretes', 'agenda', 'revisao', 'diario', 'carteira', 'instalar', 'configuracoes'];
+
+/**
+ * Navegação do trilho lateral (computador). O destaque do item ativo é uma peça
+ * única que desliza entre os itens (mesma mola do seletor de tema) e pode ser
+ * arrastada: ao soltar, abre a página do item mais próximo.
+ */
+function RailNav({
+  items,
+  route,
+  badges,
+  onGo,
+}: {
+  items: NavDef[];
+  route: RouteName;
+  badges: Partial<Record<RouteName, number>>;
+  onGo: (r: RouteName) => void;
+}) {
+  const navRef = useRef<HTMLElement>(null);
+  const drag = useRef<{ id: number; startY: number; base: number; tops: number[]; moved: boolean } | null>(null);
+  const skipClick = useRef(false);
+  const [rest, setRest] = useState<number | null>(null); // posição de repouso (topo do item ativo)
+  const [dragY, setDragY] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null); // item sob o destaque enquanto arrasta
+
+  const active = items.findIndex((n) => n.name === route);
+  const tops = () => Array.from(navRef.current?.querySelectorAll<HTMLElement>('.rail-item') ?? []).map((el) => el.offsetTop);
+
+  useLayoutEffect(() => {
+    setRest(active < 0 ? null : tops()[active] ?? null);
+  }, [active, items.length]);
+
+  const nearest = (y: number, list: number[]) => list.reduce((best, t, i) => (Math.abs(t - y) < Math.abs(list[best] - y) ? i : best), 0);
+
+  const onDown = (e: ReactPointerEvent<HTMLElement>) => {
+    skipClick.current = false;
+    if (e.button !== 0 || active < 0) return;
+    const item = (e.target as HTMLElement).closest('.rail-item');
+    if (!item || !item.classList.contains('on')) return; // só o destaque é arrastável
+    const list = tops();
+    drag.current = { id: e.pointerId, startY: e.clientY, base: list[active], tops: list, moved: false };
+  };
+
+  const onMove = (e: ReactPointerEvent<HTMLElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dy = e.clientY - d.startY;
+    if (!d.moved) {
+      if (Math.abs(dy) < 5) return;
+      d.moved = true;
+      navRef.current?.setPointerCapture(e.pointerId);
+    }
+    const y = Math.min(d.tops[d.tops.length - 1], Math.max(d.tops[0], d.base + dy));
+    setDragY(y);
+    setOver(nearest(y, d.tops));
+  };
+
+  const onUp = (e: ReactPointerEvent<HTMLElement>, cancel = false) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    if (!d.moved) return;
+    skipClick.current = true; // o clique que vem depois de soltar não deve navegar de novo
+    const target = cancel || dragY == null ? active : nearest(dragY, d.tops);
+    setDragY(null);
+    setOver(null);
+    if (target !== active && items[target]) onGo(items[target].name);
+  };
+
+  const dragging = dragY != null;
+  const y = dragY ?? rest;
+  const lit = over ?? active;
+
+  return (
+    <nav
+      ref={navRef}
+      className={cx('rail-group glass solid rail-nav', rest != null && 'has-thumb', dragging && 'dragging')}
+      aria-label="Navegação"
+      onPointerDown={onDown}
+      onPointerMove={onMove}
+      onPointerUp={(e) => onUp(e)}
+      onPointerCancel={(e) => onUp(e, true)}
+      onClickCapture={(e) => {
+        if (skipClick.current) {
+          skipClick.current = false;
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }}
+    >
+      {y != null && (
+        <span className="rail-track" aria-hidden="true">
+          <span className="rail-thumb" style={{ transform: `translateY(${y}px)${dragging ? ' scale(1.06)' : ''}` }} />
+        </span>
+      )}
+      {items.map((n, i) => (
+        <button
+          key={n.name}
+          className={cx('rail-item', i === lit && 'on')}
+          onClick={() => onGo(n.name)}
+          aria-label={n.label}
+          aria-current={n.name === route ? 'page' : undefined}
+          data-tip={n.label}
+          draggable={false}
+        >
+          <n.icon />
+          {!!badges[n.name] && <span className="rail-badge">{badges[n.name]! > 9 ? '9+' : badges[n.name]}</span>}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
@@ -244,20 +356,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="rail-group glass solid">
           <ThemeSwitch />
         </div>
-        <nav className="rail-group glass solid" aria-label="Navegação">
-          {railItems.map((n) => (
-            <button
-              key={n.name}
-              className={cx('rail-item', route.name === n.name && 'on')}
-              onClick={() => go(n.name)}
-              aria-label={n.label}
-              data-tip={n.label}
-            >
-              <n.icon />
-              {!!badges[n.name] && <span className="rail-badge">{badges[n.name]! > 9 ? '9+' : badges[n.name]}</span>}
-            </button>
-          ))}
-        </nav>
+        <RailNav items={railItems} route={route.name} badges={badges} onGo={go} />
       </aside>
 
       {/* Topo (mobile) */}
