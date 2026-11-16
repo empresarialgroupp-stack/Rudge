@@ -10,7 +10,14 @@ import {
   useTransform,
   type MotionValue,
 } from 'motion/react';
-import { Check, Moon, Plus, Sun } from 'lucide-react';
+import { Bell, BookOpen, Check, CheckSquare, Plus, Repeat, Target, Timer, Wallet } from 'lucide-react';
+import { LiquidButton } from './ui/LiquidButton';
+import { GooeyTextReveal } from './ui/GooeyTextReveal';
+import { ThemeToggle } from './ui/ThemeToggle';
+import { ScrollGather } from './ui/ScrollGather';
+import InkBackground from './ui/InkBackground';
+import ActivityTerrain from './ui/ActivityTerrain';
+import ScrollIndex from './ui/ScrollIndex';
 
 /* ------------------------------------------------------------------ */
 /* Peças pequenas                                                      */
@@ -59,26 +66,6 @@ function LaunchSeal() {
       </svg>
       <Star className="s-seal-star" />
     </div>
-  );
-}
-
-function ThemeButton() {
-  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark');
-  const toggle = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = next;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'light' ? '#f2f2f3' : '#000000');
-    try {
-      localStorage.setItem('rudge:site:theme', next);
-    } catch {
-      /* navegação privada */
-    }
-    setTheme(next);
-  };
-  return (
-    <button className="s-icon-btn" onClick={toggle} aria-label={theme === 'light' ? 'Usar tema escuro' : 'Usar tema claro'}>
-      {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
-    </button>
   );
 }
 
@@ -341,11 +328,35 @@ const SAME_ACCOUNT = [
   { h: 'Instala como app', p: 'Adicione à tela de início, sem passar por loja de aplicativos.' },
 ];
 
+const GATHER_ICONS = [Target, CheckSquare, Repeat, Bell, BookOpen, Timer, Wallet].map((Icon, i) => (
+  <Icon key={i} size={22} strokeWidth={1.7} />
+));
+
+/** Dados de exemplo para o relevo: hábitos concluídos por dia, em 26 semanas. */
+function habitData() {
+  let seed = 11;
+  const random = () => {
+    seed = (seed * 16_807) % 2_147_483_647;
+    return seed / 2_147_483_647;
+  };
+  const out: number[] = [];
+  for (let i = 0; i < 26 * 7; i++) {
+    const weekend = i % 7 >= 5;
+    const growth = 0.45 + 0.55 * (i / (26 * 7)); // a constância cresce com o tempo
+    const skipped = random() < (weekend ? 0.4 : 0.1) * (1.3 - growth);
+    out.push(skipped ? 0 : Math.max(1, Math.round((weekend ? 3 : 6) * growth * (0.5 + random()))));
+  }
+  return out;
+}
+const HABIT_DATA = habitData();
+
 export function Site() {
   const hero = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({ target: hero, offset: ['start start', 'end start'] });
   const glowY = useTransform(scrollYProgress, [0, 1], [0, 120]);
   const reduce = useReducedMotion();
+  // no celular o nome de fundo fica atrás dos painéis; no desktop, no meio
+  const [inkCenter] = useState(() => (window.innerWidth < 980 ? 0.7 : 0.52));
 
   return (
     <div className="s-page">
@@ -356,82 +367,120 @@ export function Site() {
         </a>
         <nav aria-label="Seções">
           <a href="#recursos">Recursos</a>
+          <a href="#constancia">Constância</a>
           <a href="#foco">Modo foco</a>
           <a href="#lancamento">Lançamento</a>
         </nav>
         <div className="s-nav-end">
-          <ThemeButton />
-          <a className="s-btn ghost" href="../">
+          <ThemeToggle />
+          <LiquidButton href="../" size="sm">
             Entrar
-          </a>
+          </LiquidButton>
         </div>
       </header>
 
-      <main id="topo">
-        <section className="s-hero" ref={hero}>
-          <motion.div className="s-glow" style={reduce ? undefined : { y: glowY }} aria-hidden="true" />
-          <div className="s-orbit" aria-hidden="true" />
+      <ScrollIndex>
+        <main id="topo">
+          <section className="s-hero-wrap" ref={hero}>
+            <InkBackground text="Rudge" center={inkCenter} />
+            <motion.div className="s-glow" style={reduce ? undefined : { y: glowY }} aria-hidden="true" />
+            <div className="s-orbit" aria-hidden="true" />
 
-          <div className="s-hero-copy">
-            <p className="s-launch-pill">
-              <span className="s-pulse" />
-              Lançamento previsto para 2027
-            </p>
-            <h1>Organize a vida inteira num lugar só.</h1>
-            <p className="s-lead">
-              O Rudge junta metas, tarefas, hábitos, lembretes, diário, modo foco e carteira em um app, no celular e no
-              computador.
-            </p>
-            <a className="s-btn" href="#recursos">
-              Ver o que o Rudge faz
-            </a>
-          </div>
-
-          <HeroScene progress={scrollYProgress} />
-          <LaunchSeal />
-        </section>
-
-        <section className="s-section" id="recursos">
-          <h2>Sete partes da sua rotina, um app.</h2>
-          <Features />
-        </section>
-
-        <section className="s-section s-focus" id="foco">
-          <div className="s-focus-copy">
-            <h2>Na hora de focar, fica só o relógio.</h2>
-            <p>
-              Depois de alguns segundos parado, o modo foco esconde tudo. Este é o relógio Flip, um dos estilos que você
-              pode escolher.
-            </p>
-          </div>
-          <LiveClock />
-        </section>
-
-        <div className="s-band">
-          <Marquee />
-          <Marquee reverse />
-        </div>
-
-        <section className="s-section s-same">
-          <h2>Seus dados acompanham você.</h2>
-          <div className="s-same-grid">
-            {SAME_ACCOUNT.map((x) => (
-              <div key={x.h}>
-                <h3>{x.h}</h3>
-                <p>{x.p}</p>
+            <div className="s-hero">
+              <div className="s-hero-copy">
+                <p className="s-launch-pill">
+                  <span className="s-pulse" />
+                  Lançamento previsto para 2027
+                </p>
+                <GooeyTextReveal mode="immediate" delay={0.1} duration={1.1} stagger={0.09}>
+                  <h1 data-index="Início">Organize a vida inteira num lugar só.</h1>
+                  <p className="s-lead">
+                    O Rudge junta metas, tarefas, hábitos, lembretes, diário, modo foco e carteira em um app, no celular
+                    e no computador.
+                  </p>
+                </GooeyTextReveal>
+                <LiquidButton href="#recursos" variant="solid">
+                  Ver o que o Rudge faz
+                </LiquidButton>
               </div>
-            ))}
-          </div>
-        </section>
 
-        <section className="s-launch" id="lancamento">
-          <div className="s-glow low" aria-hidden="true" />
-          <Star className="s-launch-star" />
-          <h2>Lançamento previsto para</h2>
-          <LaunchYear />
-          <p>O Rudge ainda está em construção. A abertura para o público está prevista para 2027.</p>
-        </section>
-      </main>
+              <HeroScene progress={scrollYProgress} />
+              <LaunchSeal />
+            </div>
+          </section>
+
+          <ScrollGather
+            text="Tudo no mesmo lugar"
+            icons={GATHER_ICONS}
+            caption="Metas, tarefas, hábitos, lembretes, diário, foco e carteira deixam de ficar espalhados."
+          />
+
+          <section className="s-section" id="recursos">
+            <GooeyTextReveal mode="scroll">
+              <h2 data-index="Recursos">Sete partes da sua rotina, um app.</h2>
+            </GooeyTextReveal>
+            <Features />
+          </section>
+
+          <section className="s-section s-split" id="constancia">
+            <GooeyTextReveal mode="scroll" className="s-split-copy">
+              <h2 data-index="Constância">Veja a sua constância ganhar relevo.</h2>
+              <p>
+                Cada coluna é um dia. Quanto mais hábitos você conclui, mais alta ela fica. Arraste o cartão para girar
+                e toque em um dia para ver o total.
+              </p>
+            </GooeyTextReveal>
+            <div className="s-terrain-wrap">
+              <ActivityTerrain
+                data={HABIT_DATA}
+                title="Hábitos concluídos"
+                unit={['hábito concluído', 'hábitos concluídos']}
+              />
+              <p className="s-note">Dados de exemplo.</p>
+            </div>
+          </section>
+
+          <section className="s-section s-split" id="foco">
+            <GooeyTextReveal mode="scroll" className="s-split-copy">
+              <h2 data-index="Modo foco">Na hora de focar, fica só o relógio.</h2>
+              <p>
+                Depois de alguns segundos parado, o modo foco esconde tudo. Este é o relógio Flip, um dos estilos que
+                você pode escolher.
+              </p>
+            </GooeyTextReveal>
+            <LiveClock />
+          </section>
+
+          <div className="s-band">
+            <Marquee />
+            <Marquee reverse />
+          </div>
+
+          <section className="s-section s-same">
+            <GooeyTextReveal mode="scroll">
+              <h2 data-index="Seus dados">Seus dados acompanham você.</h2>
+            </GooeyTextReveal>
+            <div className="s-same-grid">
+              {SAME_ACCOUNT.map((x) => (
+                <div key={x.h}>
+                  <h3>{x.h}</h3>
+                  <p>{x.p}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="s-launch" id="lancamento">
+            <div className="s-glow low" aria-hidden="true" />
+            <Star className="s-launch-star" />
+            <h2 data-index="Lançamento">Lançamento previsto para</h2>
+            <LaunchYear />
+            <GooeyTextReveal mode="scroll">
+              <p>O Rudge ainda está em construção. A abertura para o público está prevista para 2027.</p>
+            </GooeyTextReveal>
+          </section>
+        </main>
+      </ScrollIndex>
 
       <footer className="s-footer">
         <span className="s-brand">
