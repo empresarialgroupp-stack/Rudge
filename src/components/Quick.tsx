@@ -35,6 +35,7 @@ import { logout } from '../lib/auth';
 import { testNotification } from '../lib/scheduler';
 import { cx, Modal, Segmented } from './ui';
 import { NAV } from './Shell';
+import { Button } from 'glisse';
 
 export type CaptureMode = 'task' | 'reminder';
 
@@ -135,19 +136,19 @@ export function QuickAdd({ mode: initial = 'task' }: { mode?: CaptureMode }) {
       onClose={close}
       footer={
         <>
-          <button
-            className="btn btn-ghost"
+          <Button
+            className="btn-ghost"
             onClick={() => {
               close();
               openModal(mode === 'task' ? { type: 'task', defaults: { title: parsed.title } } : { type: 'reminder', defaults: { title: parsed.title } });
             }}
           >
             Mais opções
-          </button>
+          </Button>
           <div className="spacer" />
-          <button className="btn btn-primary" onClick={submit} disabled={!text.trim()}>
+          <Button variant="filled" onClick={submit} disabled={!text.trim()}>
             Adicionar <ArrowRight />
-          </button>
+          </Button>
         </>
       }
     >

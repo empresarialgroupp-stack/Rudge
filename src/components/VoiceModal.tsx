@@ -7,6 +7,7 @@ import { addDays, dateKey, parseKey, relativeDay } from '../lib/date';
 import { describeRule } from '../lib/recurrence';
 import { interpret, listen, speak, voiceSupported, type VoiceItem } from '../lib/voice';
 import { cx, Modal } from './ui';
+import { Button } from 'glisse';
 
 type Phase = 'listening' | 'thinking' | 'review' | 'error';
 
@@ -106,19 +107,19 @@ export function VoiceModal() {
       onClose={close}
       footer={
         <>
-          <button className="btn btn-ghost" onClick={close}>
+          <Button className="btn-ghost" onClick={close}>
             Cancelar
-          </button>
+          </Button>
           <div className="spacer" />
           {phase === 'review' && (
-            <button className="btn btn-glass" onClick={() => void start()}>
+            <Button  onClick={() => void start()}>
               <Mic /> Falar de novo
-            </button>
+            </Button>
           )}
           {phase === 'review' && items.length > 0 && (
-            <button className="btn btn-primary" onClick={save}>
+            <Button variant="filled" onClick={save}>
               <Check /> Salvar {items.length > 1 ? `(${items.length})` : ''}
-            </button>
+            </Button>
           )}
         </>
       }
@@ -161,13 +162,13 @@ export function VoiceModal() {
           {items.length === 0 && <p className="muted" style={{ margin: 0, textAlign: 'center' }}>Não encontrei um lembrete ou tarefa. Tente de novo.</p>}
           {items.map((i, idx) => (
             <div key={idx} className="tpl" style={{ alignItems: 'center' }}>
-              <button
+              <Button
                 className="icon-btn"
                 title="Alternar entre lembrete e tarefa"
                 onClick={() => setItems(items.map((x, j) => (j === idx ? { ...x, kind: x.kind === 'task' ? 'reminder' : 'task' } : x)))}
               >
                 {i.kind === 'reminder' ? <AlarmClock /> : <ListTodo />}
-              </button>
+              </Button>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <input
                   className="input"
@@ -179,9 +180,9 @@ export function VoiceModal() {
                   {i.kind === 'reminder' ? 'Lembrete' : 'Tarefa'} · {label(i)}
                 </span>
               </div>
-              <button className="icon-btn sm" onClick={() => setItems(items.filter((_, j) => j !== idx))} aria-label="Remover">
+              <Button className="icon-btn sm" onClick={() => setItems(items.filter((_, j) => j !== idx))} aria-label="Remover">
                 <Trash2 />
-              </button>
+              </Button>
             </div>
           ))}
           <p className="muted" style={{ margin: 0, fontSize: 12 }}>

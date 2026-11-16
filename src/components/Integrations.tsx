@@ -5,6 +5,7 @@ import { logout, useSession } from '../lib/auth';
 import { RUDGE_MUSIC_URL } from '../lib/supabase';
 import { toast } from '../lib/ui';
 import { BrandMark, cx, Switch } from './ui';
+import { Button } from 'glisse';
 
 /* Conexão com o Rudge Music guardada no servidor (public.integrations) e espelhada aqui
    para o modo foco e para funcionar offline. */
@@ -130,13 +131,13 @@ export function IntegrationsCard() {
         )}
         <div className="row wrap">
           {hasMusic ? (
-            <button className="btn btn-glass btn-sm" onClick={() => openRudgeMusic()} disabled={busy}>
+            <Button className="btn-sm" onClick={() => openRudgeMusic()} disabled={busy}>
               <ExternalLink /> Abrir Rudge Music
-            </button>
+            </Button>
           ) : (
-            <button className="btn btn-primary btn-sm" onClick={() => openRudgeMusic('/configuracoes')}>
+            <Button className="btn-sm" variant="filled" onClick={() => openRudgeMusic('/configuracoes')}>
               <Sparkles /> Conhecer o pacote app + Music
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -151,9 +152,9 @@ export function FocusMusicButton() {
   const hasMusic = access.status === 'ready' && access.access.music;
   if (!hasMusic || !music.connected || !music.focusMusic) return null;
   return (
-    <button className="btn btn-glass btn-pill" onClick={() => openRudgeMusic('/inicio')}>
+    <Button  onClick={() => openRudgeMusic('/inicio')}>
       <Music2 /> Rudge Music
-    </button>
+    </Button>
   );
 }
 
@@ -173,15 +174,15 @@ export function PlanLocked() {
             A conta <b>{session?.email}</b> está ativa no Rudge Music. Para usar o organizador também, mude para o pacote
             Rudge (app + Music).
           </p>
-          <button className="btn btn-primary btn-lg btn-block" onClick={() => openRudgeMusic('/configuracoes')}>
+          <Button className="btn-lg btn-block" variant="filled" onClick={() => openRudgeMusic('/configuracoes')}>
             <Sparkles /> Ver o pacote
-          </button>
-          <button className="btn btn-glass btn-block" onClick={() => openRudgeMusic()}>
+          </Button>
+          <Button className="btn-block" onClick={() => openRudgeMusic()}>
             <Music2 /> Abrir Rudge Music
-          </button>
-          <button className="btn btn-ghost btn-block" onClick={() => void logout()}>
+          </Button>
+          <Button className="btn-ghost btn-block" onClick={() => void logout()}>
             <LogOut /> Entrar com outra conta
-          </button>
+          </Button>
         </div>
       </div>
     </div>

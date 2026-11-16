@@ -4,6 +4,7 @@ import { linkError, onLinkLogin, sendCode, verifyCode } from '../lib/auth';
 import { toast } from '../lib/ui';
 import { BrandMark, cx } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Button } from 'glisse';
 
 const LAST_EMAIL = 'rudge:last-email';
 
@@ -116,21 +117,21 @@ export function Login() {
                 <AlertCircle /> {error}
               </div>
             )}
-            <button
-              className="btn btn-primary btn-lg btn-block"
+            <Button
+              className="btn-lg btn-block" variant="filled"
               type="submit"
               disabled={busy || (step === 'email' ? !email : code.length < 6)}
             >
               {busy ? <span className="spinner" /> : <>{step === 'email' ? 'Receber acesso por e-mail' : 'Entrar com o código'} <ArrowRight /></>}
-            </button>
+            </Button>
             {step === 'code' && (
               <div className="login-alt">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => (setStep('email'), setError(''))}>
+                <Button type="button" className="btn-ghost btn-sm" onClick={() => (setStep('email'), setError(''))}>
                   <ArrowLeft /> Trocar e-mail
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
-                  className="btn btn-ghost btn-sm"
+                  className="btn-ghost btn-sm"
                   disabled={busy}
                   onClick={async () => {
                     const r = await sendCode(email);
@@ -139,7 +140,7 @@ export function Login() {
                   }}
                 >
                   Reenviar e-mail
-                </button>
+                </Button>
               </div>
             )}
           </form>

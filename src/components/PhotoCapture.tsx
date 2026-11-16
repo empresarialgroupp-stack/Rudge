@@ -7,6 +7,7 @@ import { parseInput } from '../lib/nlp';
 import { parseKey, relativeDay, todayKey, addDaysKey } from '../lib/date';
 import { fmtBRL, scanImage, type ScanResult } from '../lib/scan';
 import { cx, Modal, Segmented, Switch } from './ui';
+import { Button } from 'glisse';
 
 type Phase = 'pick' | 'reading' | 'review' | 'error';
 
@@ -82,18 +83,18 @@ export function PhotoCapture() {
       footer={
         phase === 'review' ? (
           <>
-            <button className="btn btn-ghost" onClick={() => setPhase('pick')}>
+            <Button className="btn-ghost" onClick={() => setPhase('pick')}>
               Outra foto
-            </button>
+            </Button>
             <div className="spacer" />
             {view === 'bill' ? (
-              <button className="btn btn-primary" onClick={createBill} disabled={!title.trim()}>
+              <Button variant="filled" onClick={createBill} disabled={!title.trim()}>
                 <Check /> Criar tarefa
-              </button>
+              </Button>
             ) : (
-              <button className="btn btn-primary" onClick={createList} disabled={!nPicked}>
+              <Button variant="filled" onClick={createList} disabled={!nPicked}>
                 <Check /> Criar {nPicked || ''}
-              </button>
+              </Button>
             )}
           </>
         ) : undefined
@@ -110,9 +111,9 @@ export function PhotoCapture() {
             Fotografe um <b>boleto</b>, uma conta, um papel ou um quadro. O Rudge lê o texto <b>no seu aparelho</b> — a foto não sai daqui.
           </p>
           <div className="row wrap" style={{ justifyContent: 'center' }}>
-            <button className="btn btn-primary btn-lg btn-pill" onClick={() => input.current?.click()}>
+            <Button className="btn-lg" variant="filled" onClick={() => input.current?.click()}>
               <Camera /> Tirar ou escolher foto
-            </button>
+            </Button>
           </div>
           <label className="btn btn-ghost btn-sm">
             <ImageUp /> Escolher da galeria
@@ -136,9 +137,9 @@ export function PhotoCapture() {
       {phase === 'error' && (
         <div className="stack" style={{ alignItems: 'center', textAlign: 'center' }}>
           <p className="muted">Não consegui ler esta foto. Tente com mais luz, sem reflexo e com o papel inteiro na imagem.</p>
-          <button className="btn btn-primary btn-pill" onClick={() => input.current?.click()}>
+          <Button variant="filled" onClick={() => input.current?.click()}>
             <Camera /> Tentar de novo
-          </button>
+          </Button>
         </div>
       )}
 

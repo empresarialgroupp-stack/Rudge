@@ -18,6 +18,7 @@ import { addDays, dateKey, fromLocalInput, parseKey, timeOf, toLocalInput, today
 import { AREAS } from '../lib/goals';
 import { REPEAT_LABEL } from '../lib/recurrence';
 import { cx, DayPicker, Field, Modal, Segmented, Switch } from './ui';
+import { Button } from 'glisse';
 
 const REMIND_OPTS: { v: string; label: string }[] = [
   { v: 'none', label: 'Sem lembrete' },
@@ -123,23 +124,23 @@ export function TaskEditor({
       footer={
         <>
           {existing && (
-            <button
-              className="btn btn-danger"
+            <Button
+              destructive
               onClick={() => {
                 deleteTask(existing.id);
                 close();
               }}
             >
               <Trash2 /> Excluir
-            </button>
+            </Button>
           )}
           <div className="spacer" />
-          <button className="btn btn-ghost" onClick={close}>
+          <Button className="btn-ghost" onClick={close}>
             Cancelar
-          </button>
-          <button className="btn btn-primary" onClick={save} disabled={!title.trim()}>
+          </Button>
+          <Button variant="filled" onClick={save} disabled={!title.trim()}>
             Salvar
-          </button>
+          </Button>
         </>
       }
     >
@@ -240,9 +241,9 @@ export function TaskEditor({
                   </svg>
                 </button>
                 <input value={st.title} onChange={(e) => setSubtasks(subtasks.map((x) => (x.id === st.id ? { ...x, title: e.target.value } : x)))} />
-                <button type="button" className="icon-btn sm" onClick={() => setSubtasks(subtasks.filter((x) => x.id !== st.id))} aria-label="Remover">
+                <Button type="button" className="icon-btn sm" onClick={() => setSubtasks(subtasks.filter((x) => x.id !== st.id))} aria-label="Remover">
                   <X />
-                </button>
+                </Button>
               </div>
             ))}
             <div className="subtask">
@@ -344,23 +345,23 @@ export function ReminderEditor({ id, defaults }: { id?: string; defaults?: { tit
       footer={
         <>
           {existing && (
-            <button
-              className="btn btn-danger"
+            <Button
+              destructive
               onClick={() => {
                 deleteReminder(existing.id);
                 close();
               }}
             >
               <Trash2 /> Excluir
-            </button>
+            </Button>
           )}
           <div className="spacer" />
-          <button className="btn btn-ghost" onClick={close}>
+          <Button className="btn-ghost" onClick={close}>
             Cancelar
-          </button>
-          <button className="btn btn-primary" onClick={save} disabled={!title.trim() || past || isNaN(at)}>
+          </Button>
+          <Button variant="filled" onClick={save} disabled={!title.trim() || past || isNaN(at)}>
             Salvar
-          </button>
+          </Button>
         </>
       }
     >
@@ -507,33 +508,33 @@ export function HabitEditor({ id, defaults }: { id?: string; defaults?: { title?
         <>
           {existing && (
             <>
-              <button
-                className="btn btn-danger"
+              <Button
+                destructive
                 onClick={() => {
                   deleteHabit(existing.id);
                   close();
                 }}
               >
                 <Trash2 /> Excluir
-              </button>
-              <button
-                className="btn btn-ghost"
+              </Button>
+              <Button
+                className="btn-ghost"
                 onClick={() => {
                   updateHabit(existing.id, { archived: !existing.archived });
                   close();
                 }}
               >
                 {existing.archived ? 'Reativar' : 'Arquivar'}
-              </button>
+              </Button>
             </>
           )}
           <div className="spacer" />
-          <button className="btn btn-ghost" onClick={close}>
+          <Button className="btn-ghost" onClick={close}>
             Cancelar
-          </button>
-          <button className="btn btn-primary" onClick={save} disabled={!title.trim() || !days.length}>
+          </Button>
+          <Button variant="filled" onClick={save} disabled={!title.trim() || !days.length}>
             Salvar
-          </button>
+          </Button>
         </>
       }
     >

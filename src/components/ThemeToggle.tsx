@@ -3,6 +3,7 @@ import { Moon, Sun } from 'lucide-react';
 import { useStore } from '../lib/store';
 import { updateSettings } from '../lib/actions';
 import { cx } from './ui';
+import { Button } from 'glisse';
 
 type Theme = 'dark' | 'light';
 
@@ -71,14 +72,14 @@ export function ThemeToggle() {
   const { settings } = useStore();
   const light = settings.theme === 'light';
   return (
-    <button
-      className="icon-btn btn-glass"
+    <Button
+      className="icon-btn"
       onClick={(e) => setTheme(light ? 'dark' : 'light', e.currentTarget)}
       aria-label={light ? 'Mudar para modo escuro' : 'Mudar para modo white'}
       title={light ? 'Modo escuro' : 'Modo white'}
     >
       {light ? <Moon /> : <Sun />}
-    </button>
+    </Button>
   );
 }
 

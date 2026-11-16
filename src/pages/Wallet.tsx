@@ -8,6 +8,7 @@ import { cx, ProgressBar } from '../components/ui';
 import { navigate, toast } from '../lib/ui';
 import { ago, amountsInAlerts, BANKS, brl, removeAccount, setPrivacy, summarize, syncedBanks, takeNewInflows, tips, useAccounts, useFinance, usePrivacy, useSaved, type FinanceCard } from '../lib/finance';
 import type { PluggyState } from '../lib/finance/pluggy';
+import { Button } from 'glisse';
 
 function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
   const { saved, total: savedTotal, toggle } = useSaved();
@@ -89,9 +90,9 @@ function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
                         Entrou {brl(i.amount)} · {new Date(i.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}
                       </small>
                     </span>
-                    <button className={cx('btn btn-sm btn-pill', done ? 'btn-primary' : 'btn-glass')} onClick={() => toggle(i.id, i.save)} aria-pressed={done}>
+                    <Button className="btn-sm" variant={done ? 'filled' : 'glass'} onClick={() => toggle(i.id, i.save)} aria-pressed={done}>
                       {done && <Check />} {done ? 'Guardado' : <>Guardar <span className="money">{brl(i.save)}</span></>}
-                    </button>
+                    </Button>
                   </li>
                 );
               })}
@@ -129,9 +130,9 @@ function Accounts({ onImport }: { onImport: () => void }) {
       <div className="wb-head">
         <Landmark />
         <b>Extratos importados</b>
-        <button className="btn btn-sm btn-glass btn-pill wb-meta-btn" onClick={onImport}>
+        <Button className="btn-sm wb-meta-btn" onClick={onImport}>
           <FileUp /> Importar
-        </button>
+        </Button>
       </div>
       <ul className="wsave">
         {accounts.map((a) => (
@@ -145,13 +146,13 @@ function Accounts({ onImport }: { onImport: () => void }) {
                 {a.txs.length} transações · atualizado em {new Date(a.importedAt).toLocaleDateString('pt-BR')}
               </small>
             </span>
-            <button
-              className="btn btn-sm btn-glass btn-pill"
+            <Button
+              className="btn-sm"
               onClick={() => confirm(`Remover ${BANKS[a.bank].label} deste aparelho?`) && removeAccount(a.id)}
               aria-label={`Remover ${BANKS[a.bank].label}`}
             >
               <Trash2 />
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
@@ -229,21 +230,21 @@ export function WalletPage() {
           <div className="wallet-note glass">
             <Landmark />
             <span>{provider.live ? <b>Extratos importados.</b> : <b>Dados de exemplo.</b>} Conecte seus bancos para a Carteira se atualizar sozinha.</span>
-            <button className="btn btn-sm btn-primary btn-pill" onClick={() => setConnecting(true)}>
+            <Button className="btn-sm" variant="filled" onClick={() => setConnecting(true)}>
               <Link2 /> Conectar
-            </button>
+            </Button>
           </div>
         )}
-        <button
+        <Button
           type="button"
-          className="icon-btn btn-glass wallet-eye"
+          className="icon-btn wallet-eye"
           onClick={() => setPrivacy({ hidden: !privacy.hidden })}
           aria-pressed={privacy.hidden}
           aria-label={privacy.hidden ? 'Mostrar valores' : 'Ocultar valores'}
           title={privacy.hidden ? 'Mostrar valores' : 'Ocultar valores'}
         >
           {privacy.hidden ? <EyeOff /> : <Eye />}
-        </button>
+        </Button>
       </div>
       <WalletSummary cards={cards} />
       <div className="wv-col wv-col-main">
