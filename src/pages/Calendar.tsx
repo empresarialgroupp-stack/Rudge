@@ -8,7 +8,6 @@ import { isHabitDueOn } from '../lib/goals';
 import { toggleHabit } from '../lib/actions';
 import { Checkbox, cx, Empty, StatCard, StatRow } from '../components/ui';
 import { TaskRow, sortTasks } from '../components/TaskRow';
-import { Button } from 'glisse';
 
 export function CalendarPage() {
   const s = useStore();
@@ -78,8 +77,8 @@ export function CalendarPage() {
           <h3>
             {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
           </h3>
-          <Button
-            className="btn-sm"
+          <button
+            className="btn btn-sm btn-glass"
             onClick={() => {
               const d = new Date();
               setCursor(new Date(d.getFullYear(), d.getMonth(), 1));
@@ -87,13 +86,13 @@ export function CalendarPage() {
             }}
           >
             Hoje
-          </Button>
-          <Button className="icon-btn sm" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} aria-label="Mês anterior">
+          </button>
+          <button className="icon-btn sm" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))} aria-label="Mês anterior">
             <ChevronLeft />
-          </Button>
-          <Button className="icon-btn sm" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} aria-label="Próximo mês">
+          </button>
+          <button className="icon-btn sm" onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))} aria-label="Próximo mês">
             <ChevronRight />
-          </Button>
+          </button>
         </div>
         <div className="cal-grid">
           {WEEKDAYS_SHORT.map((w) => (
@@ -147,15 +146,15 @@ export function CalendarPage() {
           </h2>
         </div>
         <div className="row wrap" style={{ marginBottom: 12 }}>
-          <Button className="btn-sm" onClick={() => openModal({ type: 'task', defaults: { due: sel } })}>
+          <button className="btn btn-sm btn-glass" onClick={() => openModal({ type: 'task', defaults: { due: sel } })}>
             <Plus /> Tarefa
-          </Button>
-          <Button
-            className="btn-sm"
+          </button>
+          <button
+            className="btn btn-sm btn-glass"
             onClick={() => openModal({ type: 'reminder', defaults: { at: Math.max(parseKey(sel, '09:00').getTime(), Date.now() + 60 * 60_000) } })}
           >
             <Bell /> Lembrete
-          </Button>
+          </button>
         </div>
 
         {!dayTasks.length && !selInfo?.rems.length && !selInfo?.goals.length && !selHabits.length && (

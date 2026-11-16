@@ -13,8 +13,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { AreaKey, Priority } from '../lib/types';
-import { Button, Glass, Switch as GlassSwitch } from 'glisse';
-import { GlassSegmented } from './glisse';
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(' ');
@@ -104,19 +102,19 @@ export function Modal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <Glass ref={ref} className={cx('modal', size, className)} role="dialog" aria-modal="true">
+      <div ref={ref} className={cx('modal glass strong', size, className)} role="dialog" aria-modal="true">
         <div className="sheet-grip" />
         {title !== undefined && (
           <div className="modal-head">
             <h2>{title}</h2>
-            <Button className="icon-btn sm" onClick={onClose} aria-label="Fechar">
+            <button className="icon-btn sm" onClick={onClose} aria-label="Fechar">
               <X />
-            </Button>
+            </button>
           </div>
         )}
         <div className="modal-body">{children}</div>
         {footer && <div className="modal-foot">{footer}</div>}
-      </Glass>
+      </div>
     </div>
   );
 }
@@ -150,17 +148,46 @@ export function Checkbox({
 }
 
 export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label?: string }) {
-  return <GlassSwitch aria-label={label} checked={on} onCheckedChange={onChange} />;
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      className={cx('switch', on && 'on')}
+      onClick={() => onChange(!on)}
+    />
+  );
 }
 
-export function Segmented<T extends string | number>(props: {
+export function Segmented<T extends string | number>({
+  options,
+  value,
+  onChange,
+  full,
+}: {
   options: { value: T; label: ReactNode; count?: number }[];
   value: T;
   onChange: (v: T) => void;
   full?: boolean;
-  label?: string;
 }) {
-  return <GlassSegmented {...props} />;
+  return (
+    <div className={cx('segmented', full && 'full')} role="tablist">
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          type="button"
+          role="tab"
+          aria-selected={o.value === value}
+          className={cx(o.value === value && 'on')}
+          onClick={() => onChange(o.value)}
+        >
+          {o.label}
+          {o.count !== undefined && <span className="count">{o.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function ProgressBar({ value, marker, size }: { value: number; marker?: number; size?: 'lg' }) {
@@ -332,12 +359,25 @@ export function StatRow({ children, cols = 4 }: { children: ReactNode; cols?: nu
   );
 }
 
-/** Filtros com contagem ("Todas 12"), no controle segmentado do Glisse. */
-export function ChipTabs<T extends string>(props: {
+/** Filtros em chips com bolinha e contagem ("Todas 12"). */
+export function ChipTabs<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
   options: { value: T; label: ReactNode; count?: number }[];
   value: T;
   onChange: (v: T) => void;
-  label?: string;
 }) {
-  return <GlassSegmented {...props} label={props.label ?? 'Filtro'} className="chip-seg" />;
+  return (
+    <div className="chip-tabs" role="tablist">
+      {options.map((o) => (
+        <button key={o.value} role="tab" aria-selected={o.value === value} className={cx(o.value === value && 'on')} onClick={() => onChange(o.value)}>
+          <i className="ct-dot" />
+          {o.label}
+          {o.count !== undefined && <span className="ct-count">{o.count}</span>}
+        </button>
+      ))}
+    </div>
+  );
 }

@@ -6,7 +6,6 @@ import { closeModal, toast } from '../lib/ui';
 import { monthStats, prevMonth, type MonthStats } from '../lib/retro';
 import { CountUp, Gauge } from './charts';
 import { BrandMark, cx } from './ui';
-import { Button } from 'glisse';
 
 const SLIDE_MS = 5500;
 
@@ -169,9 +168,9 @@ export function Retro({ month: monthProp }: { month?: string }) {
       <div className="retro-top">
         <BrandMark className="brand-orb" />
         <span>Retrospectiva · {st.label}</span>
-        <Button className="icon-btn" onClick={close} aria-label="Fechar">
+        <button className="icon-btn btn-glass" onClick={close} aria-label="Fechar">
           <X />
-        </Button>
+        </button>
       </div>
 
       <div
@@ -240,18 +239,18 @@ export function Retro({ month: monthProp }: { month?: string }) {
 
       {last && (
         <div className="retro-actions">
-          <Button className="btn-lg" variant="filled" onClick={() => void shareImage(st)}>
+          <button className="btn btn-primary btn-lg btn-pill" onClick={() => void shareImage(st)}>
             <Share2 /> Compartilhar imagem
-          </Button>
-          <Button
-            
+          </button>
+          <button
+            className="btn btn-glass btn-pill"
             onClick={() => {
               setI(0);
               setT0(Date.now());
             }}
           >
             <RotateCcw /> Ver de novo
-          </Button>
+          </button>
         </div>
       )}
     </div>

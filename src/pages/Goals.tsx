@@ -8,7 +8,6 @@ import { proposeGoals } from '../lib/suggestions';
 import { shortDate } from '../lib/date';
 import { AreaIcon, ChipTabs, cx, Empty, ProgressBar, StatCard, StatRow } from '../components/ui';
 import { CountUp, Gauge } from '../components/charts';
-import { Button } from 'glisse';
 
 type Tab = 'active' | 'paused' | 'done';
 
@@ -62,9 +61,9 @@ export function Goals() {
                 </div>
                 <b>{t.title}</b>
                 <p>{t.pitch}</p>
-                <Button className="btn-sm" onClick={() => openModal({ type: 'goal-wizard', templateId: t.id })}>
+                <button className="btn btn-sm btn-glass" onClick={() => openModal({ type: 'goal-wizard', templateId: t.id })}>
                   <Plus /> Adotar meta
-                </Button>
+                </button>
               </div>
             ))}
           </div>
@@ -82,9 +81,9 @@ export function Goals() {
           ]}
         />
         <div className="spacer" />
-        <Button variant="filled" onClick={() => openModal({ type: 'goal-wizard' })}>
+        <button className="btn btn-primary" onClick={() => openModal({ type: 'goal-wizard' })}>
           <Sparkles /> Nova meta
-        </Button>
+        </button>
       </div>
 
       {inTab.length > 0 && (
@@ -145,9 +144,9 @@ export function Goals() {
             text={tab === 'active' ? 'Escolha uma proposta acima ou crie a sua com o assistente — ele calcula o ritmo e configura lembretes.' : undefined}
             action={
               tab === 'active' ? (
-                <Button className="btn-sm" variant="filled" onClick={() => openModal({ type: 'goal-wizard' })}>
+                <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'goal-wizard' })}>
                   <Sparkles /> Criar meta
-                </Button>
+                </button>
               ) : undefined
             }
           />

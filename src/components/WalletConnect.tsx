@@ -4,7 +4,6 @@ import { ExternalLink, Link2, Lock } from 'lucide-react';
 import { Field, Modal } from './ui';
 import { toast } from '../lib/ui';
 import { linkPluggy, openPluggyConnect, pluggyConfig } from '../lib/finance';
-import { Button } from 'glisse';
 
 /**
  * Conexão única com o Meu Pluggy; depois disso a Carteira sincroniza sozinha.
@@ -70,12 +69,12 @@ export function WalletConnect({ onClose, onImport }: { onClose: () => void; onIm
       size="narrow"
       footer={
         <>
-          <Button  onClick={() => (onClose(), onImport())}>
+          <button className="btn btn-glass btn-pill" onClick={() => (onClose(), onImport())}>
             Importar extrato
-          </Button>
-          <Button variant="filled" onClick={widget ? openWidget : submit} disabled={busy || server === null}>
+          </button>
+          <button className="btn btn-primary btn-pill" onClick={widget ? openWidget : submit} disabled={busy || server === null}>
             <Link2 /> {busy ? 'Conectando…' : widget ? 'Abrir Pluggy' : 'Conectar'}
-          </Button>
+          </button>
         </>
       }
     >

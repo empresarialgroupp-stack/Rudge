@@ -6,7 +6,6 @@ import { relativeDay, todayKey } from '../lib/date';
 import { AREA_LABEL } from '../lib/goals';
 import { useStore } from '../lib/store';
 import { AreaIcon, Checkbox, cx, Prio } from './ui';
-import { Button } from 'glisse';
 
 export function TaskRow({ task, showDate = true }: { task: Task; showDate?: boolean }) {
   const s = useStore();
@@ -63,16 +62,16 @@ export function TaskRow({ task, showDate = true }: { task: Task; showDate?: bool
       </div>
       <div className="item-actions hide-mobile">
         {!task.done && (
-          <Button className="icon-btn sm" onClick={() => openModal({ type: 'focus', taskId: task.id })} aria-label="Focar nesta tarefa" title="Modo foco">
+          <button className="icon-btn sm" onClick={() => openModal({ type: 'focus', taskId: task.id })} aria-label="Focar nesta tarefa" title="Modo foco">
             <Timer />
-          </Button>
+          </button>
         )}
-        <Button className="icon-btn sm" onClick={open} aria-label="Editar">
+        <button className="icon-btn sm" onClick={open} aria-label="Editar">
           <Pencil />
-        </Button>
-        <Button className="icon-btn sm" onClick={() => deleteTask(task.id)} aria-label="Excluir">
+        </button>
+        <button className="icon-btn sm" onClick={() => deleteTask(task.id)} aria-label="Excluir">
           <Trash2 />
-        </Button>
+        </button>
       </div>
     </div>
   );

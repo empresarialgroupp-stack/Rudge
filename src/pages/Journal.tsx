@@ -7,7 +7,6 @@ import { toast } from '../lib/ui';
 import { journalHabitImpact } from '../lib/stats';
 import { LineChart } from '../components/charts';
 import { cx, Empty, StatCard, StatRow } from '../components/ui';
-import { Button } from 'glisse';
 
 const SCORES = [
   { v: 1, label: 'Ruim' },
@@ -84,9 +83,9 @@ export function Journal() {
         </div>
         <div className="row" style={{ marginTop: 14 }}>
           <div className="spacer" />
-          <Button variant="filled" onClick={save}>
+          <button className="btn btn-primary btn-pill" onClick={save}>
             <Check /> Salvar
-          </Button>
+          </button>
         </div>
       </section>
 

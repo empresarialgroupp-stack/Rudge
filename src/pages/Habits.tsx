@@ -9,7 +9,6 @@ import { habitBestStreak, habitRate, habitStreak, isHabitDueOn } from '../lib/go
 import { ChipTabs, cx, Empty, Segmented, StatCard, StatRow } from '../components/ui';
 import { LineChart } from '../components/charts';
 import { dailyBreakdown } from '../lib/stats';
-import { Button } from 'glisse';
 
 function Heatmap({ habit }: { habit: Habit }) {
   const weeks = 18;
@@ -94,9 +93,9 @@ export function Habits() {
           ]}
         />
         <div className="spacer" />
-        <Button variant="filled" onClick={() => openModal({ type: 'habit' })}>
+        <button className="btn btn-primary" onClick={() => openModal({ type: 'habit' })}>
           <Plus /> Novo hábito
-        </Button>
+        </button>
       </div>
 
       {habits.length ? (
@@ -168,9 +167,9 @@ export function Habits() {
                         </div>
                       </div>
                     </div>
-                    <Button className="btn-sm" style={{ marginTop: 12 }} onClick={() => openModal({ type: 'habit', id: h.id })}>
+                    <button className="btn btn-sm btn-glass" style={{ marginTop: 12 }} onClick={() => openModal({ type: 'habit', id: h.id })}>
                       Editar hábito
-                    </Button>
+                    </button>
                   </div>
                 )}
               </div>
@@ -185,9 +184,9 @@ export function Habits() {
             text={view === 'active' ? 'Comece pequeno: um hábito, um horário, todo dia. O Rudge lembra você.' : undefined}
             action={
               view === 'active' ? (
-                <Button className="btn-sm" variant="filled" onClick={() => openModal({ type: 'habit' })}>
+                <button className="btn btn-primary btn-sm" onClick={() => openModal({ type: 'habit' })}>
                   <Plus /> Criar hábito
-                </Button>
+                </button>
               ) : undefined
             }
           />
