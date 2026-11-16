@@ -6,12 +6,11 @@ import { closeModal, openModal, useModals } from '../lib/ui';
 import { todayKey } from '../lib/date';
 import { completeFocus, focusLeft } from '../lib/focus';
 import { sortTasks } from './TaskRow';
-import { LiquidTabBar } from './glisse';
+import { LiquidTabBar } from './LiquidTabBar';
 import { cx } from './ui';
 import { FocusMusicButton } from './Integrations';
 import { FocusClock, FocusClockPicker, mmss } from './FocusClock';
 import type { FocusClockStyle } from '../lib/types';
-import { Button } from 'glisse';
 
 const DURATIONS = ['15', '25', '45', '60'];
 
@@ -95,15 +94,15 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
   if (!f && (choosing || !clock)) {
     return (
       <div className="focus-screen" role="dialog" aria-label="Escolher relógio do Modo foco">
-        <Button className="icon-btn focus-close" onClick={close} aria-label="Fechar">
+        <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
           <Minimize2 />
-        </Button>
+        </button>
         <div className="focus-setup focus-choose">
           <h2>Escolha seu relógio</h2>
           <p className="muted">Ele aparece sempre que você entra no Modo foco. Dá para trocar depois nas Configurações.</p>
           <FocusClockPicker value={choice} onChange={setChoice} />
-          <Button
-            className="btn-lg focus-go" variant="filled"
+          <button
+            className="btn btn-primary btn-lg btn-pill focus-go"
             disabled={!choice}
             onClick={() => {
               updateSettings({ focusClock: choice });
@@ -111,7 +110,7 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
             }}
           >
             Continuar
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -133,12 +132,12 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
       startFocus({ title: label.trim() || 'Foco livre', taskId: task?.id, goalId: goalId ?? task?.goalId, minutes: Number(dur) });
     return (
       <div className="focus-screen" role="dialog" aria-label="Modo foco">
-        <Button className="icon-btn focus-close" onClick={close} aria-label="Fechar">
+        <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
           <Minimize2 />
-        </Button>
-        <Button className="icon-btn focus-switch" onClick={() => setChoosing(true)} aria-label="Trocar relógio" title="Trocar relógio">
+        </button>
+        <button className="icon-btn btn-glass focus-switch" onClick={() => setChoosing(true)} aria-label="Trocar relógio" title="Trocar relógio">
           <Clock3 />
-        </Button>
+        </button>
         <div className="focus-setup">
           <FocusClock style={clock} left={ms} total={ms} idle />
           <form
@@ -181,9 +180,9 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
               onValueChange={setDur}
             />
           </div>
-          <Button className="btn-lg focus-go" variant="filled" onClick={start}>
+          <button className="btn btn-primary btn-lg btn-pill focus-go" onClick={start}>
             <Play /> Começar
-          </Button>
+          </button>
           <p className="muted focus-note">
             <BellOff width={14} /> Avisos em silêncio até o fim
           </p>
@@ -225,9 +224,9 @@ function FocusRun({
       onPointerMove={onPointerMove}
       onPointerDown={onPointerDown}
     >
-      <Button className="icon-btn focus-close" onClick={close} aria-label="Minimizar" title="Minimizar">
+      <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Minimizar" title="Minimizar">
         <Minimize2 />
-      </Button>
+      </button>
       <div className="focus-run">
         <FocusClock
           style={clock}
@@ -240,21 +239,21 @@ function FocusRun({
           <div className="focus-extras-in">
             <span className="focus-title">{f.title}</span>
             <div className="focus-controls">
-              <Button  onClick={() => extendFocus(5)}>
+              <button className="btn btn-glass btn-pill" onClick={() => extendFocus(5)}>
                 <Plus /> 5 min
-              </Button>
-              <Button className="btn-lg" variant="filled" onClick={() => (paused ? resumeFocus() : pauseFocus())}>
+              </button>
+              <button className="btn btn-primary btn-lg btn-pill" onClick={() => (paused ? resumeFocus() : pauseFocus())}>
                 {paused ? <Play /> : <Pause />} {paused ? 'Retomar' : 'Pausar'}
-              </Button>
-              <Button
-                
+              </button>
+              <button
+                className="btn btn-glass btn-pill"
                 onClick={() => {
                   completeFocus(true);
                   close();
                 }}
               >
                 <Square /> Encerrar
-              </Button>
+              </button>
               <FocusMusicButton />
             </div>
             <p className="muted focus-note">

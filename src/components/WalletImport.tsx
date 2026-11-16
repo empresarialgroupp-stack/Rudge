@@ -5,7 +5,6 @@ import { Field, Modal, Segmented } from './ui';
 import { toast } from '../lib/ui';
 import { useStore } from '../lib/store';
 import { BANKS, importStatement, type BankId } from '../lib/finance';
-import { Button } from 'glisse';
 
 /** Lê o arquivo como UTF-8 e, se vier com acentos quebrados, como Windows-1252 (comum em OFX). */
 async function readText(file: File) {
@@ -59,9 +58,9 @@ export function WalletImport({ onClose }: { onClose: () => void }) {
       onClose={onClose}
       size="narrow"
       footer={
-        <Button variant="filled" onClick={run} disabled={busy}>
+        <button className="btn btn-primary btn-pill" onClick={run} disabled={busy}>
           <FileUp /> {file ? (busy ? 'Importando…' : 'Importar') : 'Escolher arquivo'}
-        </Button>
+        </button>
       }
     >
       <div className="wimport">

@@ -2,9 +2,7 @@
 
 Sistema pessoal de organização — tarefas, metas, hábitos e lembretes com notificações.
 PWA instalável no computador (Chrome/Edge/Safari) e no celular (Android/iPhone), design
-"liquid glass" monocromático com modo escuro e **modo white**. Botões, abas, controles
-segmentados, switches, busca e modais usam o [Glisse](https://glisse.kelvinzhang.com) (Liquid Glass
-da Apple para a web), com as cores do Rudge em `src/styles/glisse.css` e a ponte em `src/components/glisse.tsx`.
+"liquid glass" monocromático com modo escuro e **modo white**.
 
 ## Acesso
 

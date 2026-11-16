@@ -29,10 +29,9 @@ import { occurrencesBetween } from '../lib/recurrence';
 import { BrandMark, cx, Modal } from './ui';
 import { displayName } from '../lib/summary';
 import { ThemeSwitch, ThemeToggle } from './ThemeToggle';
-import { LiquidTabBar } from './glisse';
+import { LiquidTabBar } from './LiquidTabBar';
 import { FocusPill } from './FocusMode';
 import { NotificationCenter } from './NotificationCenter';
-import { Button, Glass } from 'glisse';
 
 interface NavDef {
   name: RouteName;
@@ -137,7 +136,7 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const show = () => {
       const box = mTabs.current;
-      const on = box?.querySelector<HTMLElement>('.lg-tab[data-selected]');
+      const on = box?.querySelector<HTMLElement>('.ltb-row:not(.ltb-ink) .ltb-slot.on');
       if (!box || !on || box.scrollWidth <= box.clientWidth) return;
       const b = box.getBoundingClientRect();
       const r = on.getBoundingClientRect();
@@ -194,19 +193,19 @@ export function Shell({ children }: { children: ReactNode }) {
         </button>
         <PillTabs id="top-tabs" route={route.name} onGo={go} />
         <div className="topnav-right">
-          <Button className="search-pill" onClick={() => openModal({ type: 'command' })}>
+          <button className="search-pill" onClick={() => openModal({ type: 'command' })}>
             <Search /> <span>Buscar</span> <kbd>Ctrl K</kbd>
-          </Button>
-          <Button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar com o Rudge" title="Falar com o Rudge">
+          </button>
+          <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar com o Rudge" title="Falar com o Rudge">
             <Mic />
-          </Button>
-          <Button className="icon-btn" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações" title="Notificações">
+          </button>
+          <button className="icon-btn btn-glass" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações" title="Notificações">
             <Bell />
             {unread > 0 && <span className="dot">{unread > 9 ? '9+' : unread}</span>}
-          </Button>
-          <Button variant="filled" onClick={() => openModal({ type: 'quick-add' })}>
+          </button>
+          <button className="btn btn-primary btn-pill" onClick={() => openModal({ type: 'quick-add' })}>
             <Plus /> Novo
-          </Button>
+          </button>
           <div className="user-chip-wrap">
             <button className="user-chip" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}>
               <span className="avatar">{initials(s.settings.name, email)}</span>
@@ -219,7 +218,7 @@ export function Shell({ children }: { children: ReactNode }) {
             {userOpen && (
               <>
                 <div className="click-away" onClick={() => setUserOpen(false)} />
-                <Glass className="user-menu">
+                <div className="user-menu glass strong">
                   <div className="um-head">
                     <b>{userName}</b>
                     <span>{email}</span>
@@ -233,7 +232,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   <button onClick={logout}>
                     <LogOut /> Sair
                   </button>
-                </Glass>
+                </div>
               </>
             )}
           </div>
@@ -267,16 +266,16 @@ export function Shell({ children }: { children: ReactNode }) {
           <BrandMark />
           <span className="brand-name">Rudge</span>
         </div>
-        <Button className="icon-btn" onClick={() => openModal({ type: 'voice' })} aria-label="Falar">
+        <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar">
           <Mic />
-        </Button>
-        <Button className="icon-btn" onClick={() => openModal({ type: 'command' })} aria-label="Buscar">
+        </button>
+        <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'command' })} aria-label="Buscar">
           <Search />
-        </Button>
-        <Button className="icon-btn" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações">
+        </button>
+        <button className="icon-btn btn-glass" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações">
           <Bell />
           {unread > 0 && <span className="dot">{unread > 9 ? '9+' : unread}</span>}
-        </Button>
+        </button>
         <ThemeToggle />
       </header>
 
@@ -297,7 +296,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
       {/* Barra de abas líquida (mobile) */}
       <div className="tabdock">
-        <div className="dock-bar">
+        <div className="dock-bar glass liquid">
           <LiquidTabBar
             id="dock"
             label="Navegação principal"
@@ -306,9 +305,9 @@ export function Shell({ children }: { children: ReactNode }) {
             onValueChange={(v) => (v === 'mais' ? setMoreOpen(true) : go(v as RouteName))}
           />
         </div>
-        <Button className="dock-add" variant="filled" onClick={() => openModal({ type: 'quick-add' })} aria-label="Adicionar">
+        <button className="dock-add" onClick={() => openModal({ type: 'quick-add' })} aria-label="Adicionar">
           <Plus />
-        </Button>
+        </button>
       </div>
 
       {moreOpen && (
@@ -327,9 +326,9 @@ export function Shell({ children }: { children: ReactNode }) {
               <b>{userName}</b>
               <span>{email}</span>
             </div>
-            <Button className="btn-sm" onClick={logout}>
+            <button className="btn btn-sm btn-glass" onClick={logout}>
               <LogOut /> Sair
-            </Button>
+            </button>
           </div>
         </Modal>
       )}

@@ -17,7 +17,6 @@ import { AccountDataCard } from '../components/AccountData';
 import { FocusClockPicker } from '../components/FocusClock';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
-import { Button } from 'glisse';
 
 const PERM_LABEL: Record<string, string> = {
   granted: 'Permitidas',
@@ -129,19 +128,19 @@ export function SettingsPage() {
               <span>{PERM_LABEL[perm]}</span>
             </div>
             {perm !== 'granted' ? (
-              <Button
-                className="btn-sm" variant="filled"
+              <button
+                className="btn btn-primary btn-sm"
                 onClick={async () => {
                   await enableNotifications();
                   setPerm(permission());
                 }}
               >
                 Ativar
-              </Button>
+              </button>
             ) : (
-              <Button className="btn-sm" onClick={() => void testNotification()}>
+              <button className="btn btn-glass btn-sm" onClick={() => void testNotification()}>
                 Testar
-              </Button>
+              </button>
             )}
           </div>
           <div className="setting">
@@ -249,12 +248,12 @@ export function SettingsPage() {
             Seus dados já ficam na conta. Se quiser, exporte também um arquivo de backup; importar junta o arquivo com o que você já tem.
           </p>
           <div className="row wrap">
-            <Button  onClick={download}>
+            <button className="btn btn-glass" onClick={download}>
               <Download /> Exportar backup
-            </Button>
-            <Button  onClick={() => fileRef.current?.click()}>
+            </button>
+            <button className="btn btn-glass" onClick={() => fileRef.current?.click()}>
               <Upload /> Importar backup
-            </Button>
+            </button>
             <input
               ref={fileRef}
               type="file"
@@ -269,14 +268,14 @@ export function SettingsPage() {
           </div>
           <div className="row wrap" style={{ marginTop: 14 }}>
             {!confirmReset ? (
-              <Button className="btn-sm" destructive onClick={() => setConfirmReset(true)}>
+              <button className="btn btn-danger btn-sm" onClick={() => setConfirmReset(true)}>
                 Apagar todos os dados
-              </Button>
+              </button>
             ) : (
               <>
                 <span style={{ fontSize: 13 }}>Apaga em todos os aparelhos da conta. Dá para voltar em Dados na conta → Cópias de segurança.</span>
-                <Button
-                  className="btn-sm" destructive
+                <button
+                  className="btn btn-danger btn-sm"
                   onClick={() => {
                     resetState();
                     setConfirmReset(false);
@@ -284,10 +283,10 @@ export function SettingsPage() {
                   }}
                 >
                   Sim, apagar
-                </Button>
-                <Button className="btn-ghost btn-sm" onClick={() => setConfirmReset(false)}>
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(false)}>
                   Cancelar
-                </Button>
+                </button>
               </>
             )}
           </div>
@@ -301,9 +300,9 @@ export function SettingsPage() {
               <b>Sair do Rudge</b>
               <span>Sai da conta Rudge neste aparelho. Seus dados continuam salvos aqui.</span>
             </div>
-            <Button  onClick={() => void logout()}>
+            <button className="btn btn-glass" onClick={() => void logout()}>
               <LogOut /> Sair
-            </Button>
+            </button>
           </div>
         </section>
         <p className="muted" style={{ fontSize: 12, margin: '4px 4px 0' }}>Rudge v1.0 · organização pessoal</p>
@@ -362,8 +361,8 @@ function PushRow({ perm }: { perm: string }) {
       </div>
       {st.push && supported && perm === 'granted' && (
         <div className="row wrap" style={{ padding: '0 0 12px' }}>
-          <Button
-            className="btn-sm" variant="filled"
+          <button
+            className="btn btn-sm btn-primary"
             disabled={busy}
             onClick={async () => {
               setBusy(true);
@@ -384,9 +383,9 @@ function PushRow({ perm }: { perm: string }) {
             }}
           >
             Testar com o app fechado
-          </Button>
-          <Button
-            className="btn-sm"
+          </button>
+          <button
+            className="btn btn-sm btn-glass"
             disabled={busy}
             onClick={async () => {
               setBusy(true);
@@ -402,7 +401,7 @@ function PushRow({ perm }: { perm: string }) {
             }}
           >
             Sincronizar agora
-          </Button>
+          </button>
         </div>
       )}
     </>
@@ -457,9 +456,9 @@ function PlacesCard() {
                 raio de {p.radius} m{n ? ` · ${n} ${n === 1 ? 'lembrete' : 'lembretes'}` : ''}
               </span>
             </div>
-            <Button className="icon-btn sm" aria-label={`Excluir ${p.name}`} onClick={() => deletePlace(p.id)}>
+            <button className="icon-btn sm" aria-label={`Excluir ${p.name}`} onClick={() => deletePlace(p.id)}>
               <Trash2 />
-            </Button>
+            </button>
           </div>
         );
       })}
@@ -472,9 +471,9 @@ function PlacesCard() {
             </option>
           ))}
         </select>
-        <Button variant="filled" disabled={!name.trim() || busy} onClick={() => void save()}>
+        <button className="btn btn-primary" disabled={!name.trim() || busy} onClick={() => void save()}>
           <LocateFixed /> {busy ? 'Localizando…' : 'Salvar aqui'}
-        </Button>
+        </button>
       </div>
     </section>
   );

@@ -4,7 +4,6 @@ import { listSnapshots, restoreSnapshot, syncAccount, useCloudStatus, type Snaps
 import { formatWhen } from '../lib/date';
 import { toast } from '../lib/ui';
 import { SyncAlert } from './SyncAlert';
-import { Button } from 'glisse';
 
 const LABEL = { off: 'Ainda não sincronizado', syncing: 'Sincronizando…', ok: 'Tudo salvo na conta', offline: 'Sem internet: salva quando a conexão voltar', error: 'Não foi possível falar com o servidor' };
 
@@ -54,12 +53,12 @@ export function AccountDataCard() {
         </div>
       </div>
       <div className="row wrap">
-        <Button className="btn-sm" onClick={() => void syncAccount()} disabled={cloud.state === 'syncing'}>
+        <button className="btn btn-glass btn-sm" onClick={() => void syncAccount()} disabled={cloud.state === 'syncing'}>
           <RefreshCw /> Sincronizar agora
-        </Button>
-        <Button className="btn-sm" onClick={() => void openList()} disabled={busy === 'list'}>
+        </button>
+        <button className="btn btn-glass btn-sm" onClick={() => void openList()} disabled={busy === 'list'}>
           <History /> Cópias de segurança
-        </Button>
+        </button>
       </div>
       {snaps && (
         <div className="snapshots" style={{ marginTop: 12 }}>
@@ -75,9 +74,9 @@ export function AccountDataCard() {
                   {s.goals} metas · {s.tasks} tarefas · {s.habits} hábitos · {s.reminders} lembretes
                 </span>
               </div>
-              <Button className="btn-ghost btn-sm" onClick={() => void restore(s)} disabled={busy === s.id}>
+              <button className="btn btn-ghost btn-sm" onClick={() => void restore(s)} disabled={busy === s.id}>
                 Restaurar
-              </Button>
+              </button>
             </div>
           ))}
         </div>
