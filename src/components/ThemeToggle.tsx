@@ -12,23 +12,58 @@ export function applyTheme(theme: Theme) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f2f2f3' : '#000000');
 }
 
-/** Troca o tema abrindo um círculo a partir do botão tocado (View Transitions). */
+/** O navegador anima a máscara com borda desfocada? (View Transitions + @property + mask) */
+function canReveal() {
+  if (typeof document === 'undefined' || !document.startViewTransition) return false;
+  if (typeof CSS === 'undefined' || !('registerProperty' in CSS)) return false;
+  const g = 'radial-gradient(circle, #000 0px, transparent 1px)';
+  return CSS.supports('mask-image', g) || CSS.supports('-webkit-mask-image', g);
+}
+
+/**
+ * Troca o tema abrindo um círculo a partir do botão tocado (View Transitions).
+ * Só a borda do círculo é desfocada (máscara radial com 90px de degradê); o
+ * interior e o resto da tela ficam nítidos o tempo todo.
+ */
 export function setTheme(theme: Theme, origin?: Element | null) {
   const change = () => {
     flushSync(() => updateSettings({ theme }));
     applyTheme(theme);
   };
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  if (!origin || reduce || !document.startViewTransition) return change();
+  if (!origin || reduce || !canReveal()) return change();
+
+  const root = document.documentElement;
   const r = origin.getBoundingClientRect();
   const x = r.left + r.width / 2;
   const y = r.top + r.height / 2;
-  const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-  document.startViewTransition(change).ready.then(() => {
-    document.documentElement.animate(
-      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
-      { duration: 620, easing: 'cubic-bezier(.65,0,.35,1)', pseudoElement: '::view-transition-new(root)' },
-    );
+  const edge = 90;
+  const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + edge;
+
+  root.style.setProperty('--vt-x', `${x}px`);
+  root.style.setProperty('--vt-y', `${y}px`);
+  // sem transições de cor enquanto a tela nova é fotografada (senão sai com as cores dos dois temas)
+  root.classList.add('theme-switching', 'vt-reveal');
+
+  let vt: ViewTransition;
+  try {
+    vt = document.startViewTransition(change);
+  } catch {
+    root.classList.remove('theme-switching', 'vt-reveal');
+    return change();
+  }
+  vt.ready
+    .then(() => {
+      root.animate(
+        { '--vt-r': ['0px', `${end}px`] } as unknown as Keyframe[],
+        { duration: 900, easing: 'cubic-bezier(0.45, 0, 0.2, 1)', fill: 'both', pseudoElement: '::view-transition-new(root)' },
+      );
+    })
+    .catch(() => {});
+  vt.finished.finally(() => {
+    root.classList.remove('theme-switching', 'vt-reveal');
+    root.style.removeProperty('--vt-x');
+    root.style.removeProperty('--vt-y');
   });
 }
 
