@@ -1,6 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentType, type PointerEvent as ReactPointerEvent, type ReactElement, type ReactNode } from 'react';
 import {
-  Bell,
   CalendarDays,
   ChevronDown,
   ClipboardCheck,
@@ -8,12 +7,8 @@ import {
   Flame,
   House,
   ListTodo,
-  LogOut,
   NotebookPen,
   Menu,
-  Mic,
-  Plus,
-  Search,
   Settings,
   Target,
   AlarmClock,
@@ -32,23 +27,58 @@ import { ThemeSwitch, ThemeToggle } from './ThemeToggle';
 import { LiquidTabBar } from './LiquidTabBar';
 import { FocusPill } from './FocusMode';
 import { NotificationCenter } from './NotificationCenter';
+import { AnimateIcon } from '@animate-ui/react/icons';
+import { House as HouseAnim } from './animate-ui/icons/house';
+import { ListTodo as ListTodoAnim } from './animate-ui/icons/list-todo';
+import { Target as TargetAnim } from './animate-ui/icons/target';
+import { Flame as FlameAnim } from './animate-ui/icons/flame';
+import { AlarmClock as AlarmClockAnim } from './animate-ui/icons/alarm-clock';
+import { CalendarDays as CalendarDaysAnim } from './animate-ui/icons/calendar-days';
+import { ClipboardCheck as ClipboardCheckAnim } from './animate-ui/icons/clipboard-check';
+import { NotebookPen as NotebookPenAnim } from './animate-ui/icons/notebook-pen';
+import { WalletCards as WalletCardsAnim } from './animate-ui/icons/wallet-cards';
+import { Download as DownloadAnim } from './animate-ui/icons/download';
+import { Settings as SettingsAnim } from './animate-ui/icons/settings';
+import { Bell as BellAnim } from './animate-ui/icons/bell';
+import { Mic as MicAnim } from './animate-ui/icons/mic';
+import { Search as SearchAnim } from './animate-ui/icons/search';
+import { Plus as PlusAnim } from './animate-ui/icons/plus';
+import { LogOut as LogOutAnim } from './animate-ui/icons/log-out';
+
+/** Ícone animado (Animate UI). `animate` liga a animação por fora; sem ele, segue o botão em volta. */
+type AnimIcon = ComponentType<{ animate?: boolean }>;
+
+/**
+ * Faz o ícone de dentro do botão se mexer quando o mouse passa ou o dedo toca no botão inteiro
+ * (não só em cima do desenho). `play` dispara a animação por fora, ex.: quando o item fica ativo.
+ * Com "reduzir movimento" ligado no aparelho, os ícones ficam parados.
+ */
+function Lively({ children, play }: { children: ReactElement; play?: boolean }) {
+  return (
+    <AnimateIcon asChild animateOnHover animateOnTap completeOnStop animate={play}>
+      {children}
+    </AnimateIcon>
+  );
+}
 
 interface NavDef {
   name: RouteName;
   label: string;
   icon: LucideIcon;
+  /** versão animada do mesmo ícone, usada na navegação */
+  anim: AnimIcon;
 }
 
 export const NAV: NavDef[] = [
-  { name: 'inicio', label: 'Início', icon: House },
-  { name: 'tarefas', label: 'Tarefas', icon: ListTodo },
-  { name: 'metas', label: 'Metas', icon: Target },
-  { name: 'habitos', label: 'Hábitos', icon: Flame },
-  { name: 'lembretes', label: 'Lembretes', icon: AlarmClock },
-  { name: 'agenda', label: 'Agenda', icon: CalendarDays },
-  { name: 'revisao', label: 'Revisão semanal', icon: ClipboardCheck },
-  { name: 'diario', label: 'Diário', icon: NotebookPen },
-  { name: 'carteira', label: 'Carteira', icon: WalletCards },
+  { name: 'inicio', label: 'Início', icon: House, anim: HouseAnim },
+  { name: 'tarefas', label: 'Tarefas', icon: ListTodo, anim: ListTodoAnim },
+  { name: 'metas', label: 'Metas', icon: Target, anim: TargetAnim },
+  { name: 'habitos', label: 'Hábitos', icon: Flame, anim: FlameAnim },
+  { name: 'lembretes', label: 'Lembretes', icon: AlarmClock, anim: AlarmClockAnim },
+  { name: 'agenda', label: 'Agenda', icon: CalendarDays, anim: CalendarDaysAnim },
+  { name: 'revisao', label: 'Revisão semanal', icon: ClipboardCheck, anim: ClipboardCheckAnim },
+  { name: 'diario', label: 'Diário', icon: NotebookPen, anim: NotebookPenAnim },
+  { name: 'carteira', label: 'Carteira', icon: WalletCards, anim: WalletCardsAnim },
 ];
 
 export const PAGE_META: Record<RouteName, { title: string; sub?: string }> = {
@@ -212,8 +242,8 @@ function RailNav({
         </span>
       )}
       {items.map((n, i) => (
+        <Lively key={n.name} play={i === lit}>
         <button
-          key={n.name}
           className={cx('rail-item', i === lit && 'on')}
           onClick={() => onGo(n.name)}
           aria-label={n.label}
@@ -221,9 +251,10 @@ function RailNav({
           data-tip={n.label}
           draggable={false}
         >
-          <n.icon />
+          <n.anim />
           {!!badges[n.name] && <span className="rail-badge">{badges[n.name]! > 9 ? '9+' : badges[n.name]}</span>}
         </button>
+        </Lively>
       ))}
     </nav>
   );
@@ -267,30 +298,31 @@ export function Shell({ children }: { children: ReactNode }) {
     setUserOpen(false);
   };
 
-  const railItems: NavDef[] = [...NAV, { name: 'instalar', label: 'Instalar app', icon: Download }, { name: 'configuracoes', label: 'Configurações', icon: Settings }];
+  const railItems: NavDef[] = [...NAV, { name: 'instalar', label: 'Instalar app', icon: Download, anim: DownloadAnim }, { name: 'configuracoes', label: 'Configurações', icon: Settings, anim: SettingsAnim }];
 
   const moreBadge = (badges.lembretes ?? 0) + (badges.habitos ?? 0);
   // Fora das três abas fixas, a quarta aba mostra a página em que a pessoa está (e continua abrindo o menu).
   const here = MORE.includes(route.name) ? route.name : null;
+  const dockValue = moreOpen || MORE.includes(route.name) ? 'mais' : route.name;
   const dockTabs = useMemo(() => {
     const cur = here ? railItems.find((n) => n.name === here) : undefined;
-    const HereIcon = cur?.icon ?? Menu;
+    const HereIcon = cur?.anim;
     const dockBadge = (here ? badges[here] : moreBadge) ?? 0;
     return [
-      { value: 'inicio', label: 'Início', icon: <House /> },
-      { value: 'tarefas', label: 'Tarefas', icon: <ListTodo />, badge: badges.tarefas || undefined, badgeLabel: badges.tarefas ? `${badges.tarefas} para hoje` : undefined },
-      { value: 'metas', label: 'Metas', icon: <Target /> },
+      { value: 'inicio', label: 'Início', icon: <HouseAnim animate={dockValue === 'inicio'} /> },
+      { value: 'tarefas', label: 'Tarefas', icon: <ListTodoAnim animate={dockValue === 'tarefas'} />, badge: badges.tarefas || undefined, badgeLabel: badges.tarefas ? `${badges.tarefas} para hoje` : undefined },
+      { value: 'metas', label: 'Metas', icon: <TargetAnim animate={dockValue === 'metas'} /> },
       {
         value: 'mais',
         label: here ? DOCK_LABEL[here] ?? PAGE_META[here].title : 'Mais',
-        icon: <HereIcon />,
+        icon: HereIcon ? <HereIcon key={here} animate={dockValue === 'mais'} /> : <Menu />,
         // na página atual o contador é o dela (igual ao do trilho do computador); em "Mais", a soma
         badge: dockBadge || undefined,
         badgeLabel: `${dockBadge} pendentes, abrir menu`,
       },
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [badges, moreBadge, here]);
+  }, [badges, moreBadge, here, dockValue]);
 
   return (
     <div className="app">
@@ -305,19 +337,27 @@ export function Shell({ children }: { children: ReactNode }) {
         </button>
         <PillTabs id="top-tabs" route={route.name} onGo={go} />
         <div className="topnav-right">
+          <Lively>
           <button className="search-pill" onClick={() => openModal({ type: 'command' })}>
-            <Search /> <span>Buscar</span> <kbd>Ctrl K</kbd>
+            <SearchAnim /> <span>Buscar</span> <kbd>Ctrl K</kbd>
           </button>
+          </Lively>
+          <Lively>
           <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar com o Rudge" title="Falar com o Rudge">
-            <Mic />
+            <MicAnim />
           </button>
+          </Lively>
+          <Lively>
           <button className="icon-btn btn-glass" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações" title="Notificações">
-            <Bell />
+            <BellAnim />
             {unread > 0 && <span className="dot">{unread > 9 ? '9+' : unread}</span>}
           </button>
+          </Lively>
+          <Lively>
           <button className="btn btn-primary btn-pill" onClick={() => openModal({ type: 'quick-add' })}>
-            <Plus /> Novo
+            <PlusAnim /> Novo
           </button>
+          </Lively>
           <div className="user-chip-wrap">
             <button className="user-chip" onClick={() => setUserOpen((v) => !v)} aria-expanded={userOpen}>
               <span className="avatar">{initials(s.settings.name, email)}</span>
@@ -335,15 +375,21 @@ export function Shell({ children }: { children: ReactNode }) {
                     <b>{userName}</b>
                     <span>{email}</span>
                   </div>
+                  <Lively>
                   <button onClick={() => go('configuracoes')}>
-                    <Settings /> Configurações
+                    <SettingsAnim /> Configurações
                   </button>
+                  </Lively>
+                  <Lively>
                   <button onClick={() => go('instalar')}>
-                    <Download /> Instalar app
+                    <DownloadAnim /> Instalar app
                   </button>
+                  </Lively>
+                  <Lively>
                   <button onClick={logout}>
-                    <LogOut /> Sair
+                    <LogOutAnim /> Sair
                   </button>
+                  </Lively>
                 </div>
               </>
             )}
@@ -365,16 +411,22 @@ export function Shell({ children }: { children: ReactNode }) {
           <BrandMark />
           <span className="brand-name">Rudge</span>
         </div>
+        <Lively>
         <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'voice' })} aria-label="Falar">
-          <Mic />
+          <MicAnim />
         </button>
+        </Lively>
+        <Lively>
         <button className="icon-btn btn-glass" onClick={() => openModal({ type: 'command' })} aria-label="Buscar">
-          <Search />
+          <SearchAnim />
         </button>
+        </Lively>
+        <Lively>
         <button className="icon-btn btn-glass" onClick={() => setBellOpen((v) => !v)} aria-label="Notificações">
-          <Bell />
+          <BellAnim />
           {unread > 0 && <span className="dot">{unread > 9 ? '9+' : unread}</span>}
         </button>
+        </Lively>
         <ThemeToggle />
       </header>
 
@@ -400,23 +452,27 @@ export function Shell({ children }: { children: ReactNode }) {
             id="dock"
             label="Navegação principal"
             tabs={dockTabs}
-            value={moreOpen ? 'mais' : MORE.includes(route.name) ? 'mais' : route.name}
+            value={dockValue}
             onValueChange={(v) => (v === 'mais' ? setMoreOpen(true) : go(v as RouteName))}
           />
         </div>
+        <Lively>
         <button className="dock-add" onClick={() => openModal({ type: 'quick-add' })} aria-label="Adicionar">
-          <Plus />
+          <PlusAnim />
         </button>
+        </Lively>
       </div>
 
       {moreOpen && (
         <Modal title="Menu" onClose={() => setMoreOpen(false)} size="narrow">
           <div className="nav" style={{ marginTop: 0 }}>
-            {[...NAV.slice(3), { name: 'instalar' as RouteName, label: 'Instalar app', icon: Download }, { name: 'configuracoes' as RouteName, label: 'Configurações', icon: Settings }].map((n) => (
-              <button key={n.name} className={cx('nav-item', route.name === n.name && 'on')} onClick={() => go(n.name)} style={{ height: 46 }}>
-                <n.icon /> {n.label}
+            {railItems.slice(3).map((n) => (
+              <Lively key={n.name}>
+              <button className={cx('nav-item', route.name === n.name && 'on')} onClick={() => go(n.name)} style={{ height: 46 }}>
+                <n.anim /> {n.label}
                 {!!badges[n.name] && <span className="badge">{badges[n.name]}</span>}
               </button>
+              </Lively>
             ))}
           </div>
           <div className="user-card">
@@ -425,9 +481,11 @@ export function Shell({ children }: { children: ReactNode }) {
               <b>{userName}</b>
               <span>{email}</span>
             </div>
+            <Lively>
             <button className="btn btn-sm btn-glass" onClick={logout}>
-              <LogOut /> Sair
+              <LogOutAnim /> Sair
             </button>
+            </Lively>
           </div>
         </Modal>
       )}
