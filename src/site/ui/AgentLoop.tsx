@@ -33,6 +33,8 @@ interface AgentLoopProps {
   autoPlay?: boolean;
   loop?: boolean;
   defaultSpeed?: number;
+  /** Mostra tocar/pausar, passo, recomeçar e velocidade. */
+  controls?: boolean;
   className?: string;
 }
 
@@ -150,6 +152,7 @@ export default function AgentLoop({
   autoPlay = true,
   loop = false,
   defaultSpeed = 1,
+  controls = true,
   className,
 }: AgentLoopProps) {
   const reduce = useReducedMotion();
@@ -697,6 +700,7 @@ export default function AgentLoop({
         </motion.p>
       </AnimatePresence>
 
+      {controls && (
       <div className="al-controls">
         <LiquidButton
           size="sm"
@@ -741,6 +745,7 @@ export default function AgentLoop({
           ))}
         </div>
       </div>
+      )}
 
       <p className="al-sr" aria-live="polite">
         {announce}

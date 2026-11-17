@@ -405,7 +405,6 @@ export function Site() {
               sources={FLOW_SOURCES}
               destinations={FLOW_DESTINATIONS}
               core={{ label: 'Rudge', detail: 'Organiza e cruza tudo', countLabel: 'itens organizados', countStart: 1248 }}
-              caption="Ilustração. Os números são de exemplo."
             />
           </section>
 
@@ -421,8 +420,7 @@ export function Site() {
                 age por você e confere o resultado até a tarefa ficar pronta.
               </p>
             </GooeyTextReveal>
-            <AgentLoop iterations={AGENT_RUN} task="Organize minha semana e me lembre do que importa." summary="Semana organizada: 4 tarefas remarcadas, 5 lembretes e 2 blocos de foco." title="Assistente" loop />
-            <p className="s-note">Demonstração ilustrativa com dados de exemplo. Nada aqui é executado de verdade.</p>
+            <AgentLoop iterations={AGENT_RUN} task="Organize minha semana e me lembre do que importa." summary="Semana organizada: 4 tarefas remarcadas, 5 lembretes e 2 blocos de foco." title="Assistente" loop controls={false} defaultSpeed={1.3} />
           </section>
 
           <section className="s-launch" id="lancamento">

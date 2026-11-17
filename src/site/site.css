@@ -1373,18 +1373,15 @@ ul {
   color: var(--fg-2);
 }
 
-#novidade .s-note {
-  margin-top: -18px;
-}
 
 /* ---------- Data flow ---------- */
 .df {
   margin: 0;
-  padding: 18px;
-  border: 1px solid var(--panel-border);
+  padding: 0;
+  border: 0;
   border-radius: 24px;
-  background: var(--panel);
-  box-shadow: var(--panel-shadow);
+  background: transparent;
+  box-shadow: none;
 }
 
 .df-stage {
@@ -1569,9 +1566,6 @@ ul {
 
 /* no celular os nós ficam em linha, compactos */
 @media (max-width: 599px) {
-  .df {
-    padding: 14px;
-  }
 
   .df-node {
     flex-direction: column;
@@ -1610,11 +1604,11 @@ ul {
   container-type: inline-size;
   width: 100%;
   max-width: 760px;
-  padding: 18px;
-  border: 1px solid var(--panel-border);
+  padding: 0;
+  border: 0;
   border-radius: 24px;
-  background: var(--panel);
-  box-shadow: var(--panel-shadow);
+  background: transparent;
+  box-shadow: none;
 }
 
 .al-head {
