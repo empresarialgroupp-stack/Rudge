@@ -7,7 +7,18 @@ import {
   useScroll,
   useTransform,
 } from 'motion/react';
-import { Bell, BookOpen, CheckSquare, Plus, Repeat, Target, Timer, Wallet } from 'lucide-react';
+import {
+  Bell,
+  BookOpen,
+  CalendarDays,
+  CheckSquare,
+  LayoutDashboard,
+  Plus,
+  Repeat,
+  Target,
+  Timer,
+  Wallet,
+} from 'lucide-react';
 import { LiquidButton } from './ui/LiquidButton';
 import { GooeyTextReveal } from './ui/GooeyTextReveal';
 import { ThemeToggle } from './ui/ThemeToggle';
@@ -15,6 +26,45 @@ import { ScrollGather } from './ui/ScrollGather';
 import InkBackground from './ui/InkBackground';
 import ActivityTerrain from './ui/ActivityTerrain';
 import ScrollIndex from './ui/ScrollIndex';
+import AgentLoop, { type LoopIteration } from './ui/AgentLoop';
+import DataFlow, { type FlowNode } from './ui/DataFlow';
+
+// Ilustração 1: o assistente previsto para 2027 organizando a semana (exemplo).
+const AGENT_RUN: LoopIteration[] = [
+  {
+    gather: { label: 'Suas metas', detail: '3 metas ativas', tokens: 1800, mark: <Target /> },
+    calls: [{ tool: 'Tarefas', mark: <CheckSquare />, action: 'Ler tarefas da semana', result: '12 tarefas, 4 atrasadas' }],
+    verify: { passed: false, note: 'Faltam os horários livres' },
+  },
+  {
+    gather: { label: 'Sua agenda', detail: 'Seg a sex, 9h às 18h', tokens: 2400, mark: <CalendarDays /> },
+    calls: [
+      { tool: 'Tarefas', mark: <CheckSquare />, action: 'Reorganizar a semana', result: '4 tarefas remarcadas' },
+      { tool: 'Lembretes', mark: <Bell />, action: 'Criar lembretes', result: 'Horário em conflito', status: 'error' },
+    ],
+    verify: { passed: false, note: 'Um lembrete ficou de fora' },
+  },
+  {
+    gather: { label: 'Seus hábitos', detail: 'Treino às 7h', tokens: 1200, mark: <Repeat /> },
+    calls: [
+      { tool: 'Lembretes', mark: <Bell />, action: 'Criar lembretes', result: '5 lembretes criados' },
+      { tool: 'Modo foco', mark: <Timer />, action: 'Reservar foco', result: 'Ter e qui, às 14h' },
+    ],
+    verify: { passed: true, note: 'Semana pronta' },
+  },
+];
+
+// Ilustração 2: como o Rudge funciona.
+const FLOW_SOURCES: FlowNode[] = [
+  { label: 'Rotina', meta: 'Tarefas e metas', detail: 'O que você precisa fazer e onde quer chegar', icon: <Target /> },
+  { label: 'Hábitos', meta: 'Check-ins do dia', detail: 'Cada hábito concluído entra na sua constância', icon: <Repeat /> },
+  { label: 'Carteira', meta: 'Seus bancos', detail: 'Gastos e saldos sincronizados', icon: <Wallet /> },
+];
+const FLOW_DESTINATIONS: FlowNode[] = [
+  { label: 'Visão geral', meta: 'Tudo do seu dia', detail: 'Recebe tudo que entra', icon: <LayoutDashboard /> },
+  { label: 'Lembretes', meta: 'Na hora certa', detail: 'Só o que tem horário', icon: <Bell />, share: 0.5 },
+  { label: 'Modo foco', meta: 'Sessões de foco', detail: 'Só o que pede concentração', icon: <Timer />, share: 0.34 },
+];
 
 /* ------------------------------------------------------------------ */
 /* Peças pequenas                                                      */
@@ -340,6 +390,39 @@ export function Site() {
                 </div>
               ))}
             </div>
+          </section>
+
+          <section className="s-section s-illus" id="como-funciona">
+            <GooeyTextReveal mode="scroll" className="s-illus-copy">
+              <p className="s-kicker">Como funciona</p>
+              <h2 data-index="Como funciona">Tudo entra, o Rudge organiza.</h2>
+              <p>
+                O que você registra vira um lugar só. O Rudge cruza tudo e devolve para você como visão do dia,
+                lembretes na hora certa e sessões de foco.
+              </p>
+            </GooeyTextReveal>
+            <DataFlow
+              sources={FLOW_SOURCES}
+              destinations={FLOW_DESTINATIONS}
+              core={{ label: 'Rudge', detail: 'Organiza e cruza tudo', countLabel: 'itens organizados', countStart: 1248 }}
+              caption="Ilustração. Os números são de exemplo."
+            />
+          </section>
+
+          <section className="s-section s-illus" id="novidade">
+            <GooeyTextReveal mode="scroll" className="s-illus-copy">
+              <p className="s-kicker">
+                <span className="s-pulse" />
+                Novidade em 2027
+              </p>
+              <h2 data-index="Novidade 2027">Um braço direito para tudo.</h2>
+              <p>
+                Em 2027 o Rudge ganha o Claude Opus como assistente. Você pede, ele lê suas metas, tarefas e hábitos,
+                age por você e confere o resultado até a tarefa ficar pronta.
+              </p>
+            </GooeyTextReveal>
+            <AgentLoop iterations={AGENT_RUN} task="Organize minha semana e me lembre do que importa." summary="Semana organizada: 4 tarefas remarcadas, 5 lembretes e 2 blocos de foco." title="Assistente" loop />
+            <p className="s-note">Demonstração ilustrativa com dados de exemplo. Nada aqui é executado de verdade.</p>
           </section>
 
           <section className="s-launch" id="lancamento">
