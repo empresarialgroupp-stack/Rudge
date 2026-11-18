@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Rudge: lançamento previsto para 2027</title>
+    <meta name="description" content="Rudge junta metas, tarefas, hábitos, lembretes, diário, modo foco e carteira num app só. Lançamento previsto para 2027." />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="dark light" />
+    <meta property="og:title" content="Rudge: lançamento previsto para 2027" />
+    <meta property="og:description" content="Metas, tarefas, hábitos, lembretes, diário, modo foco e carteira num app só." />
+    <meta property="og:image" content="../icons/icon-512.png" />
+    <link rel="icon" type="image/svg+xml" href="../icons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png" />
+    <script>
+      // tema: escolha feita na landing; senão, o tema salvo no app; senão, escuro
+      try {
+        var t = localStorage.getItem('rudge:site:theme');
+        if (!t) {
+          var d = JSON.parse(localStorage.getItem('rudge:data:v1') || '{}');
+          t = d.settings && d.settings.theme;
+        }
+        if (t === 'light') {
+          document.documentElement.dataset.theme = 'light';
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#f2f2f3');
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="site"></div>
+    <script type="module" src="../src/site/main.tsx"></script>
+  </body>
+</html>

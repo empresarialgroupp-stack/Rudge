@@ -56,6 +56,13 @@ export default defineConfig({
   build: {
     target: 'es2020',
     sourcemap: false,
+    // duas páginas: o app (raiz) e a landing page (/site/)
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        site: resolve(__dirname, 'site/index.html'),
+      },
+    },
   },
   test: {
     environment: 'node',
