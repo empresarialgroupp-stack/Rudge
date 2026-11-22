@@ -146,11 +146,11 @@ export function mergeStates(local: AppState, remote: AppState, now = Date.now())
     return out;
   };
   if (isPristine(local) && !isPristine(remote)) {
-    return { ...remote, settings: keepDevice({ ...remote.settings, onboarded: remote.settings.onboarded || local.settings.onboarded }), inbox: mergeInbox(local.inbox, remote.inbox) };
+    return { ...remote, settings: keepDevice({ ...remote.settings, onboarded: remote.settings.onboarded || local.settings.onboarded, tourSeen: remote.settings.tourSeen || local.settings.tourSeen }), inbox: mergeInbox(local.inbox, remote.inbox) };
   }
   // a conta só tem as tarefas iniciais (outro aparelho novo subiu antes): vale o que está aqui
   if (isPristine(remote) && !isPristine(local)) {
-    return { ...local, inbox: mergeInbox(local.inbox, remote.inbox) };
+    return { ...local, settings: { ...local.settings, tourSeen: local.settings.tourSeen || remote.settings?.tourSeen }, inbox: mergeInbox(local.inbox, remote.inbox) };
   }
 
   const deleted: Record<ID, number> = {};
@@ -169,6 +169,7 @@ export function mergeStates(local: AppState, remote: AppState, now = Date.now())
   out.settings = keepDevice({
     ...(settingsRemote ? remote.settings : local.settings),
     onboarded: local.settings.onboarded || remote.settings.onboarded,
+    tourSeen: local.settings.tourSeen || remote.settings.tourSeen,
   });
   out.settingsAt = Math.max(local.settingsAt ?? 0, remote.settingsAt ?? 0) || undefined;
 

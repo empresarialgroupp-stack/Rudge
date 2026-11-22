@@ -8712,3 +8712,198 @@ html.theme-switching *::after {
     transition: none;
   }
 }
+
+/* ---------------- Tour guiado (Product Tour, EasyUI) ---------------- */
+
+.pt-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.pt-dim {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pt-safe {
+  position: absolute;
+  inset: auto 0 0 0;
+  pointer-events: none;
+}
+
+.pt-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 340px;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line-2);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.4);
+  backdrop-filter: blur(var(--blur)) saturate(1.4);
+  box-shadow: var(--glass-shadow), 0 30px 80px -20px rgba(0, 0, 0, 0.55);
+  color: var(--fg);
+  font-family: var(--font);
+}
+
+@media (max-width: 639px) {
+  .pt-card {
+    width: calc(100vw - 24px);
+    max-width: 440px;
+  }
+}
+
+.pt-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-3);
+}
+
+.pt-skip {
+  margin: -6px -8px -6px 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s var(--ease);
+}
+
+@media (hover: hover) {
+  .pt-skip:hover {
+    color: var(--fg);
+  }
+}
+
+.pt-region {
+  position: relative;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pt-content {
+  padding: 8px 16px 4px;
+}
+
+.pt-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+}
+
+.pt-body {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg-3);
+}
+
+.pt-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px 12px;
+}
+
+.pt-dots {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.pt-dot {
+  padding: 8px 3px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pt-dot span {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--fg-5);
+  transition:
+    width 0.2s var(--ease),
+    background-color 0.2s var(--ease);
+}
+
+.pt-dot span.on {
+  width: 16px;
+  background: var(--fg);
+}
+
+.pt-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.pt-btn {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--r-xs);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s var(--ease);
+}
+
+.pt-btn:active {
+  transform: scale(0.97);
+}
+
+.pt-btn.solid {
+  background: var(--solid);
+  color: var(--on-solid);
+}
+
+.pt-btn.ghost {
+  background: none;
+  color: var(--fg-2);
+}
+
+@media (hover: hover) {
+  .pt-btn.ghost:hover {
+    background: var(--hover);
+  }
+}
+
+.pt-skip:focus-visible,
+.pt-btn:focus-visible,
+.pt-dot:focus-visible span {
+  box-shadow: 0 0 0 2px var(--fg-4);
+}
+
+@media (max-width: 639px) {
+  .pt-dot {
+    padding: 12px 4px;
+  }
+
+  .pt-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+}

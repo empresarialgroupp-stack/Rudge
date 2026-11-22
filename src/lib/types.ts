@@ -251,6 +251,8 @@ export interface Settings {
   /** plano do dia: janela de trabalho usada para encaixar tarefas */
   plan: { enabled: boolean; start: string; end: string };
   onboarded: boolean;
+  /** tour guiado já visto (vale para todos os aparelhos da conta) */
+  tourSeen?: boolean;
   /** relógio do Modo foco; vazio até o usuário escolher na primeira vez */
   focusClock?: FocusClockStyle;
 }
