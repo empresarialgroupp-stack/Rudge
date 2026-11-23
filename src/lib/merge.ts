@@ -1,7 +1,14 @@
 // Junta os dados de dois aparelhos da mesma conta sem perder nada.
 // Regra: cada item (por id) fica com a versão alterada por último; um item só some quando foi
 // apagado depois da última alteração dele. Nada que exista em um dos lados é descartado sem motivo.
-import type { AppState, ID, InboxItem, Settings } from './types';
+import type { AppState, ID, InboxItem, PinLock, Settings } from './types';
+
+/** Qual configuração de PIN vale ao juntar dois aparelhos: a mais recente. */
+export function newerLock(a?: PinLock, b?: PinLock): PinLock | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return (b.at ?? 0) > (a.at ?? 0) ? b : a;
+}
 
 type Stamped = { id: ID; updatedAt?: number; createdAt?: string };
 
@@ -146,11 +153,11 @@ export function mergeStates(local: AppState, remote: AppState, now = Date.now())
     return out;
   };
   if (isPristine(local) && !isPristine(remote)) {
-    return { ...remote, settings: keepDevice({ ...remote.settings, onboarded: remote.settings.onboarded || local.settings.onboarded, tourSeen: remote.settings.tourSeen || local.settings.tourSeen }), inbox: mergeInbox(local.inbox, remote.inbox) };
+    return { ...remote, settings: keepDevice({ ...remote.settings, onboarded: remote.settings.onboarded || local.settings.onboarded, tourSeen: remote.settings.tourSeen || local.settings.tourSeen, lock: newerLock(local.settings.lock, remote.settings.lock) }), inbox: mergeInbox(local.inbox, remote.inbox) };
   }
   // a conta só tem as tarefas iniciais (outro aparelho novo subiu antes): vale o que está aqui
   if (isPristine(remote) && !isPristine(local)) {
-    return { ...local, settings: { ...local.settings, tourSeen: local.settings.tourSeen || remote.settings?.tourSeen }, inbox: mergeInbox(local.inbox, remote.inbox) };
+    return { ...local, settings: { ...local.settings, tourSeen: local.settings.tourSeen || remote.settings?.tourSeen, lock: newerLock(local.settings.lock, remote.settings?.lock) }, inbox: mergeInbox(local.inbox, remote.inbox) };
   }
 
   const deleted: Record<ID, number> = {};
@@ -170,6 +177,7 @@ export function mergeStates(local: AppState, remote: AppState, now = Date.now())
     ...(settingsRemote ? remote.settings : local.settings),
     onboarded: local.settings.onboarded || remote.settings.onboarded,
     tourSeen: local.settings.tourSeen || remote.settings.tourSeen,
+    lock: newerLock(local.settings.lock, remote.settings.lock),
   });
   out.settingsAt = Math.max(local.settingsAt ?? 0, remote.settingsAt ?? 0) || undefined;
 
