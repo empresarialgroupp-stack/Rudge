@@ -52,12 +52,22 @@ export function LiquidTabBar({
   const [labelW, setLabelW] = useState<number[]>(() => tabs.map(() => 0));
   const sig = tabs.map((t) => t.label).join('|');
   useLayoutEffect(() => {
+    const el = measureRef.current;
+    if (!el) return;
+    // Se a barra nasce escondida (display: none, ex.: abas do celular abertas no computador
+    // ou a janela redimensionada), as medidas saem 0 e os rótulos se sobrepõem. Por isso
+    // medimos de novo sempre que um rótulo muda de tamanho (aparecer, fonte carregar).
     const read = () => {
-      const el = measureRef.current;
-      if (el) setLabelW([...el.children].map((c) => Math.ceil((c as HTMLElement).getBoundingClientRect().width)));
+      const next = [...el.children].map((c) => Math.ceil((c as HTMLElement).getBoundingClientRect().width));
+      if (next.every((v) => v === 0)) return; // ainda escondida: mantém o que tinha
+      setLabelW((prev) => (prev.length === next.length && prev.every((v, i) => v === next[i]) ? prev : next));
     };
     read();
     document.fonts?.ready.then(read).catch(() => {});
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(read);
+    [...el.children].forEach((c) => ro.observe(c));
+    return () => ro.disconnect();
   }, [sig]);
 
   const showLabel = useCallback(
