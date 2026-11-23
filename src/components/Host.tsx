@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
+import { AnimatePresence } from 'motion/react';
 import { ArrowRight, Bell, BellRing, Check, CircleAlert, Download, Info, Sparkles, Target, X } from 'lucide-react';
 import { closeModal, dismissToast, navigate, openModal, useModals, useToasts, type Toast } from '../lib/ui';
 import { updateSettings } from '../lib/actions';
@@ -12,7 +13,7 @@ import { VoiceModal } from './VoiceModal';
 import { FocusMode } from './FocusMode';
 import { PhotoCapture } from './PhotoCapture';
 import { Retro } from './Retro';
-import { BrandMark, Modal } from './ui';
+import { BrandMark, Leave, Modal } from './ui';
 import { enableNotifications } from '../pages/Dashboard';
 
 const TOAST_ICON: Record<NonNullable<Toast['icon']>, typeof Bell> = {
@@ -27,10 +28,12 @@ export function Toaster() {
   const toasts = useToasts();
   return (
     <div className="toasts" aria-live="polite">
+      <AnimatePresence initial={false}>
       {toasts.map((t) => {
         const I = TOAST_ICON[t.icon ?? 'info'];
         return (
-          <div key={t.id} className="toast glass strong" role="status">
+          <Leave key={t.id} ms={220}>
+          <div className="toast glass strong" role="status">
             <div className="t-icon">
               <I />
             </div>
@@ -58,8 +61,10 @@ export function Toaster() {
               <X />
             </button>
           </div>
+          </Leave>
         );
       })}
+      </AnimatePresence>
     </div>
   );
 }
@@ -182,39 +187,49 @@ function Onboarding() {
 export function ModalHost() {
   const modals = useModals();
   return (
-    <>
+    <AnimatePresence>
       {modals.map((m) => {
-        switch (m.type) {
-          case 'task':
-            return <TaskEditor key={`task-${m.id ?? 'new'}`} id={m.id} defaults={m.defaults} />;
-          case 'reminder':
-            return <ReminderEditor key={`rem-${m.id ?? 'new'}`} id={m.id} defaults={m.defaults} />;
-          case 'habit':
-            return <HabitEditor key={`habit-${m.id ?? 'new'}`} id={m.id} defaults={m.defaults} />;
-          case 'goal-wizard':
-            return <GoalWizard key={`gw-${m.templateId ?? ''}`} templateId={m.templateId} />;
-          case 'goal-detail':
-            return <GoalDetail key={`gd-${m.id}`} id={m.id} />;
-          case 'goal-edit':
-            return <GoalEdit key={`ge-${m.id}`} id={m.id} />;
-          case 'quick-add':
-            return <QuickAdd key="qa" mode={m.mode} />;
-          case 'voice':
-            return <VoiceModal key="voice" />;
-          case 'command':
-            return <CommandPalette key="cmd" />;
-          case 'onboarding':
-            return <Onboarding key="onb" />;
-          case 'retro':
-            return <Retro key={`retro-${m.month ?? ''}`} month={m.month} />;
-          case 'photo':
-            return <PhotoCapture key="photo" />;
-          case 'focus':
-            return <FocusMode key="focus" taskId={m.taskId} goalId={m.goalId} />;
-          default:
-            return null;
-        }
+        const el = renderModal(m);
+        // focus fecha com um fade mais longo; os demais descem como folha
+        return el ? (
+          <Leave key={el.key ?? m.type} ms={m.type === 'focus' ? 320 : 280}>
+            {el}
+          </Leave>
+        ) : null;
       })}
-    </>
+    </AnimatePresence>
   );
+}
+
+function renderModal(m: ReturnType<typeof useModals>[number]): ReactElement | null {
+  switch (m.type) {
+    case 'task':
+      return <TaskEditor key={`task-${m.id ?? 'new'}`} id={m.id} defaults={m.defaults} />;
+    case 'reminder':
+      return <ReminderEditor key={`rem-${m.id ?? 'new'}`} id={m.id} defaults={m.defaults} />;
+    case 'habit':
+      return <HabitEditor key={`habit-${m.id ?? 'new'}`} id={m.id} defaults={m.defaults} />;
+    case 'goal-wizard':
+      return <GoalWizard key={`gw-${m.templateId ?? ''}`} templateId={m.templateId} />;
+    case 'goal-detail':
+      return <GoalDetail key={`gd-${m.id}`} id={m.id} />;
+    case 'goal-edit':
+      return <GoalEdit key={`ge-${m.id}`} id={m.id} />;
+    case 'quick-add':
+      return <QuickAdd key="qa" mode={m.mode} />;
+    case 'voice':
+      return <VoiceModal key="voice" />;
+    case 'command':
+      return <CommandPalette key="cmd" />;
+    case 'onboarding':
+      return <Onboarding key="onb" />;
+    case 'retro':
+      return <Retro key={`retro-${m.month ?? ''}`} month={m.month} />;
+    case 'photo':
+      return <PhotoCapture key="photo" />;
+    case 'focus':
+      return <FocusMode key="focus" taskId={m.taskId} goalId={m.goalId} />;
+    default:
+      return null;
+  }
 }

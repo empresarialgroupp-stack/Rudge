@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { usePresence } from 'motion/react';
 import { CountUp } from './charts';
 import {
   Briefcase,
@@ -378,6 +379,47 @@ export function ChipTabs<T extends string>({
           {o.count !== undefined && <span className="ct-count">{o.count}</span>}
         </button>
       ))}
+    </div>
+  );
+}
+
+/** Movimento reduzido pedido pelo sistema (acessibilidade). */
+export function reducedMotion() {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+const EXIT_ANIMS = new Set(['page-out', 'leave-fade', 'modal-out', 'sheet-out', 'pop-out', 'toast-out']);
+
+/**
+ * Saída suave: dentro de um <AnimatePresence>, mantém o conteúdo na tela
+ * enquanto o CSS toca a animação de saída (marcada com [data-leaving]) e só
+ * então o remove. `ms` é a rede de segurança caso a animação não aconteça.
+ * Não cria caixa própria (display: contents), então não mexe no layout.
+ */
+export function Leave({ children, ms = 260, className }: { children: ReactNode; ms?: number; className?: string }) {
+  const [present, safeToRemove] = usePresence();
+  const done = useRef(false);
+  useEffect(() => {
+    if (present || !safeToRemove) return;
+    done.current = false;
+    const t = setTimeout(() => {
+      done.current = true;
+      safeToRemove();
+    }, reducedMotion() ? 0 : ms + 120);
+    return () => clearTimeout(t);
+  }, [present, safeToRemove, ms]);
+  return (
+    <div
+      className={cx('leave', className)}
+      data-leaving={present ? undefined : ''}
+      onAnimationEnd={(e) => {
+        if (present || done.current || !safeToRemove) return;
+        if ((e.target as HTMLElement).parentElement !== e.currentTarget || !EXIT_ANIMS.has(e.animationName)) return;
+        done.current = true;
+        safeToRemove();
+      }}
+    >
+      {children}
     </div>
   );
 }
