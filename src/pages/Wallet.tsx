@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Check, Eye, EyeOff, FileUp, Landmark, Link2, Trash2, Lightbulb, PiggyBank, Receipt, Scale } from 'lucide-react';
 import { WalletStack } from '../components/WalletStack';
 import { WalletImport } from '../components/WalletImport';
 import { WalletConnect } from '../components/WalletConnect';
 import { WalletActivity, WalletFlow, WalletLimit, WalletSummary } from '../components/WalletOverview';
 import { cx, ProgressBar } from '../components/ui';
+import { carry, DistortionWave, useWaveStyle, WAVE_RESOLUTION, type DistortionWaveHandle } from '../components/Wave';
 import { navigate, toast } from '../lib/ui';
 import { ago, amountsInAlerts, BANKS, brl, removeAccount, setPrivacy, summarize, syncedBanks, takeNewInflows, tips, useAccounts, useFinance, usePrivacy, useSaved, type FinanceCard } from '../lib/finance';
 import type { PluggyState } from '../lib/finance/pluggy';
@@ -16,6 +17,9 @@ function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
   const list = useMemo(() => tips(cards, Date.now(), savedHere), [cards, savedHere]);
   // cartão de crédito sozinho: não recebe dinheiro, então mostra fatura e limite no lugar
   const credit = cards.length === 1 && cards[0].kind === 'credit' ? cards[0] : null;
+  // Guardar dispara uma onda verde que sobe do botão e leva o bloco ao novo estado.
+  const wave = useRef<DistortionWaveHandle>(null);
+  const waveStyle = useWaveStyle();
 
   return (
     <section className="wdash" aria-label={`Resumo do mês: ${scope}`}>
@@ -68,7 +72,7 @@ function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
       </div>
 
       {!credit && (
-        <div className="wdash-block glass">
+        <DistortionWave ref={wave} className="wdash-block glass dw-surface" type="vertical" palette="green" waveStyle={waveStyle} resolution={WAVE_RESOLUTION}>
           <div className="wb-head">
             <PiggyBank />
             <b>Guarde 10% de cada entrada</b>
@@ -89,7 +93,14 @@ function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
                         Entrou {brl(i.amount)} · {new Date(i.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}
                       </small>
                     </span>
-                    <button className={cx('btn btn-sm btn-pill', done ? 'btn-primary' : 'btn-glass')} onClick={() => toggle(i.id, i.save)} aria-pressed={done}>
+                    <button
+                      className={cx('btn btn-sm btn-pill', done ? 'btn-primary' : 'btn-glass')}
+                      onClick={(e) => {
+                        toggle(i.id, i.save);
+                        if (!done) carry(wave.current, 'play', { source: e.currentTarget });
+                      }}
+                      aria-pressed={done}
+                    >
                       {done && <Check />} {done ? 'Guardado' : <>Guardar <span className="money">{brl(i.save)}</span></>}
                     </button>
                   </li>
@@ -100,7 +111,7 @@ function Dashboard({ cards, scope }: { cards: FinanceCard[]; scope: string }) {
             <p className="wb-empty">Nenhuma entrada este mês ainda.</p>
           )}
           {savedTotal > savedHere && <p className="wb-foot">Em todos os cartões: {brl(savedTotal)} guardados no mês.</p>}
-        </div>
+        </DistortionWave>
       )}
 
       {list.length > 0 && (

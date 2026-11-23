@@ -61,6 +61,7 @@ convite). `src/lib/auth.ts`
   abaixo do cartão aberto, quanto entrou, quanto saiu, dicas e o aviso de guardar 10% de cada
   entrada. Importa extratos OFX/CSV de Nubank, Inter e Mercado Pago no próprio aparelho (sem senha
   de banco); Open Finance automático em `docs/open-finance.md`.
+- **Ondas de distorção** (Distortion waves, de Jakub Antalik, MIT, código em `src/vendor/distortion-waves`): onda colorida em WebGL que nasce do que foi tocado e leva a tela ao novo estado. Carteira → Guardar 10% (verde), Meta → Concluir (anel colorido; Reabrir recolhe) e Modo foco → Começar (azul; volta quando o foco acaba com a tela aberta). Com "reduzir movimento" ou sem WebGL 2, vira um esmaecer. `src/components/Wave.tsx`
 - **Agenda** mensal, **Revisão semanal** guiada, paleta de comandos (`Ctrl/⌘ K`), atalho `N`
   para adicionar, backup/importação em JSON.
 
