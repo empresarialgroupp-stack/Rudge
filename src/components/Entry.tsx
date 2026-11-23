@@ -15,8 +15,8 @@ import { checkPin, forgotPin, PIN_LENGTH, registerFail, savePin, turnOffPin, wai
 export const shape = (right: number, low: number, left: number) =>
   `M0,0 L100,0 L100,${right} C86,${right + (low - right) * 0.7} 64,${low} 42,${low} C24,${low} 10,${left + (low - left) * 0.5} 0,${left} Z`;
 const FULL = 'M0,0 L100,0 L100,100 C86,100 64,100 42,100 C24,100 10,100 0,100 Z';
-export const LOGIN_SHAPE = shape(12, 31, 25);
-export const PIN_SHAPE = shape(8, 22, 18);
+export const LOGIN_SHAPE = shape(12, 32, 29);
+export const PIN_SHAPE = shape(8, 25, 27);
 
 /** Fundo de tinta (cor invertida do tema) que se transforma da tela cheia na curva do topo. */
 export function InkHeader({ d, splash, children }: { d: string; splash: boolean; children: ReactNode }) {

@@ -9327,7 +9327,7 @@ html.theme-switching *::after {
   position: absolute;
   z-index: 1;
   left: 50%;
-  top: calc(var(--safe-t) + 8svh);
+  top: calc(var(--safe-t) + 14px + 3svh);
   width: min(100% - 48px, 400px);
   transform: translateX(-50%);
   color: var(--on-ink);
@@ -9373,7 +9373,7 @@ html.theme-switching *::after {
   z-index: 1;
   width: min(100% - 48px, 400px);
   margin: 0 auto;
-  padding: calc(31svh + 22px) 0 calc(28px + var(--safe-b));
+  padding: calc(32svh + 22px) 0 calc(28px + var(--safe-b));
 }
 .entry-title {
   margin: 0 0 22px;
@@ -9585,7 +9585,7 @@ html.theme-switching *::after {
 
 /* PIN */
 .entry-pin .entry-body {
-  padding-top: calc(22svh + 14px);
+  padding-top: calc(25svh + 14px);
   display: flex;
   flex-direction: column;
   align-items: center;
