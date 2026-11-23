@@ -10,6 +10,7 @@ import { startGeo } from './lib/geo';
 import { applyTheme } from './components/ThemeToggle';
 import { Shell } from './components/Shell';
 import { ModalHost, Toaster } from './components/Host';
+import { FirstRunTour } from './components/FirstRunTour';
 import { Login } from './pages/Login';
 import { PlanLocked } from './components/Integrations';
 import { appBlocked, useAccess } from './lib/access';
@@ -140,6 +141,7 @@ function Authed() {
         <Page />
       </Shell>
       <ModalHost />
+      <FirstRunTour />
     </>
   );
 }

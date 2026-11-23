@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, CloudCheck, Database, Download, LocateFixed, LogOut, MapPin, Palette, Timer, Trash2, Upload, User } from 'lucide-react';
+import { Bell, CloudCheck, Compass, Database, Download, LocateFixed, LogOut, MapPin, Palette, Timer, Trash2, Upload, User } from 'lucide-react';
 import { exportState, replaceState, resetState, useStore } from '../lib/store';
 import { addPlace, deletePlace, updateSettings } from '../lib/actions';
 import { currentPosition, geoSupported } from '../lib/geo';
@@ -15,6 +15,7 @@ import { IntegrationsCard } from '../components/Integrations';
 import { SensitiveDataCard } from '../components/SensitiveData';
 import { AccountDataCard } from '../components/AccountData';
 import { FocusClockPicker } from '../components/FocusClock';
+import { replayTour } from '../components/FirstRunTour';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
 
@@ -110,6 +111,23 @@ export function SettingsPage() {
             Relógio que aparece quando você foca.
           </p>
           <FocusClockPicker value={st.focusClock} onChange={(v) => updateSettings({ focusClock: v })} />
+        </section>
+
+        <section className="card glass">
+          <div className="card-head">
+            <h2 className="card-title">
+              <Compass /> Tour do Rudge
+            </h2>
+          </div>
+          <div className="setting" style={{ padding: 0 }}>
+            <div className="s-text">
+              <b>Rever o tour guiado</b>
+              <span>Mostra de novo, passo a passo, onde fica cada parte do app.</span>
+            </div>
+            <button className="btn btn-glass" onClick={replayTour}>
+              <Compass /> Ver o tour
+            </button>
+          </div>
         </section>
 
         <PlacesCard />

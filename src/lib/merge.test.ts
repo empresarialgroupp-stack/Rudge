@@ -101,3 +101,21 @@ describe('juntar dados de aparelhos da mesma conta', () => {
     expect(stable(mergeStates(m1, m1))).toBe(stable(m1));
   });
 });
+
+describe('tour guiado visto em qualquer aparelho', () => {
+  const seen = (s: AppState, v: boolean, at = 0): AppState => ({ ...s, settings: { ...s.settings, onboarded: true, tourSeen: v }, settingsAt: at });
+  const data = { goals: [goal('g1', 'Reserva')] };
+
+  it('aparelho novo não vê o tour de novo se a conta já viu', () => {
+    expect(mergeStates(seen(freshState(), false), seen(st(data), true)).settings.tourSeen).toBe(true);
+  });
+
+  it('vale mesmo quando as configurações deste aparelho são mais novas', () => {
+    expect(mergeStates(seen(st(data), false, 200), seen(st(data), true, 100)).settings.tourSeen).toBe(true);
+    expect(mergeStates(seen(st(data), true, 100), seen(st(data), false, 200)).settings.tourSeen).toBe(true);
+  });
+
+  it('conta só com dados iniciais não apaga o "já viu" deste aparelho', () => {
+    expect(mergeStates(seen(st(data), false), seen(freshState(), true)).settings.tourSeen).toBe(true);
+  });
+});
