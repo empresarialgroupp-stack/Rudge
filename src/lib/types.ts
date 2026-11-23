@@ -234,6 +234,14 @@ export interface InboxItem {
   kind: NotifKind;
   url: string;
   read: boolean;
+  /** item de origem (lembrete, tarefa, hábito) — permite concluir/adiar pela central */
+  refId?: ID;
+  /** ocorrência original (ms) */
+  occ?: number;
+  /** minutos do "Adiar" deste aviso */
+  snoozeMin?: number;
+  /** apagado da central (fica guardado para valer em todos os aparelhos da conta) */
+  dismissed?: boolean;
 }
 
 export interface Settings {

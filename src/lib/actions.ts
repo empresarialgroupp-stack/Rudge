@@ -323,8 +323,19 @@ export function markInboxRead() {
   setState((s) => (s.inbox.some((i) => !i.read) ? { ...s, inbox: s.inbox.map((i) => ({ ...i, read: true })) } : s));
 }
 
+/** Limpa a central. Os avisos ficam marcados como apagados (e não somem só neste aparelho). */
 export function clearInbox() {
-  setState((s) => ({ ...s, inbox: [] }));
+  setState((s) => ({ ...s, inbox: s.inbox.map((i) => (i.dismissed ? i : { ...i, read: true, dismissed: true })) }));
+}
+
+/** Apaga um aviso da central (vale para todos os aparelhos da conta). */
+export function dismissInbox(id: string) {
+  setState((s) => ({ ...s, inbox: s.inbox.map((i) => (i.id === id ? { ...i, read: true, dismissed: true } : i)) }));
+}
+
+/** Desfaz o "apagar" de um aviso. */
+export function restoreInbox(id: string) {
+  setState((s) => ({ ...s, inbox: s.inbox.map((i) => (i.id === id ? { ...i, dismissed: undefined } : i)) }));
 }
 
 export function dismissSuggestion(id: string) {
