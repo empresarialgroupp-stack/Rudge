@@ -9836,3 +9836,35 @@ html.theme-switching *::after {
     transition: none;
   }
 }
+
+/* ───────── Ondas de distorção (src/components/Wave.tsx) ───────── */
+/* O vidro é translúcido: --dw-bg diz à onda a cor opaca por trás dele,
+   para a imagem sob a lente bater com a tela. */
+.dw-surface,
+.modal,
+.focus-wave {
+  --dw-bg: var(--bg);
+}
+.gd-ring {
+  display: inline-flex;
+  flex: none;
+  border-radius: 50%;
+}
+.gd-ring-check {
+  width: 34px;
+  height: 34px;
+  stroke-width: 2.4;
+}
+.ring-wrap .ring-label svg.gd-ring-check {
+  transform: none;
+}
+
+/* Modo foco: a preparação e o relógio são os dois lados da onda */
+.focus-wave {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+.focus-wave .focus-screen {
+  position: absolute;
+}

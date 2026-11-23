@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { carry, useSurfaceWave, useWaveStyle } from './Wave';
 import {
   ArrowLeft,
   ArrowRight,
@@ -496,6 +497,9 @@ export function GoalDetail({ id }: { id: string }) {
   const [val, setVal] = useState<string>('');
   const [newMs, setNewMs] = useState('');
   const close = () => closeModal('goal-detail');
+  // Concluir: um anel colorido nasce do progresso e cobre a folha. Reabrir recolhe a onda de volta.
+  const ring = useRef<HTMLSpanElement>(null);
+  const wave = useSurfaceWave(ring, (el) => el.closest<HTMLElement>('.modal'), { type: 'center', palette: 'colorful', waveStyle: useWaveStyle() });
   const habits = useMemo(() => s.habits.filter((h) => h.goalId === id), [s.habits, id]);
   const tasks = useMemo(() => s.tasks.filter((t) => t.goalId === id && !t.done), [s.tasks, id]);
 
@@ -537,11 +541,23 @@ export function GoalDetail({ id }: { id: string }) {
             <Pencil /> Editar
           </button>
           {goal.status !== 'done' ? (
-            <button className="btn btn-primary" onClick={() => setGoalStatus(goal.id, 'done')}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setGoalStatus(goal.id, 'done');
+                carry(wave, 'play', { source: ring.current });
+              }}
+            >
               <CheckCircle2 /> Concluir
             </button>
           ) : (
-            <button className="btn btn-primary" onClick={() => setGoalStatus(goal.id, 'active')}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setGoalStatus(goal.id, 'active');
+                carry(wave, 'reverse');
+              }}
+            >
               Reabrir
             </button>
           )}
@@ -550,7 +566,9 @@ export function GoalDetail({ id }: { id: string }) {
     >
       <div className="stack">
         <div className="row" style={{ gap: 18, alignItems: 'center' }}>
-          <ProgressRing value={progress} size={92} stroke={7} />
+          <span ref={ring} className="gd-ring" data-wave-source="">
+            <ProgressRing value={goal.status === 'done' ? 1 : progress} size={92} stroke={7} label={goal.status === 'done' ? <Check className="gd-ring-check" /> : undefined} />
+          </span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <h3 style={{ margin: 0, fontSize: 20, fontWeight: 650, letterSpacing: '-0.025em', lineHeight: 1.25 }}>{goal.title}</h3>
             <div className="row wrap" style={{ marginTop: 8, gap: 6 }}>
