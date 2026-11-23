@@ -62,7 +62,7 @@ export function Review() {
       </div>
 
       {step === 0 && (
-        <div className="stack">
+        <div className="stack swap-in">
           <StatRow cols={3}>
             <StatCard icon={CheckCircle2} label="Tarefas concluídas" value={stats.doneTasks} hint="últimos 7 dias" />
             <StatCard icon={Flame} label="Hábitos" value={stats.habitRate * 100} suffix="%" hint={`${stats.habitDone} check-ins`} />
@@ -155,7 +155,7 @@ export function Review() {
       )}
 
       {step === 2 && (
-        <div className="stack sm">
+        <div className="stack sm swap-in">
           {active.length ? (
             active.map((g) => {
               const pace = goalPace(g);
@@ -208,7 +208,7 @@ export function Review() {
       )}
 
       {step === 3 && (
-        <div className="glass card stack">
+        <div className="glass card stack swap-in">
           <p className="muted" style={{ margin: 0 }}>
             Quais são as 3 coisas que, se feitas, tornam a próxima semana um sucesso? Elas entram como tarefas de alta prioridade a partir de {relativeDay(nextMonday).toLowerCase()}.
           </p>

@@ -26,7 +26,8 @@ import { navigate, openModal, useRoute, type RouteName } from '../lib/ui';
 import { greeting, todayKey } from '../lib/date';
 import { isHabitDueOn } from '../lib/goals';
 import { occurrencesBetween } from '../lib/recurrence';
-import { BrandMark, cx, Modal } from './ui';
+import { AnimatePresence } from 'motion/react';
+import { BrandMark, cx, Leave, Modal } from './ui';
 import { displayName } from '../lib/summary';
 import { ThemeSwitch, ThemeToggle } from './ThemeToggle';
 import { LiquidTabBar } from './LiquidTabBar';
@@ -229,6 +230,13 @@ function RailNav({
   );
 }
 
+/** Página nova começa do topo (a troca acontece com a anterior já invisível). */
+function ScrollTop() {
+  useLayoutEffect(() => {
+    if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, []);
+  return null;
+}
 
 export function Shell({ children }: { children: ReactNode }) {
   const route = useRoute();
@@ -327,8 +335,9 @@ export function Shell({ children }: { children: ReactNode }) {
               </span>
               <ChevronDown className="chev" />
             </button>
+            <AnimatePresence>
             {userOpen && (
-              <>
+              <Leave key="user-menu" ms={180}>
                 <div className="click-away" onClick={() => setUserOpen(false)} />
                 <div className="user-menu glass strong">
                   <div className="um-head">
@@ -345,8 +354,9 @@ export function Shell({ children }: { children: ReactNode }) {
                     <LogOut /> Sair
                   </button>
                 </div>
-              </>
+              </Leave>
             )}
+            </AnimatePresence>
           </div>
         </div>
       </header>
@@ -382,15 +392,19 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="mobile-tabs only-mobile" ref={mTabs}>
           <PillTabs id="m-tabs" route={route.name} onGo={go} />
         </div>
-        {route.name !== 'inicio' && (
-          <div className="page-head" key={`h-${route.name}`}>
-            {meta.sub && <p className="overline">{meta.sub}</p>}
-            <h1 className="page-title">{meta.title}</h1>
-          </div>
-        )}
-        <div className="content stagger" key={route.name}>
-          {children}
-        </div>
+        {/* troca de página: a atual sai num fade curto e a nova entra subindo */}
+        <AnimatePresence mode="wait" initial={false}>
+          <Leave key={route.name} ms={150} className="page-view">
+            <ScrollTop />
+            {route.name !== 'inicio' && (
+              <div className="page-head">
+                {meta.sub && <p className="overline">{meta.sub}</p>}
+                <h1 className="page-title">{meta.title}</h1>
+              </div>
+            )}
+            <div className="content stagger">{children}</div>
+          </Leave>
+        </AnimatePresence>
       </main>
 
       {/* Barra de abas líquida (mobile) */}
@@ -409,7 +423,9 @@ export function Shell({ children }: { children: ReactNode }) {
         </button>
       </div>
 
+      <AnimatePresence>
       {moreOpen && (
+        <Leave key="more" ms={280}>
         <Modal title="Menu" onClose={() => setMoreOpen(false)} size="narrow">
           <div className="nav" style={{ marginTop: 0 }}>
             {[...NAV.slice(3), { name: 'instalar' as RouteName, label: 'Instalar app', icon: Download }, { name: 'configuracoes' as RouteName, label: 'Configurações', icon: Settings }].map((n) => (
@@ -430,10 +446,18 @@ export function Shell({ children }: { children: ReactNode }) {
             </button>
           </div>
         </Modal>
+        </Leave>
       )}
+      </AnimatePresence>
 
       <FocusPill />
-      {bellOpen && <NotificationCenter onClose={() => setBellOpen(false)} />}
+      <AnimatePresence>
+        {bellOpen && (
+          <Leave key="bell" ms={180}>
+            <NotificationCenter onClose={() => setBellOpen(false)} />
+          </Leave>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

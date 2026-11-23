@@ -118,7 +118,7 @@ export function Install() {
         />
       </div>
 
-      <div className="dash-grid" style={{ marginTop: 0 }}>
+      <div className="dash-grid swap-in" key={target} style={{ marginTop: 0 }}>
         <div className="dash-col">
           {target === 'desktop' && (
             <section className="card glass">

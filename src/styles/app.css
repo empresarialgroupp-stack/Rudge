@@ -8907,3 +8907,160 @@ html.theme-switching *::after {
     font-size: 14px;
   }
 }
+
+/* ================================================================
+   Transições suaves
+   Entradas já existiam (rise, sheetUp, fade…). Aqui ficam as SAÍDAS:
+   o componente <Leave> segura o elemento na tela por alguns ms com
+   [data-leaving] enquanto estas animações tocam. Só opacity/transform,
+   que o celular anima na GPU sem travar.
+   ================================================================ */
+.leave {
+  display: contents;
+}
+
+/* Troca de página: a atual some rápido e a nova entra subindo (stagger) */
+.page-view[data-leaving] > * {
+  animation: page-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none;
+}
+
+@keyframes page-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* Modais: fundo desbota e a janela desce um pouco */
+[data-leaving] > .overlay {
+  animation: leave-fade 0.26s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+[data-leaving] > .overlay > .modal {
+  animation: modal-out 0.24s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes leave-fade {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+/* Celular: a folha volta para baixo, como abriu */
+@media (max-width: 900px) {
+  [data-leaving] > .overlay > .modal {
+    animation: sheet-out 0.28s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  }
+
+  [data-leaving] > .overlay > .modal.palette {
+    animation: modal-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+}
+
+@keyframes sheet-out {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* Modo foco e retrospectiva: telas cheias desbotam */
+[data-leaving] > .focus-screen,
+[data-leaving] > .retro {
+  animation: leave-fade 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+/* Central de notificações e menu do usuário */
+[data-leaving] > .popover,
+[data-leaving] > .user-menu {
+  animation: pop-out 0.17s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+[data-leaving] > .click-away {
+  pointer-events: none;
+}
+
+@keyframes pop-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+/* Avisos (toasts) */
+[data-leaving] > .toast {
+  animation: toast-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+/* Conteúdo que aparece dentro de uma tela já aberta (passo do assistente,
+   campo que surge, aba trocada, linha nova na lista). :where() = peso zero,
+   então qualquer animação própria do componente continua valendo. */
+:where(.modal-body) > :where(*),
+:where(.parse-preview, .group-card, .item, .goal-card, .habit-pill, .swap-in) {
+  animation: swap-in 0.32s var(--ease) backwards;
+}
+
+@keyframes swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* Chips de filtro mudam de estado com transição, como as abas */
+:where(button.chip) {
+  transition: background 0.22s var(--ease), color 0.2s, border-color 0.2s, transform 0.2s var(--spring);
+}
+
+:where(button.chip):active {
+  transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-view[data-leaving] > *,
+  [data-leaving] > *,
+  [data-leaving] > .overlay > .modal {
+    animation: none !important;
+    opacity: 0;
+  }
+}
