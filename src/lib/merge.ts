@@ -197,7 +197,7 @@ function mergeInbox(a: InboxItem[] = [], b: InboxItem[] = []): InboxItem[] {
   const byKey = new Map<string, InboxItem>();
   for (const x of [...b, ...a]) {
     const cur = byKey.get(x.key);
-    byKey.set(x.key, cur ? { ...cur, ...x, read: cur.read || x.read } : x);
+    byKey.set(x.key, cur ? { ...cur, ...x, read: cur.read || x.read, dismissed: cur.dismissed || x.dismissed || undefined } : x);
   }
   return [...byKey.values()].sort((x, y) => y.at - x.at).slice(0, INBOX_MAX);
 }
