@@ -3353,6 +3353,7 @@ kbd,
 .user-chip .who small {
   font-size: 11px;
   color: var(--fg-3);
+  white-space: nowrap; /* "Bom dia" numa linha só quando o topo fica apertado */
 }
 
 .user-chip .who b {
@@ -6203,6 +6204,18 @@ kbd,
 }
 
 /* ---------------- Responsivo (layout v2) ---------------- */
+
+/* Topo entre 1281 e 1440px: as abas do centro encostavam na busca. Esconde o atalho
+   "Ctrl K" e a saudação do usuário (a busca e o avatar continuam). */
+@media (min-width: 1281px) and (max-width: 1440px) {
+  .search-pill {
+    min-width: 150px;
+  }
+  .search-pill kbd,
+  .user-chip .who {
+    display: none;
+  }
+}
 
 @media (max-width: 1280px) {
   .search-pill {
