@@ -263,6 +263,17 @@ export interface Settings {
   tourSeen?: boolean;
   /** relógio do Modo foco; vazio até o usuário escolher na primeira vez */
   focusClock?: FocusClockStyle;
+  /** PIN de entrada (vale para todos os aparelhos da conta); só o hash fica salvo */
+  lock?: PinLock;
+}
+
+/** PIN de 6 dígitos para abrir o app. `off`: a pessoa dispensou. `at` decide entre aparelhos. */
+export interface PinLock {
+  hash?: string;
+  salt?: string;
+  iter?: number;
+  off?: boolean;
+  at: number;
 }
 
 export type FocusClockStyle = 'ring' | 'lens' | 'digital' | 'disc' | 'flip' | 'tide' | 'flipclock';
