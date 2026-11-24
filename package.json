@@ -14,7 +14,9 @@
   "dependencies": {
     "@animate-ui/react": "^2.4.6",
     "@fontsource-variable/geist": "^5.3.0",
+    "@gsap/react": "^2.1.2",
     "@supabase/supabase-js": "^2.118.0",
+    "gsap": "^3.15.1",
     "lucide-react": "^1.53.0",
     "motion": "^14.14.0",
     "pluggy-connect-sdk": "^2.14.2",

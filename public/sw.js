@@ -78,6 +78,8 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
+  // landing page (/site/): fica fora do cache do app, para nunca ocupar o lugar do index.html offline
+  if (url.pathname.startsWith(new URL('site', SCOPE).pathname)) return;
 
   // navegação: rede primeiro (sempre a versão mais nova), cache quando offline
   if (req.mode === 'navigate') {
