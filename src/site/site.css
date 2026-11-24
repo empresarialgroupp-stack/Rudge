@@ -2851,8 +2851,20 @@ ul {
 }
 
 .s-neon-wrapper:has(.s-neon-btn:focus-visible) {
-  outline: 2px solid var(--wl-gold, #fff);
-  outline-offset: 4px;
+  border-color: var(--wl-gold, #fff);
+  box-shadow: inset 0 0 0 2px var(--wl-gold, #fff);
+}
+
+/* Rudge: o Safari do iPhone não recorta as camadas giratórias (filter + blend
+   modes) pelos cantos arredondados, e o brilho vazava como um retângulo.
+   clip-path recorta tudo no formato da pílula em qualquer navegador. */
+.s-neon-wrapper {
+  overflow: hidden;
+  overflow: clip;
+  clip-path: inset(0 round var(--rad));
+  -webkit-clip-path: inset(0 round var(--rad));
+  isolation: isolate;
+  transform: translateZ(0);
 }
 
 .s-neon-wrapper[data-busy] {
