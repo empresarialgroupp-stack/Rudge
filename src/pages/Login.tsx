@@ -1,13 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { AlertCircle, ArrowLeft, ArrowRight, KeyRound, Mail, ShieldCheck } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { AlertCircle, ArrowLeft, RotateCw } from 'lucide-react';
 import { linkError, onLinkLogin, sendCode, verifyCode } from '../lib/auth';
 import { toast } from '../lib/ui';
-import { BrandMark, cx } from '../components/ui';
+import { cx } from '../components/ui';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { InkBrand, InkButton, InkHeader, LOGIN_SHAPE, useSplash } from '../components/Entry';
 
 const LAST_EMAIL = 'rudge:last-email';
 
 export function Login() {
+  const splash = useSplash();
   const [email, setEmail] = useState(() => localStorage.getItem(LAST_EMAIL) ?? '');
   const [code, setCode] = useState('');
   const [step, setStep] = useState<'email' | 'code'>('email');
@@ -28,6 +31,7 @@ export function Login() {
   function fail(msg: string) {
     setError(msg);
     setShake(true);
+    navigator.vibrate?.([30, 40, 30]);
     setTimeout(() => setShake(false), 500);
   }
 
@@ -46,59 +50,59 @@ export function Login() {
       return;
     }
     const res = await verifyCode(email, code);
-    setBusy(false);
-    if (!res.ok) return fail(res.error);
+    // deu certo: a cortina cobre a tela e o app aparece (o botão segue carregando até lá)
+    if (!res.ok) {
+      setBusy(false);
+      return fail(res.error);
+    }
     if (res.migrated) toast({ title: 'Conta conectada', body: 'Seus avisos agora ficam na sua conta Rudge.', icon: 'check' });
   }
 
   return (
-    <div className="login">
-      <div className="corner">
+    <div className={cx('entry entry-login', splash && 'is-splash')}>
+      <InkHeader d={LOGIN_SHAPE} splash={splash}>
+        <InkBrand splash={splash} splashLine="Seu sistema pessoal de organização" line="Bem-vindo de volta! Entre para continuar." />
+      </InkHeader>
+      <div className="corner entry-corner">
         <ThemeToggle />
       </div>
-      <div className="login-wrap">
-        <BrandMark className="login-mark" />
-        <h1 className="wordmark">Rudge</h1>
-        <p className="login-tag">Seu sistema pessoal de organização, metas e lembretes.</p>
 
-        <div className={cx('login-card glass liquid', shake && 'shake')}>
-          <h2>Entrar</h2>
-          <p className="sub">
+      <motion.div
+        className="entry-body"
+        initial={{ opacity: 0, y: 24 }}
+        animate={splash ? { opacity: 0, y: 24 } : { opacity: 1, y: 0 }}
+        transition={{ delay: splash ? 0 : 0.35, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <h2 className="entry-title">Entrar</h2>
+        <form onSubmit={submit} noValidate className={cx('entry-form', shake && 'shake')}>
+          <AnimatePresence mode="wait" initial={false}>
             {step === 'email' ? (
-              'Use sua conta Rudge, a mesma do Rudge Music.'
-            ) : (
-              <>
-                Enviamos um e-mail para <b>{email.trim()}</b>. Toque no link de acesso neste aparelho ou digite o código, se
-                ele vier no e-mail.
-              </>
-            )}
-          </p>
-          <form onSubmit={submit} noValidate>
-            {step === 'email' ? (
-              <label className="field">
-                <span className="label">E-mail</span>
-                <div className="input-wrap">
-                  <Mail />
+              <motion.div key="email" className="entry-step" initial={{ opacity: 0, x: -28 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -28 }} transition={{ duration: 0.25 }}>
+                <label className="entry-field">
+                  <span>E-mail</span>
                   <input
-                    className="input"
+                    className={cx('entry-input', error && 'is-err')}
                     type="email"
                     inputMode="email"
                     autoComplete="username"
-                    placeholder="voce@email.com"
+                    placeholder="Digite seu e-mail"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    autoFocus
                     required
                   />
-                </div>
-              </label>
+                </label>
+                <p className="entry-hint">Use sua conta Rudge, a mesma do Rudge Music. Enviamos um link e um código de acesso.</p>
+              </motion.div>
             ) : (
-              <label className="field">
-                <span className="label">Código</span>
-                <div className="input-wrap">
-                  <KeyRound />
+              <motion.div key="code" className="entry-step" initial={{ opacity: 0, x: 28 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 28 }} transition={{ duration: 0.25 }}>
+                <label className="entry-field">
+                  <span>E-mail</span>
+                  <input className="entry-input" value={email.trim()} disabled />
+                </label>
+                <label className="entry-field">
+                  <span>Código do e-mail</span>
                   <input
-                    className="input otp"
+                    className={cx('entry-input otp', error && 'is-err')}
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     placeholder="000000"
@@ -108,47 +112,48 @@ export function Login() {
                     autoFocus
                     required
                   />
+                </label>
+                <div className="entry-row">
+                  <button type="button" className="entry-link" onClick={() => (setStep('email'), setError(''))}>
+                    <ArrowLeft /> Trocar e-mail
+                  </button>
+                  <button
+                    type="button"
+                    className="entry-link"
+                    disabled={busy}
+                    onClick={async () => {
+                      const r = await sendCode(email);
+                      if (r.ok) toast({ title: 'E-mail reenviado', icon: 'check' });
+                      else fail(r.error);
+                    }}
+                  >
+                    <RotateCw /> Reenviar
+                  </button>
                 </div>
-              </label>
+                <p className="entry-hint">
+                  Enviamos para <b>{email.trim()}</b>. Toque no link neste aparelho ou digite o código.
+                </p>
+              </motion.div>
             )}
-            {error && (
-              <div className="login-error" role="alert">
-                <AlertCircle /> {error}
-              </div>
-            )}
-            <button
-              className="btn btn-primary btn-lg btn-block"
-              type="submit"
-              disabled={busy || (step === 'email' ? !email : code.length < 6)}
-            >
-              {busy ? <span className="spinner" /> : <>{step === 'email' ? 'Receber acesso por e-mail' : 'Entrar com o código'} <ArrowRight /></>}
-            </button>
-            {step === 'code' && (
-              <div className="login-alt">
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => (setStep('email'), setError(''))}>
-                  <ArrowLeft /> Trocar e-mail
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  disabled={busy}
-                  onClick={async () => {
-                    const r = await sendCode(email);
-                    if (r.ok) toast({ title: 'E-mail reenviado', icon: 'check' });
-                    else fail(r.error);
-                  }}
-                >
-                  Reenviar e-mail
-                </button>
-              </div>
-            )}
-          </form>
-        </div>
+          </AnimatePresence>
 
-        <div className="login-foot">
-          <ShieldCheck /> Conta Rudge · seus dados ficam salvos neste dispositivo
-        </div>
-      </div>
+          <AnimatePresence>
+            {error && (
+              <motion.div className="entry-error" role="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                <AlertCircle /> {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <InkButton busy={busy} disabled={step === 'email' ? !email : code.length < 6}>
+            {step === 'email' ? 'Continuar' : 'Entrar'}
+          </InkButton>
+        </form>
+
+        <p className="entry-foot">
+          Ainda não tem conta? <b>Peça um convite</b> ao Rudge.
+        </p>
+      </motion.div>
     </div>
   );
 }

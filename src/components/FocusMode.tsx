@@ -10,7 +10,8 @@ import { LiquidTabBar } from './LiquidTabBar';
 import { cx } from './ui';
 import { FocusMusicButton } from './Integrations';
 import { FocusClock, FocusClockPicker, mmss } from './FocusClock';
-import type { FocusClockStyle } from '../lib/types';
+import type { ActiveFocus, FocusClockStyle } from '../lib/types';
+import { DistortionWave, useWaveStyle, WAVE_RESOLUTION } from './Wave';
 
 const DURATIONS = ['15', '25', '45', '60'];
 
@@ -90,6 +91,11 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
   }, []);
 
   const held = f ? s.inbox.filter((i) => i.at >= f.start && i.kind !== 'focus').length : 0;
+  // Começar: uma onda sobe do botão e leva a preparação ao relógio; se o foco acaba com a tela aberta, ela volta.
+  const go = useRef<HTMLButtonElement>(null);
+  // Com o foco rodando, a onda não fotografa o relógio a cada segundo; volta a fotografar quando ele acaba.
+  const [settled, setSettled] = useState(!!f);
+  const waveStyle = useWaveStyle();
 
   if (!f && (choosing || !clock)) {
     return (
@@ -116,7 +122,7 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
     );
   }
 
-  if (!f) {
+  {
     const task = s.tasks.find((t) => t.id === pick);
     const ms = Number(dur) * 60_000;
     const choose = (id: string, title: string) => {
@@ -130,7 +136,7 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
     };
     const start = () =>
       startFocus({ title: label.trim() || 'Foco livre', taskId: task?.id, goalId: goalId ?? task?.goalId, minutes: Number(dur) });
-    return (
+    const setup = (
       <div className="focus-screen" role="dialog" aria-label="Modo foco">
         <button className="icon-btn btn-glass focus-close" onClick={close} aria-label="Fechar">
           <Minimize2 />
@@ -180,7 +186,7 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
               onValueChange={setDur}
             />
           </div>
-          <button className="btn btn-primary btn-lg btn-pill focus-go" onClick={start}>
+          <button ref={go} className="btn btn-primary btn-lg btn-pill focus-go" onClick={start}>
             <Play /> Começar
           </button>
           <p className="muted focus-note">
@@ -189,12 +195,31 @@ export function FocusMode({ taskId, goalId }: { taskId?: string; goalId?: string
         </div>
       </div>
     );
-  }
 
-  const left = f.pausedLeft ?? Math.max(0, f.until - now);
-  const total = f.minutes * 60_000;
-  const paused = f.pausedLeft !== undefined;
-  return <FocusRun f={f} left={left} total={total} paused={paused} clock={clock} held={held} close={close} />;
+    // Antes de começar, o lado de lá da onda já mostra o relógio que vai rodar.
+    const shown: ActiveFocus = f ?? { title: label.trim() || 'Foco livre', start: now, until: now + ms, minutes: Number(dur) };
+    const total = shown.minutes * 60_000;
+    // logo depois de Começar, `now` ainda é de antes: sem o teto, o relógio passaria do total por um instante
+    const left = shown.pausedLeft ?? Math.min(total, Math.max(0, shown.until - now));
+    const paused = shown.pausedLeft !== undefined;
+    return (
+      <DistortionWave
+        className="focus-wave"
+        type="vertical"
+        palette="ocean"
+        waveStyle={waveStyle}
+        revealed={!!f}
+        source={go}
+        live={false}
+        capture={!(settled && f)}
+        onFinish={setSettled}
+        resolution={WAVE_RESOLUTION}
+        revealedContent={<FocusRun f={shown} left={left} total={total} paused={paused} clock={clock} held={held} close={close} preview={!f} />}
+      >
+        {setup}
+      </DistortionWave>
+    );
+  }
 }
 
 function FocusRun({
@@ -205,17 +230,20 @@ function FocusRun({
   clock,
   held,
   close,
+  preview,
 }: {
-  f: NonNullable<ReturnType<typeof useStore>['focus']>;
+  f: ActiveFocus;
   left: number;
   total: number;
   paused: boolean;
   clock?: FocusClockStyle;
   held: number;
   close: () => void;
+  /** só a imagem do que vem depois de Começar (atrás da onda) */
+  preview?: boolean;
 }) {
   // pausado, os controles ficam sempre à mostra
-  const { calm, onPointerMove, onPointerDown } = useCalm(!paused);
+  const { calm, onPointerMove, onPointerDown } = useCalm(!paused && !preview);
   return (
     <div
       className={cx('focus-screen running', paused && 'paused', calm && 'calm')}

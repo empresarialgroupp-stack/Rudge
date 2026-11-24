@@ -398,7 +398,7 @@ function isForeground() {
 export async function present(item: QueueItem, late = false) {
   const s = getState();
   const body = late ? `Atrasado · ${item.body}` : item.body;
-  pushInbox([{ key: item.key, at: item.at, title: item.title, body, kind: item.kind, url: item.url }]);
+  pushInbox([{ key: item.key, at: item.at, title: item.title, body, kind: item.kind, url: item.url, refId: item.refId, occ: item.occ, snoozeMin: item.snoozeMin }]);
   if (item.kind !== 'focus' && inFocus(s)) {
     // modo foco: guarda na central; com o app em segundo plano, avisa sem som
     if (!isForeground() && s.settings.notifications)
@@ -504,7 +504,7 @@ const ACTIONABLE: NotifKind[] = ['reminder', 'task', 'habit'];
 const asked = new Set<string>();
 
 /** O item da notificação ainda está pendente? (pode ter sido concluído em outro aparelho) */
-function stillPending(data: NotifData): boolean {
+export function stillPending(data: Pick<NotifData, 'kind' | 'refId' | 'occ'>): boolean {
   const s = getState();
   if (!data.refId) return false;
   if (data.kind === 'reminder') {
@@ -610,7 +610,7 @@ export async function syncFromServiceWorker() {
   const swInbox = (await idbGet<NotifData[]>('sw-inbox')) ?? [];
   if (swInbox.length) {
     await idbSet('sw-inbox', []);
-    pushInbox(swInbox.map((d) => ({ key: d.key, at: Date.now(), title: d.title, body: d.body, kind: d.kind, url: d.url })));
+    pushInbox(swInbox.map((d) => ({ key: d.key, at: Date.now(), title: d.title, body: d.body, kind: d.kind, url: d.url, refId: d.refId, occ: d.occ, snoozeMin: d.snoozeMin })));
   }
   const ask = await idbGet<(NotifData & { at?: number }) | null>('pending-ask');
   if (ask) {

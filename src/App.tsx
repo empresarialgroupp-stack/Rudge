@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from './lib/auth';
 import { getState, useStore } from './lib/store';
 import { openModal, useModals, useRoute } from './lib/ui';
@@ -10,7 +10,11 @@ import { startGeo } from './lib/geo';
 import { applyTheme } from './components/ThemeToggle';
 import { Shell } from './components/Shell';
 import { ModalHost, Toaster } from './components/Host';
+import { FirstRunTour } from './components/FirstRunTour';
 import { Login } from './pages/Login';
+import { CurtainHost, EntryLayer, GooFilter, PinScreen, playCurtain } from './components/Entry';
+import { hasPin, pinResetPending, pinSupported, pinUndecided, turnOffPin, unlock, useLocked } from './lib/pin';
+import { useCloudStatus } from './lib/cloud';
 import { PlanLocked } from './components/Integrations';
 import { appBlocked, useAccess } from './lib/access';
 import { Dashboard } from './pages/Dashboard';
@@ -140,7 +144,45 @@ function Authed() {
         <Page />
       </Shell>
       <ModalHost />
+      <FirstRunTour />
+      <PinSetupPrompt />
     </>
+  );
+}
+
+/**
+ * Depois da atualização (ou de "Esqueci o PIN"), oferece criar o PIN de entrada uma vez.
+ * Espera a conta sincronizar para não pedir um PIN que outro aparelho já criou.
+ */
+function PinSetupPrompt() {
+  const { settings } = useStore();
+  const modals = useModals();
+  const cloud = useCloudStatus();
+  const [synced, setSynced] = useState(false);
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (cloud.state === 'ok') setSynced(true);
+  }, [cloud.state]);
+  useEffect(() => {
+    if (open || !synced || !pinSupported() || !settings.onboarded || !settings.tourSeen || modals.length) return;
+    if (!pinUndecided() && !pinResetPending()) return;
+    const t = setTimeout(() => setOpen(true), 900);
+    return () => clearTimeout(t);
+  }, [open, synced, settings.onboarded, settings.tourSeen, settings.lock, modals.length]);
+  if (!open) return null;
+  return (
+    <EntryLayer>
+      <PinScreen
+        flow="create"
+        cancelLabel="Agora não"
+        onCancel={() => {
+          if (!hasPin()) turnOffPin();
+          else localStorage.removeItem('rudge:pin-reset');
+          setOpen(false);
+        }}
+        onDone={() => playCurtain(() => setOpen(false))}
+      />
+    </EntryLayer>
   );
 }
 
@@ -152,7 +194,16 @@ function Gate() {
 
 export function App() {
   const session = useSession();
+  const locked = useLocked();
   const { settings } = useStore();
+  // ao entrar, a cortina cobre a tela antes de trocar o login pelo app
+  const [shown, setShown] = useState(session);
+  useEffect(() => {
+    if (session && !shown) playCurtain(() => setShown(session));
+    else setShown(session);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
+  const [lockSplash] = useState(locked);
   useSpotlight();
 
   useEffect(() => {
@@ -162,8 +213,21 @@ export function App() {
   return (
     <>
       <Ambient />
-      {session ? <Gate /> : <Login />}
+      <GooFilter />
+      {shown ? (
+        <div className="app-root" inert={locked}>
+          <Gate />
+        </div>
+      ) : (
+        <Login />
+      )}
+      {shown && locked && (
+        <EntryLayer>
+          <PinScreen flow="unlock" splash={lockSplash} onDone={() => playCurtain(unlock)} />
+        </EntryLayer>
+      )}
       <Toaster />
+      <CurtainHost />
     </>
   );
 }

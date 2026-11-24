@@ -234,6 +234,14 @@ export interface InboxItem {
   kind: NotifKind;
   url: string;
   read: boolean;
+  /** item de origem (lembrete, tarefa, hábito) — permite concluir/adiar pela central */
+  refId?: ID;
+  /** ocorrência original (ms) */
+  occ?: number;
+  /** minutos do "Adiar" deste aviso */
+  snoozeMin?: number;
+  /** apagado da central (fica guardado para valer em todos os aparelhos da conta) */
+  dismissed?: boolean;
 }
 
 export interface Settings {
@@ -251,8 +259,21 @@ export interface Settings {
   /** plano do dia: janela de trabalho usada para encaixar tarefas */
   plan: { enabled: boolean; start: string; end: string };
   onboarded: boolean;
+  /** tour guiado já visto (vale para todos os aparelhos da conta) */
+  tourSeen?: boolean;
   /** relógio do Modo foco; vazio até o usuário escolher na primeira vez */
   focusClock?: FocusClockStyle;
+  /** PIN de entrada (vale para todos os aparelhos da conta); só o hash fica salvo */
+  lock?: PinLock;
+}
+
+/** PIN de 6 dígitos para abrir o app. `off`: a pessoa dispensou. `at` decide entre aparelhos. */
+export interface PinLock {
+  hash?: string;
+  salt?: string;
+  iter?: number;
+  off?: boolean;
+  at: number;
 }
 
 export type FocusClockStyle = 'ring' | 'lens' | 'digital' | 'disc' | 'flip' | 'tide' | 'flipclock';

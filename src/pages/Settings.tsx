@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, CloudCheck, Database, Download, LocateFixed, LogOut, MapPin, Palette, Timer, Trash2, Upload, User } from 'lucide-react';
+import { Bell, CloudCheck, LockKeyhole, Compass, Database, Download, LocateFixed, LogOut, MapPin, Palette, Timer, Trash2, Upload, User } from 'lucide-react';
 import { exportState, replaceState, resetState, useStore } from '../lib/store';
 import { addPlace, deletePlace, updateSettings } from '../lib/actions';
 import { currentPosition, geoSupported } from '../lib/geo';
@@ -15,8 +15,11 @@ import { IntegrationsCard } from '../components/Integrations';
 import { SensitiveDataCard } from '../components/SensitiveData';
 import { AccountDataCard } from '../components/AccountData';
 import { FocusClockPicker } from '../components/FocusClock';
+import { replayTour } from '../components/FirstRunTour';
 import { disablePush, enablePush, pushSupported, refreshServerStatus, serverTest, syncNow, usePushStatus } from '../lib/push';
 import { formatWhen } from '../lib/date';
+import { EntryLayer, PinScreen, playCurtain, type PinFlow } from '../components/Entry';
+import { hasPin, lockNow, pinSupported } from '../lib/pin';
 
 const PERM_LABEL: Record<string, string> = {
   granted: 'Permitidas',
@@ -98,6 +101,8 @@ export function SettingsPage() {
           </div>
         </section>
 
+        <PinCard />
+
         <IntegrationsCard />
 
         <section className="card glass">
@@ -112,77 +117,24 @@ export function SettingsPage() {
           <FocusClockPicker value={st.focusClock} onChange={(v) => updateSettings({ focusClock: v })} />
         </section>
 
-        <PlacesCard />
-
-        <SensitiveDataCard />
-
-        <AccountDataCard />
-
         <section className="card glass">
           <div className="card-head">
             <h2 className="card-title">
-              <Database /> Dados e backup
+              <Compass /> Tour do Rudge
             </h2>
           </div>
-          <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
-            Seus dados já ficam na conta. Se quiser, exporte também um arquivo de backup; importar junta o arquivo com o que você já tem.
-          </p>
-          <div className="row wrap">
-            <button className="btn btn-glass" onClick={download}>
-              <Download /> Exportar backup
+          <div className="setting" style={{ padding: 0 }}>
+            <div className="s-text">
+              <b>Rever o tour guiado</b>
+              <span>Mostra de novo, passo a passo, onde fica cada parte do app.</span>
+            </div>
+            <button className="btn btn-glass" onClick={replayTour}>
+              <Compass /> Ver o tour
             </button>
-            <button className="btn btn-glass" onClick={() => fileRef.current?.click()}>
-              <Upload /> Importar backup
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/json,.json"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void importFile(f);
-                e.target.value = '';
-              }}
-            />
-          </div>
-          <div className="row wrap" style={{ marginTop: 14 }}>
-            {!confirmReset ? (
-              <button className="btn btn-danger btn-sm" onClick={() => setConfirmReset(true)}>
-                Apagar todos os dados
-              </button>
-            ) : (
-              <>
-                <span style={{ fontSize: 13 }}>Apaga em todos os aparelhos da conta. Dá para voltar em Dados na conta → Cópias de segurança.</span>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => {
-                    resetState();
-                    setConfirmReset(false);
-                    toast({ title: 'Dados apagados', icon: 'info' });
-                  }}
-                >
-                  Sim, apagar
-                </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(false)}>
-                  Cancelar
-                </button>
-              </>
-            )}
           </div>
         </section>
 
-        <section className="card glass">
-          <div className="setting" style={{ padding: 0 }}>
-            <div className="s-text">
-              <b>Sair do Rudge</b>
-              <span>Sai da conta Rudge neste aparelho. Seus dados continuam salvos aqui.</span>
-            </div>
-            <button className="btn btn-glass" onClick={() => void logout()}>
-              <LogOut /> Sair
-            </button>
-          </div>
-        </section>
+        <PlacesCard />
       </div>
 
       <div className="dash-col">
@@ -301,6 +253,78 @@ export function SettingsPage() {
                 </option>
               ))}
             </select>
+          </div>
+        </section>
+
+        <SensitiveDataCard />
+
+        <AccountDataCard />
+
+        <section className="card glass">
+          <div className="card-head">
+            <h2 className="card-title">
+              <Database /> Dados e backup
+            </h2>
+          </div>
+          <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+            Seus dados já ficam na conta. Se quiser, exporte também um arquivo de backup; importar junta o arquivo com o que você já tem.
+          </p>
+          <div className="row wrap">
+            <button className="btn btn-glass" onClick={download}>
+              <Download /> Exportar backup
+            </button>
+            <button className="btn btn-glass" onClick={() => fileRef.current?.click()}>
+              <Upload /> Importar backup
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void importFile(f);
+                e.target.value = '';
+              }}
+            />
+          </div>
+          <div className="row wrap" style={{ marginTop: 14 }}>
+            {!confirmReset ? (
+              <button className="btn btn-danger btn-sm" onClick={() => setConfirmReset(true)}>
+                Apagar todos os dados
+              </button>
+            ) : (
+              <>
+                <span style={{ fontSize: 13 }}>Apaga em todos os aparelhos da conta. Dá para voltar em Dados na conta → Cópias de segurança.</span>
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    resetState();
+                    setConfirmReset(false);
+                    toast({ title: 'Dados apagados', icon: 'info' });
+                  }}
+                >
+                  Sim, apagar
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => setConfirmReset(false)}>
+                  Cancelar
+                </button>
+              </>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div className="settings-foot">
+        <section className="card glass">
+          <div className="setting" style={{ padding: 0 }}>
+            <div className="s-text">
+              <b>Sair do Rudge</b>
+              <span>Sai da conta Rudge neste aparelho. Seus dados continuam salvos aqui.</span>
+            </div>
+            <button className="btn btn-glass" onClick={() => void logout()}>
+              <LogOut /> Sair
+            </button>
           </div>
         </section>
         <p className="muted" style={{ fontSize: 12, margin: '4px 4px 0' }}>Rudge v1.0 · organização pessoal</p>
@@ -473,6 +497,61 @@ function PlacesCard() {
           <LocateFixed /> {busy ? 'Localizando…' : 'Salvar aqui'}
         </button>
       </div>
+    </section>
+  );
+}
+
+/** PIN de entrada: criar, trocar, bloquear agora ou desligar (vale para todos os aparelhos da conta). */
+function PinCard() {
+  const { settings } = useStore();
+  const [flow, setFlow] = useState<PinFlow | null>(null);
+  if (!pinSupported()) return null;
+  const on = hasPin(settings.lock);
+  const close = (msg?: string) =>
+    playCurtain(() => {
+      setFlow(null);
+      if (msg) toast({ title: msg, icon: 'check' });
+    });
+  return (
+    <section className="card glass">
+      <div className="card-head">
+        <h2 className="card-title">
+          <LockKeyhole /> PIN de entrada
+        </h2>
+      </div>
+      <p className="muted" style={{ margin: '0 0 12px', fontSize: 13 }}>
+        {on
+          ? 'Ligado. O Rudge pede o PIN ao abrir e quando você volta depois de 5 minutos fora. Vale no celular e no computador.'
+          : 'Seis números para abrir o Rudge sem precisar do e-mail. Vale no celular e no computador.'}
+      </p>
+      <div className="row wrap">
+        {on ? (
+          <>
+            <button className="btn btn-glass" onClick={lockNow}>
+              <LockKeyhole /> Bloquear agora
+            </button>
+            <button className="btn btn-glass" onClick={() => setFlow('change')}>
+              Trocar PIN
+            </button>
+            <button className="btn btn-ghost" onClick={() => setFlow('off')}>
+              Desligar
+            </button>
+          </>
+        ) : (
+          <button className="btn btn-glass" onClick={() => setFlow('create')}>
+            <LockKeyhole /> Criar PIN
+          </button>
+        )}
+      </div>
+      {flow && (
+        <EntryLayer>
+          <PinScreen
+            flow={flow}
+            onCancel={() => setFlow(null)}
+            onDone={() => close(flow === 'off' ? 'PIN desligado' : flow === 'change' ? 'PIN trocado' : 'PIN criado')}
+          />
+        </EntryLayer>
+      )}
     </section>
   );
 }

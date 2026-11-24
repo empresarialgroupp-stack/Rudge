@@ -101,3 +101,42 @@ describe('juntar dados de aparelhos da mesma conta', () => {
     expect(stable(mergeStates(m1, m1))).toBe(stable(m1));
   });
 });
+
+describe('tour guiado visto em qualquer aparelho', () => {
+  const seen = (s: AppState, v: boolean, at = 0): AppState => ({ ...s, settings: { ...s.settings, onboarded: true, tourSeen: v }, settingsAt: at });
+  const data = { goals: [goal('g1', 'Reserva')] };
+
+  it('aparelho novo não vê o tour de novo se a conta já viu', () => {
+    expect(mergeStates(seen(freshState(), false), seen(st(data), true)).settings.tourSeen).toBe(true);
+  });
+
+  it('vale mesmo quando as configurações deste aparelho são mais novas', () => {
+    expect(mergeStates(seen(st(data), false, 200), seen(st(data), true, 100)).settings.tourSeen).toBe(true);
+    expect(mergeStates(seen(st(data), true, 100), seen(st(data), false, 200)).settings.tourSeen).toBe(true);
+  });
+
+  it('conta só com dados iniciais não apaga o "já viu" deste aparelho', () => {
+    expect(mergeStates(seen(st(data), false), seen(freshState(), true)).settings.tourSeen).toBe(true);
+  });
+});
+
+describe('PIN de entrada', () => {
+  const data = { goals: [goal('g1', 'Reserva')] };
+  const withLock = (s: AppState, lock: AppState['settings']['lock'], at = 0): AppState => ({ ...s, settings: { ...s.settings, onboarded: true, lock }, settingsAt: at });
+  it('fica com o PIN mais recente, mesmo quando as outras configurações vêm do outro aparelho', () => {
+    const novo = { hash: 'h2', salt: 's', at: 200 };
+    const velho = { hash: 'h1', salt: 's', at: 100 };
+    expect(mergeStates(withLock(st(data), novo, 50), withLock(st(data), velho, 300)).settings.lock).toEqual(novo);
+    expect(mergeStates(withLock(st(data), velho, 300), withLock(st(data), novo, 50)).settings.lock).toEqual(novo);
+  });
+  it('não perde o PIN quando um aparelho ainda não tem', () => {
+    const lock = { hash: 'h', salt: 's', at: 100 };
+    expect(mergeStates(withLock(st(data), undefined, 500), withLock(st(data), lock, 10)).settings.lock).toEqual(lock);
+    expect(mergeStates(withLock(freshState(), undefined), withLock(st(data), lock)).settings.lock).toEqual(lock);
+  });
+  it('desligar depois vale sobre o PIN antigo', () => {
+    const lock = { hash: 'h', salt: 's', at: 100 };
+    const off = { off: true, at: 200 };
+    expect(mergeStates(withLock(st(data), lock), withLock(st(data), off)).settings.lock).toEqual(off);
+  });
+});
