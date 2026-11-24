@@ -28,6 +28,7 @@ import ActivityTerrain from './ui/ActivityTerrain';
 import ScrollIndex from './ui/ScrollIndex';
 import AgentLoop, { type LoopIteration } from './ui/AgentLoop';
 import DataFlow, { type FlowNode } from './ui/DataFlow';
+import WaitlistWallet from './ui/WaitlistWallet';
 
 // Ilustração 1: o assistente previsto para 2027 organizando a semana (exemplo).
 const AGENT_RUN: LoopIteration[] = [
@@ -431,6 +432,10 @@ export function Site() {
             <GooeyTextReveal mode="scroll">
               <p>O Rudge ainda está em construção. A abertura para o público está prevista para 2027.</p>
             </GooeyTextReveal>
+          </section>
+
+          <section className="s-section s-wl-section" id="lista-de-espera">
+            <WaitlistWallet />
           </section>
         </main>
       </ScrollIndex>

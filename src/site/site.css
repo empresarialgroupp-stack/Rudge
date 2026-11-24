@@ -2186,3 +2186,693 @@ ul {
     animation: none;
   }
 }
+
+/* =====================================================================
+   Lista de espera: carteira com cartão preto e dourado (WaitlistWallet)
+   Sempre escura (é um "cofre"), nos dois temas.
+   ===================================================================== */
+
+.s-wl-section {
+  padding-top: 24px;
+}
+
+.s-wl {
+  --wl-gold: #d8b46a;
+  --wl-gold-hi: #f3dca0;
+  --wl-gold-lo: #8a6a32;
+  --wl-fg: #f5f1e8;
+  --wl-fg-2: rgba(245, 241, 232, 0.68);
+  --wl-fg-3: rgba(245, 241, 232, 0.45);
+  --wl-line: rgba(216, 180, 106, 0.22);
+
+  position: relative;
+  display: grid;
+  grid-template-areas: 'copy' 'stage' 'form';
+  gap: 28px;
+  padding: 40px 22px 36px;
+  border-radius: 30px;
+  overflow: hidden;
+  isolation: isolate;
+  color: var(--wl-fg);
+  background:
+    radial-gradient(120% 80% at 85% 0%, rgba(216, 180, 106, 0.12), transparent 60%),
+    linear-gradient(180deg, #0d0c0a 0%, #050505 100%);
+  border: 1px solid rgba(216, 180, 106, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(243, 220, 160, 0.12),
+    0 40px 80px -40px rgba(0, 0, 0, 0.9);
+}
+
+:root[data-theme='light'] .s-wl {
+  box-shadow:
+    inset 0 1px 0 rgba(243, 220, 160, 0.14),
+    0 40px 80px -36px rgba(40, 30, 10, 0.45);
+}
+
+.s-wl-glow {
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  bottom: -30%;
+  width: 120%;
+  height: 70%;
+  transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(216, 180, 106, 0.16), transparent);
+  pointer-events: none;
+}
+
+.s-wl-copy {
+  grid-area: copy;
+}
+
+.s-wl-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--wl-gold);
+}
+
+.s-wl-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--wl-gold);
+  box-shadow: 0 0 12px var(--wl-gold);
+}
+
+.s-wl h2 {
+  margin: 0;
+  max-width: 13em;
+  font-size: clamp(30px, 7.4vw, 52px);
+  font-weight: 640;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--wl-fg);
+  text-wrap: balance;
+}
+
+.s-wl-lead {
+  margin: 16px 0 0;
+  max-width: 30em;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--wl-fg-2);
+}
+
+/* palco: costas da carteira, cartão e bolso da frente */
+.s-wl-stage {
+  grid-area: stage;
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  aspect-ratio: 1.112;
+  margin-top: -6%;
+  perspective: 1100px;
+}
+
+@media (min-width: 900px) {
+  .s-wl-stage {
+    margin-top: auto;
+  }
+}
+
+.s-wl-stage::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 1%;
+  right: 1%;
+  top: 30%;
+  bottom: 0;
+  border-radius: 26px 26px 30px 30px;
+  background: linear-gradient(180deg, #17140f 0%, #0b0a08 100%);
+  box-shadow: inset 0 1px 0 rgba(243, 220, 160, 0.08);
+}
+
+.s-wl-card-slot {
+  position: absolute;
+  z-index: 1;
+  left: 6%;
+  right: 6%;
+  top: 6.2%;
+  will-change: transform;
+}
+
+.s-wl-card {
+  --rx: 0deg;
+  --ry: 0deg;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.586;
+  border-radius: 6.2% / 9.8%;
+  overflow: hidden;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.5s var(--ease);
+  background: linear-gradient(135deg, #1a1712 0%, #070707 60%, #15120d 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(243, 220, 160, 0.18),
+    0 24px 40px -18px rgba(0, 0, 0, 0.9),
+    0 0 60px -20px rgba(216, 180, 106, 0.35);
+  touch-action: pan-y;
+}
+
+.s-wl-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.s-wl-card[data-failed] .s-wl-canvas {
+  display: none;
+}
+
+.s-wl-card-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 7% 7.5% 6.5%;
+  pointer-events: none;
+}
+
+.s-wl-card-face::after {
+  /* filete dourado por dentro da borda */
+  content: '';
+  position: absolute;
+  inset: 3.2%;
+  border-radius: 4.4% / 7%;
+  border: 1px solid rgba(216, 180, 106, 0.12);
+}
+
+.s-wl-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.s-wl-wordmark,
+.s-wl-number,
+.s-wl-year {
+  background: linear-gradient(100deg, var(--wl-gold-lo) 0%, var(--wl-gold-hi) 38%, var(--wl-gold) 55%, var(--wl-gold-hi) 80%, var(--wl-gold-lo) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: s-wl-foil 7s ease-in-out infinite;
+}
+
+.s-wl-wordmark {
+  font-size: clamp(18px, 5.4vw, 24px);
+  font-weight: 650;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.s-wl-tier,
+.s-wl-label {
+  font-size: clamp(8px, 2.2vw, 10px);
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--wl-fg-3);
+}
+
+.s-wl-chip {
+  width: 15%;
+  aspect-ratio: 1.3;
+  border-radius: 18%;
+  background:
+    linear-gradient(90deg, transparent 32%, rgba(60, 40, 10, 0.45) 33%, transparent 34%, transparent 66%, rgba(60, 40, 10, 0.45) 67%, transparent 68%),
+    linear-gradient(180deg, transparent 48%, rgba(60, 40, 10, 0.45) 49%, transparent 51%),
+    linear-gradient(135deg, #f3dca0 0%, #b98d45 45%, #f0d391 70%, #9c7434 100%);
+  box-shadow: inset 0 0 0 1px rgba(80, 55, 15, 0.5), 0 1px 0 rgba(255, 240, 200, 0.2);
+}
+
+.s-wl-card-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.s-wl-card-bottom > div {
+  display: grid;
+  gap: 4px;
+}
+
+.s-wl-valid {
+  text-align: right;
+}
+
+.s-wl-number,
+.s-wl-year {
+  font-size: clamp(18px, 5.6vw, 26px);
+  font-weight: 560;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+}
+
+.s-wl-year {
+  font-size: clamp(14px, 4vw, 18px);
+  letter-spacing: 0.14em;
+}
+
+@keyframes s-wl-foil {
+  0%,
+  100% {
+    background-position: 0% 0;
+  }
+  50% {
+    background-position: 100% 0;
+  }
+}
+
+/* bolso da frente da carteira, com costura dourada */
+.s-wl-pocket {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 35.8%;
+  border-radius: 10px 10px 30px 30px;
+  background:
+    radial-gradient(60% 120% at 50% -40%, rgba(243, 220, 160, 0.09), transparent 70%),
+    linear-gradient(180deg, #1d1912 0%, #0e0c09 55%, #080706 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(243, 220, 160, 0.22),
+    0 -16px 30px -18px rgba(0, 0, 0, 0.95);
+}
+
+.s-wl-stitch {
+  position: absolute;
+  inset: 9px;
+  border-radius: 6px 6px 22px 22px;
+  border: 1.5px dashed rgba(216, 180, 106, 0.38);
+}
+
+.s-wl-emboss {
+  position: absolute;
+  left: 50%;
+  top: 54%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(20px, 6vw, 28px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #0a0907;
+  text-shadow:
+    0 1px 0 rgba(243, 220, 160, 0.16),
+    0 -1px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* formulário */
+.s-wl-form-wrap {
+  grid-area: form;
+}
+
+.s-wl-form {
+  display: grid;
+  gap: 22px;
+  justify-items: center;
+}
+
+.s-wl-field {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.s-wl-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--wl-fg-3);
+}
+
+.s-wl-field input {
+  width: 100%;
+  padding: 12px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--wl-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--wl-fg);
+  font: inherit;
+  font-size: 18px;
+  letter-spacing: 0.01em;
+  outline: none;
+  transition: border-color 0.3s var(--ease);
+}
+
+.s-wl-field input::placeholder {
+  color: rgba(245, 241, 232, 0.28);
+}
+
+.s-wl-field input:focus {
+  border-bottom-color: var(--wl-gold);
+}
+
+.s-wl-field input[aria-invalid='true'] {
+  border-bottom-color: #e0806b;
+}
+
+.s-wl-msg {
+  min-height: 1.4em;
+  margin: -6px 0 0;
+  font-size: 13.5px;
+  text-align: center;
+  color: var(--wl-fg-3);
+}
+
+.s-wl-msg[data-tone='invalid'],
+.s-wl-msg[data-tone='error'] {
+  color: #e9a08f;
+}
+
+.s-wl-done {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+}
+
+.s-wl-done-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.s-wl-done-title strong {
+  color: var(--wl-gold-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+.s-wl-done-sub {
+  margin: 0;
+  color: var(--wl-fg-2);
+  overflow-wrap: anywhere;
+}
+
+.s-wl-done-sub strong {
+  color: var(--wl-fg);
+  font-weight: 560;
+}
+
+.s-wl-link {
+  margin-top: 6px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--wl-fg-3);
+  font: inherit;
+  font-size: 13.5px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.s-wl-link:hover {
+  color: var(--wl-gold);
+}
+
+@media (min-width: 900px) {
+  .s-wl {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'copy stage'
+      'form stage';
+    grid-template-rows: auto 1fr;
+    gap: 32px 56px;
+    padding: 64px 64px 60px;
+    border-radius: 36px;
+  }
+
+  .s-wl-stage {
+    align-self: center;
+  }
+
+  .s-wl-form {
+    justify-items: start;
+  }
+
+  .s-wl-msg {
+    text-align: left;
+  }
+
+  .s-wl-done {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s-wl-wordmark,
+  .s-wl-number,
+  .s-wl-year {
+    animation: none;
+  }
+
+  .s-wl-card {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   From Uiverse.io by dexter-st - https://uiverse.io/dexter-st/breezy-zebra-94
+   MIT License, Copyright (c) dexter-st
+   Neon liquid button (NeonLiquidButton.tsx). Classes com prefixo s-neon-;
+   o mesmo CSS do original, com as variáveis de cor no dourado da fila.
+   --------------------------------------------------------------------- */
+.s-neon-wrapper {
+  --rad: 32px;
+  --color-wrapper-border: #fff;
+  --color-btn-bg: #f00;
+  --color-btn-text: #000;
+  --color-btn-text-shadow: #fff;
+  --color-btn-inset-shadow: #558;
+  --color-layer-a: #fff;
+  --color-layer-b: #00f;
+  --color-overlay-text: #000;
+  --color-overlay-glow: #fff;
+  --color-overlay-shadow: #0004;
+  --color-overlay-highlight: #fff5;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: clip;
+  overflow-clip-margin: 4px;
+
+  border: 2px solid var(--color-wrapper-border);
+  border-radius: var(--rad);
+
+  font-family: 'Inter', var(--font);
+  font-size: 1.5rem;
+  font-weight: 600;
+
+  filter: saturate(0.65) brightness(1.8);
+}
+
+.s-neon-btn {
+  position: relative;
+  z-index: -1;
+
+  padding: 12px 36px;
+  border: none;
+  border-radius: var(--rad);
+
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0.15rem;
+
+  color: var(--color-btn-text);
+  background-color: var(--color-btn-bg);
+  background-size: 200% 200%;
+  box-shadow: inset 0 0 10px 9px var(--color-btn-inset-shadow);
+  text-shadow: 0 1px 3px var(--color-btn-text-shadow);
+
+  cursor: pointer;
+  mix-blend-mode: color-dodge;
+  transition:
+    color 0.3s ease,
+    text-shadow 0.3s ease;
+}
+
+.s-neon-btn::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+
+  border-radius: var(--rad);
+  background-size: 200% 200%;
+  mix-blend-mode: difference;
+  z-index: 1;
+}
+
+.s-neon-layer {
+  position: absolute;
+  pointer-events: none;
+
+  left: -160px;
+  width: 500%;
+  aspect-ratio: 1;
+
+  background: radial-gradient(
+    ellipse at 65% 180%,
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a),
+    var(--color-layer-b),
+    var(--color-layer-a)
+  );
+
+  mix-blend-mode: difference;
+  animation: s-neon-rotate 8s linear infinite;
+}
+
+.s-neon-layer:last-child {
+  mix-blend-mode: color-dodge;
+}
+
+@keyframes s-neon-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.s-neon-text {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+
+  padding: 12px 36px;
+  border-radius: var(--rad);
+
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: 0.15rem;
+
+  color: var(--color-overlay-text);
+  text-shadow: 0 0 4px var(--color-overlay-glow);
+  box-shadow:
+    inset 0 -4px 4px 0 var(--color-overlay-shadow),
+    inset 0 4px 4px 0 var(--color-overlay-highlight);
+
+  mix-blend-mode: multiply;
+  transition: transform 0.3s ease;
+  animation: s-neon-opacity-pulse 5s ease infinite;
+}
+
+.s-neon-wrapper:hover .s-neon-text {
+  transform: scale(1.1);
+}
+
+.s-neon-wrapper:hover .s-neon-btn {
+  color: #0000;
+  text-shadow: 0 0 0 #0000;
+}
+
+.s-neon-wrapper:active .s-neon-text {
+  transform: scale(0.95);
+}
+
+.s-neon-wrapper:active .s-neon-btn {
+  color: #0000;
+  text-shadow: 0 0 0 #0000;
+}
+
+.s-neon-light {
+  position: absolute;
+
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 50px;
+  width: 80%;
+  height: 1.9rem;
+  aspect-ratio: 1;
+  background-color: #fff5;
+  filter: blur(5px);
+  animation: s-neon-pulse 3s ease-in-out infinite;
+}
+
+@keyframes s-neon-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.1;
+  }
+}
+
+@keyframes s-neon-opacity-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Rudge: teclado e estado "enviando" (sem mudar o visual do original) */
+.s-neon-btn:focus-visible {
+  outline: none;
+}
+
+.s-neon-wrapper:has(.s-neon-btn:focus-visible) {
+  outline: 2px solid var(--wl-gold, #fff);
+  outline-offset: 4px;
+}
+
+.s-neon-wrapper[data-busy] {
+  opacity: 0.75;
+}
+
+.s-neon-wrapper[data-busy] .s-neon-btn {
+  cursor: progress;
+}
+
+/* Rudge: tom dourado da lista de espera (só as variáveis do componente) */
+.s-wl-btn {
+  --color-btn-bg: #ff9d00;
+  --color-layer-a: #ffe3a3;
+  --color-layer-b: #000;
+  --color-wrapper-border: #f3dca0;
+}
+
+@media (max-width: 380px) {
+  .s-wl-btn {
+    font-size: 1.25rem;
+  }
+}
